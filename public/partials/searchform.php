@@ -1,22 +1,23 @@
 <style>
 form.newserachform {
-    display: flex;
+	display: flex;
 	border-radius: 10px;
+	border-bottom: 1px solid #ddd;
 }
 
 form.newserachform .form-field {
-    flex: 1;
-    position: relative;
+	flex: 1;
+	position: relative;
 }
 
 .form-field-submit {}
 
 .form-field label {
-    position: absolute;
-    z-index: 1;
-    bottom: 2.35em;
-    left: 4em;
-    line-height: 1;
+	position: absolute;
+	z-index: 1;
+	bottom: 2.35em;
+	left: 4em;
+	line-height: 1;
 	transition: .4s;
 	color: #808384;
 	pointer-events: none;
@@ -26,9 +27,9 @@ form.newserachform .form-field {
 
 form.newserachform input,
 form.newserachform select {
-    width: 100%;
-    position: relative;
-    padding: 1em;
+	width: 100%;
+	position: relative;
+	padding: 1em;
 	border: 0;
 	padding-left: 4em;
 }
@@ -54,14 +55,14 @@ form.newserachform input:not(:placeholder-shown) ~ label,
 }
 
 .form-field .submit-search {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    left: 0;
+	position: absolute;
+	width: 100%;
+	height: 100%;
+	left: 0;
 	background: #59b202;
-    border: 0;
-    color: #fff;
-    cursor: pointer;
+	border: 0;
+	color: #fff;
+	cursor: pointer;
 	transition: .5s;
 }
 
@@ -87,17 +88,17 @@ form.newserachform .form-field:not(:last-child)::after {
 }
 
 .form-field svg {
-    position: absolute;
-    width: 1em;
-    top: 50%;
-    transform: translateY(-50%);
-    z-index: 2;
-    left: 40px;
+	position: absolute;
+	width: 1em;
+	top: 50%;
+	transform: translateY(-50%);
+	z-index: 2;
+	left: 40px;
 	fill: #808384;
 }
 
 form.newserachform .datepicker-input.in-edit:active, form.newserachform .datepicker-input.in-edit:focus {
-    box-shadow: none !important;
+	box-shadow: none !important;
 }
 
 .brl-10 {
@@ -120,10 +121,10 @@ form.newserachform .form-field-submit {
 }
 
 .div-select {
-    position: absolute;
-    background-color: #fff;
-    width: 100%;
-    box-shadow: -1px 0 5px 0px rgb(0 0 0 / 50%);
+	position: absolute;
+	background-color: #fff;
+	width: 100%;
+	box-shadow: -1px 0 5px 0px rgb(0 0 0 / 50%);
 	cursor: pointer;
 	display: none;
 	z-index: 99;
@@ -153,23 +154,25 @@ form.newserachform .form-field-submit {
 </style>
 
 <form action="<?php bloginfo( 'url' ); ?>/villa-list-result" method="GET" autocomplete="off" class="newserachform">
-<?php 
+<?php
 	$show = false;
-	if ( $show ) { 
+if ( $show ) {
 	?>
 	<div class="form-field form-field-select">
 	<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><path d="M215.7 499.2C267 435 384 279.4 384 192C384 86 298 0 192 0S0 86 0 192c0 87.4 117 243 168.3 307.2c12.3 15.3 35.1 15.3 47.4 0zM192 256c-35.3 0-64-28.7-64-64s28.7-64 64-64s64 28.7 64 64s-28.7 64-64 64z"/></svg>
 		<select class="form-select" name="resort" id="resort" required>
 			<option value=""></option>
-			<?php
-			$resorts = get_terms( array(
-				'taxonomy' => 'resort',
-				'hide_empty' => true
-			) );
-			?>
-			<?php foreach( $resorts as $resort ) { ?>
+		<?php
+		$resorts = get_terms(
+			array(
+				'taxonomy'   => 'resort',
+				'hide_empty' => true,
+			)
+		);
+		?>
+		<?php foreach ( $resorts as $resort ) { ?>
 
-			<option value="<?php echo $resort->term_id; ?>" <?php echo ( isset( $_REQUEST['resort'] ) && $resort->term_id == $_REQUEST['resort'] ? " selected" : '' ); ?>><?php echo $resort->name; ?></option>
+			<option value="<?php echo $resort->term_id; ?>" <?php echo ( isset( $_REQUEST['resort'] ) && $resort->term_id == $_REQUEST['resort'] ? ' selected' : '' ); ?>><?php echo $resort->name; ?></option>
 
 			<?php } ?>
 
