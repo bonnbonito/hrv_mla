@@ -1,3 +1,18 @@
+### 2.9.1 (2023-02-06)
+
+  * Fixed Logger not being serializable anymore (#1792)
+
+### 2.9.0 (2023-02-05)
+
+  * Deprecated FlowdockHandler & Formatter as the flowdock service was shutdown (#1748)
+  * Added support for enum context values in PsrLogMessageProcessor (#1773)
+  * Added graylog2/gelf-php 2.x support (#1747)
+  * Improved `BrowserConsoleHandler` logging to use more appropriate methods than just console.log in the browser (#1739)
+  * Fixed `WhatFailureGroupHandler` not catching errors happening inside `close()` (#1791)
+  * Fixed datetime field in `GoogleCloudLoggingFormatter` (#1758)
+  * Fixed infinite loop detection within Fibers (#1753)
+  * Fixed `AmqpHandler->setExtraAttributes` not working with buffering handler wrappers (#1781)
+
 ### 2.8.0 (2022-07-24)
 
   * Deprecated `CubeHandler` and `PHPConsoleHandler` as both projects are abandoned and those should not be used anymore (#1734)
@@ -123,7 +138,7 @@
   * Fixed FilterHandler triggering a notice when handleBatch was filtering all records passed to it
   * Fixed Turkish locale messing up the conversion of level names to their constant values
 
-### 2.0.2 (2019-11-13)
+### 2.0.1 (2019-11-13)
 
   * Fixed normalization of Traversables to avoid traversing them as not all of them are rewindable
   * Fixed setFormatter/getFormatter to forward to the nested handler in FilterHandler, FingersCrossedHandler, BufferHandler, OverflowHandler and SamplingHandler

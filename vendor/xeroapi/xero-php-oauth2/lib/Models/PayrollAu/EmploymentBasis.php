@@ -49,6 +49,7 @@ class EmploymentBasis
     const CASUAL = 'CASUAL';
     const LABOURHIRE = 'LABOURHIRE';
     const SUPERINCOMESTREAM = 'SUPERINCOMESTREAM';
+    const NONEMPLOYEE = 'NONEMPLOYEE';
     
     /**
      * Gets allowable values of the enum
@@ -62,6 +63,7 @@ class EmploymentBasis
             self::CASUAL,
             self::LABOURHIRE,
             self::SUPERINCOMESTREAM,
+            self::NONEMPLOYEE,
         ];
     }
 }

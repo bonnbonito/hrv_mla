@@ -20,8 +20,7 @@
  * @subpackage HRV_MLA/admin
  * @author     Bonn Joel Elimanco <bonnbonito@gmail.com>
  */
-use \DrewM\MailChimp\MailChimp;
-use XeroAPI\XeroPHP\AccountingObjectSerializer;
+
 class HRV_MLA_Admin {
 
 	/**
@@ -50,8 +49,7 @@ class HRV_MLA_Admin {
 	 * @param      string $version    The version of this plugin.
 	 */
 	public function __construct( $plugin_name, $version ) {
-
-		$this->plugin_name     = $plugin_name;
+		 $this->plugin_name    = $plugin_name;
 		$this->version         = $version;
 		$this->client_id       = get_field( 'xero_client_key', 'option' ) ? get_field( 'xero_client_key', 'option' ) : '';
 		$this->client_secret   = get_field( 'xero_secret_key', 'option' ) ? get_field( 'xero_secret_key', 'option' ) : '';
@@ -69,21 +67,19 @@ class HRV_MLA_Admin {
 	 * @since    1.0.0
 	 */
 	public function enqueue_styles() {
-
 		/**
-		 * This function is provided for demonstration purposes only.
-		 *
-		 * An instance of this class should be passed to the run() function
-		 * defined in HRV_MLA_Loader as all of the hooks are defined
-		 * in that particular class.
-		 *
-		 * The HRV_MLA_Loader will then create the relationship
-		 * between the defined hooks and the functions defined in this
-		 * class.
-		 */
+		   * This function is provided for demonstration purposes only.
+		   *
+		   * An instance of this class should be passed to the run() function
+		   * defined in HRV_MLA_Loader as all of the hooks are defined
+		   * in that particular class.
+		   *
+		   * The HRV_MLA_Loader will then create the relationship
+		   * between the defined hooks and the functions defined in this
+		   * class.
+		   */
 
 		wp_enqueue_style( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'css/hrv_mla-admin.css', array(), $this->version, 'all' );
-
 	}
 
 	/**
@@ -92,8 +88,7 @@ class HRV_MLA_Admin {
 	 * @since    1.0.0
 	 */
 	public function enqueue_scripts() {
-
-		/**
+		 /**
 		 * This function is provided for demonstration purposes only.
 		 *
 		 * An instance of this class should be passed to the run() function
@@ -119,7 +114,6 @@ class HRV_MLA_Admin {
 				'redirect_url'  => $this->redirect_url,
 			),
 		);
-
 	}
 
 
@@ -182,7 +176,6 @@ class HRV_MLA_Admin {
 		);
 
 		return $future_args->found_posts;
-
 	}
 
 	/**
@@ -192,70 +185,66 @@ class HRV_MLA_Admin {
 		add_menu_page( 'Xero Integration', 'Xero Integration', 'manage_options', 'xero-integration', array( $this, 'hrv_xero_integration' ), 'dashicons-controls-repeat' );
 
 		add_submenu_page( 'xero-integration', 'HRV Import', 'HRV Import', 'manage_options', 'hrv-import', array( $this, 'hrv_import_function' ) );
-		
+
 		add_submenu_page( 'xero-integration', 'Booking Import', 'Booking Import', 'manage_options', 'booking-import', array( $this, 'hrv_import_booking_function' ) );
 	}
-	
+
 	/**
 	 * Import Old bookings
 	 */
 	public function hrv_import_booking_function() {
-		global $wpdb;
+		 global $wpdb;
 
 		$results = $wpdb->get_results( "SELECT * FROM `VillaBookings` WHERE `BookingDate` > '2018-12-30' AND `CancelNo` IS NULL ORDER BY `BookingDate` ASC", ARRAY_A );
 
 		foreach ( $results as $result ) {
-		    $user = $wpdb->get_row( "SELECT * FROM `Client` WHERE `ClientID` = " . $result['ClientID'] );
-		   
-		    
-		    $first_name = $user->FirstName;
-		    $last_name = $user->FamilyName;
-		    $phone = $user->ResPhone;
-		    $email = $user->Email;
-		    $arrival = $result['ArrivalDate'];
-		    $departure = $result['DepartureDate'];
-		    $post_date = date("Y-m-d", strtotime($result['BookingDate']));
-		    $booking_title = $result['BookingID'] . ' - ' . $first_name . ' ' . $last_name;
-		    
-		    $booking = array(
+			$user = $wpdb->get_row( 'SELECT * FROM `Client` WHERE `ClientID` = ' . $result['ClientID'] );
+
+			$first_name    = $user->FirstName;
+			$last_name     = $user->FamilyName;
+			$phone         = $user->ResPhone;
+			$email         = $user->Email;
+			$arrival       = $result['ArrivalDate'];
+			$departure     = $result['DepartureDate'];
+			$post_date     = date( 'Y-m-d', strtotime( $result['BookingDate'] ) );
+			$booking_title = $result['BookingID'] . ' - ' . $first_name . ' ' . $last_name;
+
+			$booking = array(
 				'post_type'   => 'bookings',
 				'post_title'  => $booking_title,
 				'post_status' => 'publish',
 				'post_author' => 3,
 				'post_date'   => $post_date,
 			);
-		    
+
 			$post_id = post_exists( $booking_title ) or wp_insert_post( $booking );
-			
+
 			if ( $post_id ) {
-			    update_field( 'first_name', $first_name, $post_id );
+				update_field( 'first_name', $first_name, $post_id );
 				update_field( 'surname', $last_name, $post_id );
 				update_field( 'email', $email, $post_id );
 				update_field( 'phone', $phone, $post_id );
-				update_field( 'arrival_date', date("Ymd", strtotime($arrival)), $post_id );
-				update_field( 'end_date', date("Ymd", strtotime($departure)), $post_id );
+				update_field( 'arrival_date', date( 'Ymd', strtotime( $arrival ) ), $post_id );
+				update_field( 'end_date', date( 'Ymd', strtotime( $departure ) ), $post_id );
 				update_field( 'no_of_nights', $result['NoofNights'], $post_id );
 				update_field( 'no_of_bedrooms', $result['Noofbedrooms'], $post_id );
 				update_field( 'total_price', $result['PricetoClient'], $post_id );
 				update_field( 'payment_status', 'full', $post_id );
-				
+
 				$my_post = array(
-                    'ID'            => $post_id,
-                    'post_date'     => date( 'Y-m-d', strtotime( $result['BookingDate'] ) ),
-                    'post_date_gmt' => gmdate( 'Y-m-d', strtotime( $result['BookingDate'] ) ),
-                );
-                
-                wp_update_post( $my_post );
-			    
+					'ID'            => $post_id,
+					'post_date'     => date( 'Y-m-d', strtotime( $result['BookingDate'] ) ),
+					'post_date_gmt' => gmdate( 'Y-m-d', strtotime( $result['BookingDate'] ) ),
+				);
+
+				wp_update_post( $my_post );
 			}
-			
 		}
 
 		echo 'Booking Imported' . count( $results );
 	}
 
 	public function xero_provider() {
-
 		$provider = new \League\OAuth2\Client\Provider\GenericProvider(
 			array(
 				'clientId'                => $this->client_id,
@@ -268,14 +257,12 @@ class HRV_MLA_Admin {
 		);
 
 		return $provider;
-
 	}
 
 	/**
 	 * Authorization URL
 	 */
 	public function xero_authorization_url() {
-
 		$provider = $this->xero_provider();
 
 		$options = array(
@@ -289,7 +276,7 @@ class HRV_MLA_Admin {
 	 * Connect to Xero
 	 */
 	public function hrv_import_function() {
-		global $wpdb;
+		 global $wpdb;
 
 		$results = $wpdb->get_results( 'SELECT * FROM `villa`', ARRAY_A );
 
@@ -408,7 +395,6 @@ class HRV_MLA_Admin {
 	 * Connect to Xero
 	 */
 	public function hrv_xero_integration() {
-
 		$provider = $this->xero_provider();
 
 		if ( isset( $_GET['disconnect'] ) && $_GET['disconnect'] == '1' ) {
@@ -421,9 +407,7 @@ class HRV_MLA_Admin {
 		}
 
 		if ( isset( $_GET['refresh'] ) && $_GET['refresh'] === '1' ) {
-
-				$this->xero_refresh_token();
-
+			$this->xero_refresh_token();
 		}
 
 		if ( isset( $_GET['code'] ) && $_GET['code'] && ! get_option( 'xero_token' ) ) {
@@ -451,48 +435,52 @@ class HRV_MLA_Admin {
 				update_option( 'tenant_id', $result[0]->getTenantId() );
 				update_option( 'refresh_token', $access_token->getRefreshToken() );
 				update_option( 'id_token', $access_token->getValues()['id_token'] );
-
 			} catch ( \League\OAuth2\Client\Provider\Exception\IdentityProviderException $e ) {
 				echo 'Callback failed';
 				exit();
 			}
 		}
 		?>
-		<style>
-			.xero-wrap button {
-				cursor: pointer;
-			}
+<style>
+	.xero-wrap button {
+		cursor: pointer;
+	}
 
-			.xero-wrap .connected {
-				display: flex;
-				align-items: center;
-				grid-gap: 10px;
-			}
-			.xero-wrap .connected button {
-				background: red;
-				border: 1px solid #000;
-				border-radius: 4px;
-				color: #fff;
-				padding: 2px 10px;
-			}
-		</style>
-		<h2>Xero Integration</h2>
+	.xero-wrap .connected {
+		display: flex;
+		align-items: center;
+		grid-gap: 10px;
+	}
 
-		<div class="xero-wrap">
-			<?php if ( get_option( 'xero_token' ) ) : ?>
-			<div class="connected">
-				<p>Connected</p>
-				<a href="<?php echo admin_url( 'admin.php?page=xero-integration&disconnect=1' ); ?>" id="xeroDisconnect" class="xero-btn red">Disconnect</a>
-			</div>
-			<div class="refresh">
-				<a id="xeroRefresh" href="<?php echo admin_url( 'admin.php?page=xero-integration&refresh=1' ); ?>">Refresh Token</a>
-			</div>
-				<?php
-			else :
-				?>
-				<a href="<?php echo $this->xero_authorization_url(); ?>">Connect</a>
-			<?php endif; ?>
-		</div>
+	.xero-wrap .connected button {
+		background: red;
+		border: 1px solid #000;
+		border-radius: 4px;
+		color: #fff;
+		padding: 2px 10px;
+	}
+</style>
+<h2>Xero Integration</h2>
+
+<div class="xero-wrap">
+		<?php if ( get_option( 'xero_token' ) ) : ?>
+	<div class="connected">
+		<p>Connected</p>
+		<a href="<?php echo admin_url( 'admin.php?page=xero-integration&disconnect=1' ); ?>"
+			id="xeroDisconnect" class="xero-btn red">Disconnect</a>
+	</div>
+	<div class="refresh">
+		<a id="xeroRefresh"
+			href="<?php echo admin_url( 'admin.php?page=xero-integration&refresh=1' ); ?>">Refresh
+			Token</a>
+	</div>
+			<?php
+	else :
+		?>
+	<a
+		href="<?php echo $this->xero_authorization_url(); ?>">Connect</a>
+	<?php endif; ?>
+</div>
 
 		<?php
 	}
@@ -502,9 +490,7 @@ class HRV_MLA_Admin {
 	 */
 	public function xero_refresh_if_expired() {
 		if ( time() > get_option( 'token_expires' ) ) {
-
 			if ( get_option( 'refresh_token' ) ) {
-
 				$provider = $this->xero_provider();
 
 				$tenant_id = get_option( 'tenant_id' );
@@ -526,9 +512,7 @@ class HRV_MLA_Admin {
 	}
 
 	public function xero_refresh_token() {
-
 		if ( get_option( 'refresh_token' ) ) {
-
 			$provider = $this->xero_provider();
 
 			$tenant_id = get_option( 'tenant_id' );
@@ -540,17 +524,16 @@ class HRV_MLA_Admin {
 				)
 			);
 
-			update_option( 'xero_access_token', $newAccessToken->getToken() );
-			update_option( 'token_expires', $newAccessToken->getExpires() );
-			update_option( 'tenant_id', $tenant_id );
-			update_option( 'refresh_token', $newAccessToken->getRefreshToken() );
-			update_option( 'id_token', $newAccessToken->getValues()['id_token'] );
+			  update_option( 'xero_access_token', $newAccessToken->getToken() );
+			  update_option( 'token_expires', $newAccessToken->getExpires() );
+			  update_option( 'tenant_id', $tenant_id );
+			  update_option( 'refresh_token', $newAccessToken->getRefreshToken() );
+			  update_option( 'id_token', $newAccessToken->getValues()['id_token'] );
 		}
-
 	}
 
 	public function booking_column_sort( $query ) {
-		global $pagenow;
+		 global $pagenow;
 		if ( ! is_admin() && 'edit.php' != $pagenow && isset( $_GET['post_type'] ) && 'bookings' !== $_GET['post_type'] ) {
 			return;
 		}
@@ -573,7 +556,6 @@ class HRV_MLA_Admin {
 				'compare' => '>=',
 				'type'    => 'DATE',
 			);
-
 		}
 
 		if ( isset( $property_owner ) && ! empty( $property_owner ) ) {
@@ -590,7 +572,7 @@ class HRV_MLA_Admin {
 	public function add_booking_column() {
 		add_filter(
 			'manage_edit-bookings_columns',
-			function( $columns ) {
+			function ( $columns ) {
 				unset( $columns['date'] );
 				$columns['email']        = __( 'E-mail', 'hrv_mla' );
 				$columns['arrival_date'] = __( 'Arrival Date', 'hrv_mla' );
@@ -604,7 +586,7 @@ class HRV_MLA_Admin {
 
 		add_filter(
 			'manage_edit-bookings_sortable_columns',
-			function( $columns ) {
+			function ( $columns ) {
 				$columns['days_left']    = 'days_left';
 				$columns['owner']        = 'owner';
 				$columns['arrival_date'] = 'arrival_date';
@@ -669,7 +651,6 @@ class HRV_MLA_Admin {
 	 */
 	public function acf_options() {
 		if ( function_exists( 'acf_add_options_page' ) ) {
-
 			acf_add_options_page(
 				array(
 					'page_title' => 'Stripe Settings',
@@ -821,35 +802,31 @@ class HRV_MLA_Admin {
 					'description'           => '',
 				)
 			);
-			endif;
+		endif;
 	}
 
 	/**
 	 * Send Email Function
 	 */
 	public function send_email( $to, $subject, $content ) {
-
-		$header = file_get_contents( plugin_dir_url( __FILE__ ) . 'partials/email-header.php' );
-		$footer = file_get_contents( plugin_dir_url( __FILE__ ) . 'partials/email-footer.php' );
+		 $header = file_get_contents( plugin_dir_url( __FILE__ ) . 'partials/email-header.php' );
+		$footer  = file_get_contents( plugin_dir_url( __FILE__ ) . 'partials/email-footer.php' );
 
 		$email_content = $header . $content . $footer;
 
 		$headers = array( 'Content-Type: text/html; charset=UTF-8' );
 
 		wp_mail( $to, $subject, $email_content, $headers );
-
 	}
 
 	/**
 	 * Send Email Deposit
 	 */
 	public function send_hrv_email( $to, $subject, $content ) {
-
-		$headers   = array( 'Content-Type: text/html; charset=UTF-8' );
+		 $headers  = array( 'Content-Type: text/html; charset=UTF-8' );
 		$headers[] = 'From: HRV Booking <booking@hrv.mlademos.co.uk>';
 
 		wp_mail( $to, $subject, $content, $headers );
-
 	}
 
 	/**
@@ -861,8 +838,7 @@ class HRV_MLA_Admin {
 	 */
 
 	public function xero_contact( $user ) {
-
-		$this->xero_refresh_if_expired();
+		 $this->xero_refresh_if_expired();
 
 		$config = XeroAPI\XeroPHP\Configuration::getDefaultConfiguration()->setAccessToken( get_option( 'xero_access_token' ) );
 
@@ -881,7 +857,6 @@ class HRV_MLA_Admin {
 		// print_r( $exists->getContacts()[0]->getContactId() );
 
 		if ( count( $exists->getContacts() ) == 0 ) {
-
 			$phone = new XeroAPI\XeroPHP\Models\Accounting\Phone();
 			$phone->setPhoneNumber( $user['phone'] );
 			$phone->setPhoneType( XeroAPI\XeroPHP\Models\Accounting\Phone::PHONE_TYPE_MOBILE );
@@ -908,7 +883,7 @@ class HRV_MLA_Admin {
 	}
 
 	public function add_xero_invoice( $contact_id, $booking ) {
-		$this->xero_refresh_if_expired();
+		 $this->xero_refresh_if_expired();
 
 		$config = XeroAPI\XeroPHP\Configuration::getDefaultConfiguration()->setAccessToken( get_option( 'xero_access_token' ) );
 
@@ -955,12 +930,10 @@ class HRV_MLA_Admin {
 		$result = $apiInstance->createInvoices( $xeroTenantId, $invoices, $summarizeErrors, $unitdp );
 
 		return $result;
-
 	}
 
 	public function ciirus_is_property_available( $id, $arrive, $departure ) {
-
-		$client     = new SoapClient(
+		$client = new SoapClient(
 			null,
 			array(
 				'location' => $this->ciirus_url,
@@ -968,45 +941,44 @@ class HRV_MLA_Admin {
 				'trace'    => 1,
 			)
 		);
-			$params = array(
-				new SoapParam( $this->ciirus_user, 'ns1:APIUsername' ),
-				new SoapParam( $this->ciirus_password, 'ns1:APIPassword' ),
-				new SoapParam( intval( $id ), 'ns1:PropertyID' ),
-				new SoapParam( $arrive, 'ns1:ArrivalDate' ),
-				new SoapParam( $departure, 'ns1:DepartureDate' ),
+		$params = array(
+			new SoapParam( $this->ciirus_user, 'ns1:APIUsername' ),
+			new SoapParam( $this->ciirus_password, 'ns1:APIPassword' ),
+			new SoapParam( intval( $id ), 'ns1:PropertyID' ),
+			new SoapParam( $arrive, 'ns1:ArrivalDate' ),
+			new SoapParam( $departure, 'ns1:DepartureDate' ),
+		);
+
+		try {
+			$return = $client->__soapCall(
+				'IsPropertyAvailable',
+				$params,
+				array(
+					'soapaction'   => 'http://xml.ciirus.com/IsPropertyAvailable',
+					'soap_version' => SOAP_1_1,
+				)
 			);
 
-			try {
-				$return = $client->__soapCall(
-					'IsPropertyAvailable',
-					$params,
-					array(
-						'soapaction'   => 'http://xml.ciirus.com/IsPropertyAvailable',
-						'soap_version' => SOAP_1_1,
-					)
-				);
-
-				if ( $return == 'true' ) {
-					$status = 'available';
-				}
-
-				if ( $return == 'false' ) {
-					$status = 'not available';
-				}
-			} catch ( SoapFault $fault ) {
-				if ( strpos( $fault, 'The minimum night stay for this property could not be determined' ) > 0 ) {
-					$status = ' minimum stay';
-				} elseif ( strpos( $fault, 'The credentials could not be authenticated' ) != false ) {
-					$status = 'not ok';
-				} else {
-					$status = 'ok ' . $fault;
-				}
+			if ( $return == 'true' ) {
+				$status = 'available';
 			}
-			return $status;
+
+			if ( $return == 'false' ) {
+				$status = 'not available';
+			}
+		} catch ( SoapFault $fault ) {
+			if ( strpos( $fault, 'The minimum night stay for this property could not be determined' ) > 0 ) {
+				$status = ' minimum stay';
+			} elseif ( strpos( $fault, 'The credentials could not be authenticated' ) != false ) {
+				$status = 'not ok';
+			} else {
+				$status = 'ok ' . $fault;
+			}
+		}
+		return $status;
 	}
 
 	public function ciirus_get_property_rates( $id, $checkin, $nights ) {
-
 		$curl = curl_init();
 
 		curl_setopt_array(
@@ -1030,7 +1002,7 @@ class HRV_MLA_Admin {
 		if ( $err ) {
 			return 'cURL Error #:' . $err;
 		} else {
-		    libxml_use_internal_errors(true);
+			libxml_use_internal_errors( true );
 			$xml_result     = simplexml_load_string( $response );
 			$json_encode    = wp_json_encode( $xml_result );
 			$arr_output     = json_decode( $json_encode, true );
@@ -1040,9 +1012,7 @@ class HRV_MLA_Admin {
 			$checkin_date   = date( 'Y-m-d', strtotime( $checkin ) );
 
 			if ( is_array( $rates ) || is_object( $rates ) ) {
-
 				for ( $i = 0; $i < $nights; $i++ ) {
-
 					$chDate = date( 'Y-m-d', strtotime( '+' . $i . ' day', strtotime( $checkin_date ) ) );
 
 					for ( $j = 0; $j < count( $rates ); $j++ ) {
@@ -1068,7 +1038,6 @@ class HRV_MLA_Admin {
 	}
 
 	public function ciirus_get_tax_rates( $id ) {
-
 		$curl = curl_init();
 
 		curl_setopt_array(
@@ -1092,23 +1061,21 @@ class HRV_MLA_Admin {
 		if ( $err ) {
 			return 'cURL Error #:' . $err;
 		} else {
-			libxml_use_internal_errors(true);
-			$xml_result  = simplexml_load_string( $response );
+			libxml_use_internal_errors( true );
+			$xml_result = simplexml_load_string( $response );
 			if ( $xml_result ) {
-				$json_encode = wp_json_encode( $xml_result );
-				$arr_output  = json_decode( $json_encode, true );
+				$json_encode               = wp_json_encode( $xml_result );
+				$arr_output                = json_decode( $json_encode, true );
 				$total_taxrates            = $arr_output['Tax1Percent'] + $arr_output['Tax2Percent'] + $arr_output['Tax3Percent'];
 				$arr_output['total_rates'] = $total_taxrates;
 				return $arr_output;
 			} else {
 				return false;
 			}
-			
 		}
 	}
 
 	public function ciirus_get_cleaning_fee( $id, $nights ) {
-
 		$curl = curl_init();
 
 		curl_setopt_array(
@@ -1132,18 +1099,16 @@ class HRV_MLA_Admin {
 		if ( $err ) {
 			return 'cURL Error #:' . $err;
 		} else {
-			libxml_use_internal_errors(true);
+			libxml_use_internal_errors( true );
 
-			$xml_result  = simplexml_load_string( $response );
+			$xml_result = simplexml_load_string( $response );
 
 			if ( $xml_result ) {
 				$json_encode = wp_json_encode( $xml_result );
 				$arr_output  = json_decode( $json_encode, true );
 
 				if ( $arr_output['ChargeCleaningFee'] == 'true' && $arr_output['OnlyChargeCleaningFeeWhenLessThanDays'] > $nights ) {
-
 					return $arr_output['CleaningFeeAmount'];
-
 				} else {
 					return 0;
 				}
@@ -1154,69 +1119,70 @@ class HRV_MLA_Admin {
 	}
 
 	public function ciirus_make_booking( $booking_details ) {
-
 		$curl = curl_init();
 
-		curl_setopt_array($curl, array(
-		CURLOPT_URL => 'https://api.ciirus.com/CiirusXML.15.025.asmx',
-		CURLOPT_RETURNTRANSFER => true,
-		CURLOPT_ENCODING => '',
-		CURLOPT_MAXREDIRS => 10,
-		CURLOPT_TIMEOUT => 0,
-		CURLOPT_FOLLOWLOCATION => true,
-		CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-		CURLOPT_CUSTOMREQUEST => 'POST',
-		CURLOPT_POSTFIELDS => $booking_details,
-		CURLOPT_HTTPHEADER => array(
-			'Content-Type: text/xml; charset=utf-8',
-            'SOAPAction: http://xml.ciirus.com/MakeBooking'
-		),
-		));
+		curl_setopt_array(
+			$curl,
+			array(
+				CURLOPT_URL            => 'https://api.ciirus.com/CiirusXML.15.025.asmx',
+				CURLOPT_RETURNTRANSFER => true,
+				CURLOPT_ENCODING       => '',
+				CURLOPT_MAXREDIRS      => 10,
+				CURLOPT_TIMEOUT        => 0,
+				CURLOPT_FOLLOWLOCATION => true,
+				CURLOPT_HTTP_VERSION   => CURL_HTTP_VERSION_1_1,
+				CURLOPT_CUSTOMREQUEST  => 'POST',
+				CURLOPT_POSTFIELDS     => $booking_details,
+				CURLOPT_HTTPHEADER     => array(
+					'Content-Type: text/xml; charset=utf-8',
+					'SOAPAction: http://xml.ciirus.com/MakeBooking',
+				),
+			)
+		);
 
-		$response = curl_exec($curl);
-        $err      = curl_error( $curl );
-        
-        if ( $err ) {
+		$response = curl_exec( $curl );
+		$err      = curl_error( $curl );
+
+		if ( $err ) {
 			return 'cURL Error #:' . $err;
 		} else {
-		    $response = preg_replace("/(<\/?)(\w+):([^>]*>)/", "$1$2$3", $response);
-            $xml = new SimpleXMLElement($response);
-            $body = $xml->xpath('//soapBody ')[0];
-		    $json_encode               = wp_json_encode( $body );
-			$arr_output                = json_decode( $json_encode, true );
-			$result = $arr_output['MakeBookingResponse']['MakeBookingResult'];
-			
-			if ( 'true' == $result['BookingPlaced'] ) {
-			    return array(
-			        "BookingPlaced" => $result['BookingPlaced'],
-			        "BookingID" => $result['BookingID'],
-			        "TotalAmountIncludingTax" => $result['TotalAmountIncludingTax'],
-			        );
-			} else {
-			    return array(
-			        "BookingPlaced" => $result['BookingPlaced'],
-		            "ErrorMessage" => $result['ErrorMessage'],
-		        );
-			}
-			
-		}
-		
-	}
-	
-	public function ciirus_test_booking() {
+			$response    = preg_replace( '/(<\/?)(\w+):([^>]*>)/', '$1$2$3', $response );
+			$xml         = new SimpleXMLElement( $response );
+			$body        = $xml->xpath( '//soapBody ' )[0];
+			$json_encode = wp_json_encode( $body );
+			$arr_output  = json_decode( $json_encode, true );
+			$result      = $arr_output['MakeBookingResponse']['MakeBookingResult'];
 
-        $curl = curl_init();
-        
-        curl_setopt_array($curl, array(
-          CURLOPT_URL => 'http://api.ciirus.com/CiirusXML.15.025.asmx',
-          CURLOPT_RETURNTRANSFER => true,
-          CURLOPT_ENCODING => '',
-          CURLOPT_MAXREDIRS => 10,
-          CURLOPT_TIMEOUT => 0,
-          CURLOPT_FOLLOWLOCATION => true,
-          CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-          CURLOPT_CUSTOMREQUEST => 'POST',
-          CURLOPT_POSTFIELDS =>'<?xml version="1.0" encoding="utf-8"?>
+			if ( 'true' == $result['BookingPlaced'] ) {
+				return array(
+					'BookingPlaced'           => $result['BookingPlaced'],
+					'BookingID'               => $result['BookingID'],
+					'TotalAmountIncludingTax' => $result['TotalAmountIncludingTax'],
+				);
+			} else {
+				return array(
+					'BookingPlaced' => $result['BookingPlaced'],
+					'ErrorMessage'  => $result['ErrorMessage'],
+				);
+			}
+		}
+	}
+
+	public function ciirus_test_booking() {
+		 $curl = curl_init();
+
+		curl_setopt_array(
+			$curl,
+			array(
+				CURLOPT_URL            => 'http://api.ciirus.com/CiirusXML.15.025.asmx',
+				CURLOPT_RETURNTRANSFER => true,
+				CURLOPT_ENCODING       => '',
+				CURLOPT_MAXREDIRS      => 10,
+				CURLOPT_TIMEOUT        => 0,
+				CURLOPT_FOLLOWLOCATION => true,
+				CURLOPT_HTTP_VERSION   => CURL_HTTP_VERSION_1_1,
+				CURLOPT_CUSTOMREQUEST  => 'POST',
+				CURLOPT_POSTFIELDS     => '<?xml version="1.0" encoding="utf-8"?>
         <soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
           <soap:Body>
             <MakeBooking xmlns="http://xml.ciirus.com/">
@@ -1240,334 +1206,458 @@ class HRV_MLA_Admin {
             </MakeBooking>
           </soap:Body>
         </soap:Envelope>',
-          CURLOPT_HTTPHEADER => array(
-            'Content-Type: text/xml; charset=utf-8',
-            'SOAPAction: http://xml.ciirus.com/MakeBooking'
-          ),
-        ));
-        
-        $response = curl_exec($curl);
-        $err      = curl_error( $curl );
-        
-        if ( $err ) {
+				CURLOPT_HTTPHEADER     => array(
+					'Content-Type: text/xml; charset=utf-8',
+					'SOAPAction: http://xml.ciirus.com/MakeBooking',
+				),
+			)
+		);
+
+		$response = curl_exec( $curl );
+		$err      = curl_error( $curl );
+
+		if ( $err ) {
 			return 'cURL Error #:' . $err;
 		} else {
-		    $response = preg_replace("/(<\/?)(\w+):([^>]*>)/", "$1$2$3", $response);
-            $xml = new SimpleXMLElement($response);
-            $body = $xml->xpath('//soapBody ')[0];
-		    $json_encode               = wp_json_encode( $body );
-			$arr_output                = json_decode( $json_encode, true );
-			$result = $arr_output['MakeBookingResponse']['MakeBookingResult'];
-			
+			$response    = preg_replace( '/(<\/?)(\w+):([^>]*>)/', '$1$2$3', $response );
+			$xml         = new SimpleXMLElement( $response );
+			$body        = $xml->xpath( '//soapBody ' )[0];
+			$json_encode = wp_json_encode( $body );
+			$arr_output  = json_decode( $json_encode, true );
+			$result      = $arr_output['MakeBookingResponse']['MakeBookingResult'];
+
 			if ( 'true' == $result['BookingPlaced'] ) {
-			    return array(
-			        "BookingPlaced" => $result['BookingPlaced'],
-			        "BookingID" => $result['BookingID'],
-			        "TotalAmountIncludingTax" => $result['TotalAmountIncludingTax'],
-			        );
+				return array(
+					'BookingPlaced'           => $result['BookingPlaced'],
+					'BookingID'               => $result['BookingID'],
+					'TotalAmountIncludingTax' => $result['TotalAmountIncludingTax'],
+				);
 			} else {
-			    return array(
-			        "BookingPlaced" => $result['BookingPlaced'],
-		            "ErrorMessage" => $result['ErrorMessage'],
-		        );
+				return array(
+					'BookingPlaced' => $result['BookingPlaced'],
+					'ErrorMessage'  => $result['ErrorMessage'],
+				);
 			}
-			
 		}
-
-		
 	}
 
-	public function get_season_total_price() {
-
-	}
+	public function get_season_total_price() {  }
 
 	public function to_admin_email_hrv_content_body_old() {
-		ob_start();
-?>
+		 ob_start();
+		?>
 <div style="padding: 20px; border: 1px solid #000;">
-<table border="0" width="100%" cellpadding="0" cellspacing="0">
-    <tbody>
-    <tr width="100%">
-    <td width="60%"></td>
-    <td width="40%" align="right"><font size="2" face="verdana">&nbsp;</font> </td>
-    </tr>
-    <tr>
-    <td colspan="2">
-    <table width="97%" cellpadding="0" cellspacing="0" border="0" bgcolor="">
-    <tbody>
-    <tr>
-    <td width="50%"><font color="#215272" size="6" face="verdana">Highlands Reserve Villas</font></td>
-    <td width="50%" align="right" valign="bottom"><font size="2" face="verdana">Transaction ID</font>&nbsp;&nbsp;</td>
-    <td valign="bottom" align="right"><font size="2" face="verdana">BOOKING_ID</font></td>
-    </tr>
-    <tr>
-    <td width="50%"><font size="2" face="verdana"><a href="https://www.highlandsreservevillas.com" target="_blank" data-saferedirecturl="https://www.google.com/url?q=http://www.highlandsreservevillas.com&amp;source=gmail&amp;ust=1652953610962000&amp;usg=AOvVaw37D-ULWsoOnnifH3JVraMp">www.highlandsreservevillas.com</a></font></td>
-    <td width="50%" align="right"><font size="2" face="verdana"><span class="il">Invoice</span> Date</font>&nbsp;&nbsp;&nbsp;</td>
-    <td align="right"><font size="2" face="verdana">INVOICE_DATE</font></td>
-    </tr>
-    <tr>
-    <td width="50%">&nbsp;</td>
-    <td width="50%" align="left">&nbsp;</td>
-    <td align="right">&nbsp;</td>
-    </tr>
-    <tr>
-    <td width="50%">&nbsp;</td>
-    <td width="50%" align="left">&nbsp;</td>
-    <td align="right">&nbsp;</td>
-    </tr>
-    </tbody>
-    </table>
-    </td>
-    </tr>
-    <tr>
-    <td colspan="2" width="100%">
-    <table width="100%" cellpadding="0" cellspacing="0" border="0">
-    <tbody>
-    <tr height="25px">
-    <td><font size="2" face="verdana"><b>Property</b></font></td>
-    <td width="100%" colspan="5"><font size="2" face="verdana">PROPERTY_NAME</font></td>
-    </tr>
-    <tr height="25px">
-    <td width="22%"><font size="2" face="verdana"><b>Guest&nbsp;details</b></font></td>
-    <td><font face="verdana" size="2">[GUEST_NAME]</font></td>
-    <td><font face="verdana" size="2">NO_ADULTS&nbsp;Adults </font></td>
-    <td></td>
-    <td><font face="verdana" size="2">NO_CHILDREN&nbsp;Children</font> </td>
-    <td></td>
-    </tr>
-    <tr height="25px">
-    <td width="22%"><font size="2" face="verdana"><b>Arrival&nbsp;Date</b></font></td>
-    <td><font size="2" face="verdana">ARRIVAL_DATE</font> </td>
-    <td><font size="2" face="verdana"><b>for</b> NO_NIGHTS</font> <b><font size="2" face="verdana">nights<b></b></font></b></td>
-    <td colspan="2"><font size="2" face="verdana"><b>Departing</b>&nbsp;DEPARTURE_DATE</font></td>
-    </tr>
-    </tbody>
-    </table>
-    </td>
-    </tr>
-    </tbody>
-    </table>
-    <font size="2" face="verdana"></font>
-    <table width="100%" cellpadding="0" cellspacing="0">
-    <tbody>
-    <tr width="80%">
-    <td colspan="6">
-    <hr size="4" color="#000000">
-    </td>
-    </tr>
-    <tr>
-    <td colspan="2">
-    <table width="100%" cellpadding="0" cellspacing="0" align="right">
-    <tbody>
-    <tr>
-    <td width="25%" valign="top" align="left"><font size="2" face="verdana"><b>&nbsp;&nbsp;&nbsp;&nbsp;Fees</b></font>
-    </td>
-    <td width="100%" align="right">
-    <table border="0" cellpadding="0" cellspacing="0" width="100%">
-    <tbody>
-    <tr>
-    <td><font size="2" face="verdana">Home rental - (includes all fees and all taxes)</font>
-    </td>
-    <td align="right"><font size="2" face="verdana">$HOME_RENTAL_PRICE</font> </td>
-    </tr>
-    <tr>
-    <td><font size="2" face="verdana"></font></td>
-    </tr>
-    OTHER_ADDONS
-    <tr>
-    <td colspan="2">
-    <hr>
-    </td>
-    </tr>
-    <tr>
-    <td><font size="2" face="verdana"><b>Total</b></font> </td>
-    <td align="right"><font face="verdana" size="2">$TOTAL_PRICE</font> </td>
-    </tr>
-    <tr>
-    <td><font size="2" face="verdana"><b>Deposit </b></font></td>
-    <td align="right"><font face="verdana" size="2">$TOTAL_DEPOSIT</font> </td>
-    </tr>
-    <tr>
-    <td colspan="2">
-    <hr>
-    </td>
-    </tr>
-    <tr>
-    <td><font size="2" face="verdana"><b>Balance Due</b> </font></td>
-    <td align="right"><font face="verdana" size="2">$TOTAL_BALANCE</font> </td>
-    </tr>
-    <tr>
-    <td><font face="verdana" size="2"></font></td>
-    </tr>
-    </tbody>
-    </table>
-    </td>
-    </tr>
-    </tbody>
-    </table>
-    </td>
-    </tr>
-    <tr height="25px">
-    <td align="center">
-    </td>
-    </tr>
-    <tr>
-    </tr>
-    </tbody>
-</table>
+	<table border="0" width="100%" cellpadding="0" cellspacing="0">
+		<tbody>
+			<tr width="100%">
+				<td width="60%"></td>
+				<td width="40%" align="right">
+					<font size="2" face="verdana">&nbsp;</font>
+				</td>
+			</tr>
+			<tr>
+				<td colspan="2">
+					<table width="97%" cellpadding="0" cellspacing="0" border="0" bgcolor="">
+						<tbody>
+							<tr>
+								<td width="50%">
+									<font color="#215272" size="6" face="verdana">Highlands Reserve Villas</font>
+								</td>
+								<td width="50%" align="right" valign="bottom">
+									<font size="2" face="verdana">Transaction ID</font>&nbsp;&nbsp;
+								</td>
+								<td valign="bottom" align="right">
+									<font size="2" face="verdana">BOOKING_ID</font>
+								</td>
+							</tr>
+							<tr>
+								<td width="50%">
+									<font size="2" face="verdana"><a href="https://www.highlandsreservevillas.com"
+											target="_blank"
+											data-saferedirecturl="https://www.google.com/url?q=http://www.highlandsreservevillas.com&amp;source=gmail&amp;ust=1652953610962000&amp;usg=AOvVaw37D-ULWsoOnnifH3JVraMp">www.highlandsreservevillas.com</a>
+									</font>
+								</td>
+								<td width="50%" align="right">
+									<font size="2" face="verdana"><span class="il">Invoice</span> Date</font>
+									&nbsp;&nbsp;&nbsp;
+								</td>
+								<td align="right">
+									<font size="2" face="verdana">INVOICE_DATE</font>
+								</td>
+							</tr>
+							<tr>
+								<td width="50%">&nbsp;</td>
+								<td width="50%" align="left">&nbsp;</td>
+								<td align="right">&nbsp;</td>
+							</tr>
+							<tr>
+								<td width="50%">&nbsp;</td>
+								<td width="50%" align="left">&nbsp;</td>
+								<td align="right">&nbsp;</td>
+							</tr>
+						</tbody>
+					</table>
+				</td>
+			</tr>
+			<tr>
+				<td colspan="2" width="100%">
+					<table width="100%" cellpadding="0" cellspacing="0" border="0">
+						<tbody>
+							<tr height="25px">
+								<td>
+									<font size="2" face="verdana"><b>Property</b></font>
+								</td>
+								<td width="100%" colspan="5">
+									<font size="2" face="verdana">PROPERTY_NAME</font>
+								</td>
+							</tr>
+							<tr height="25px">
+								<td width="22%">
+									<font size="2" face="verdana"><b>Guest&nbsp;details</b></font>
+								</td>
+								<td>
+									<font face="verdana" size="2">[GUEST_NAME]</font>
+								</td>
+								<td>
+									<font face="verdana" size="2">NO_ADULTS&nbsp;Adults </font>
+								</td>
+								<td></td>
+								<td>
+									<font face="verdana" size="2">NO_CHILDREN&nbsp;Children</font>
+								</td>
+								<td></td>
+							</tr>
+							<tr height="25px">
+								<td width="22%">
+									<font size="2" face="verdana"><b>Arrival&nbsp;Date</b></font>
+								</td>
+								<td>
+									<font size="2" face="verdana">ARRIVAL_DATE</font>
+								</td>
+								<td>
+									<font size="2" face="verdana"><b>for</b> NO_NIGHTS</font> <b>
+										<font size="2" face="verdana">nights<b></b></font>
+									</b>
+								</td>
+								<td colspan="2">
+									<font size="2" face="verdana"><b>Departing</b>&nbsp;DEPARTURE_DATE</font>
+								</td>
+							</tr>
+						</tbody>
+					</table>
+				</td>
+			</tr>
+		</tbody>
+	</table>
+	<font size="2" face="verdana"></font>
+	<table width="100%" cellpadding="0" cellspacing="0">
+		<tbody>
+			<tr width="80%">
+				<td colspan="6">
+					<hr size="4" color="#000000">
+				</td>
+			</tr>
+			<tr>
+				<td colspan="2">
+					<table width="100%" cellpadding="0" cellspacing="0" align="right">
+						<tbody>
+							<tr>
+								<td width="25%" valign="top" align="left">
+									<font size="2" face="verdana"><b>&nbsp;&nbsp;&nbsp;&nbsp;Fees</b></font>
+								</td>
+								<td width="100%" align="right">
+									<table border="0" cellpadding="0" cellspacing="0" width="100%">
+										<tbody>
+											<tr>
+												<td>
+													<font size="2" face="verdana">Home rental - (includes all fees and
+														all taxes)</font>
+												</td>
+												<td align="right">
+													<font size="2" face="verdana">$HOME_RENTAL_PRICE</font>
+												</td>
+											</tr>
+											<tr>
+												<td>
+													<font size="2" face="verdana"></font>
+												</td>
+											</tr>
+											OTHER_ADDONS
+											<tr>
+												<td colspan="2">
+													<hr>
+												</td>
+											</tr>
+											<tr>
+												<td>
+													<font size="2" face="verdana"><b>Total</b></font>
+												</td>
+												<td align="right">
+													<font face="verdana" size="2">$TOTAL_PRICE</font>
+												</td>
+											</tr>
+											<tr>
+												<td>
+													<font size="2" face="verdana"><b>Deposit </b></font>
+												</td>
+												<td align="right">
+													<font face="verdana" size="2">$TOTAL_DEPOSIT</font>
+												</td>
+											</tr>
+											<tr>
+												<td colspan="2">
+													<hr>
+												</td>
+											</tr>
+											<tr>
+												<td>
+													<font size="2" face="verdana"><b>Balance Due</b> </font>
+												</td>
+												<td align="right">
+													<font face="verdana" size="2">$TOTAL_BALANCE</font>
+												</td>
+											</tr>
+											<tr>
+												<td>
+													<font face="verdana" size="2"></font>
+												</td>
+											</tr>
+										</tbody>
+									</table>
+								</td>
+							</tr>
+						</tbody>
+					</table>
+				</td>
+			</tr>
+			<tr height="25px">
+				<td align="center">
+				</td>
+			</tr>
+			<tr>
+			</tr>
+		</tbody>
+	</table>
 </div>
 
-<?php
+		<?php
 
-		return ob_get_clean();
+				return ob_get_clean();
 	}
 
 
 
 	public function to_customer_email_hrv_content_body() {
 		ob_start();
-?>
+		?>
 <div style="padding: 20px; border: 1px solid #000;">
-<table border="0" width="100%" cellpadding="0" cellspacing="0">
-    <tbody>
-    <tr width="100%">
-    <td width="60%"></td>
-    <td width="40%" align="right"><font size="2" face="verdana">&nbsp;</font> </td>
-    </tr>
-    <tr>
-    <td colspan="2">
-    <table width="97%" cellpadding="0" cellspacing="0" border="0" bgcolor="">
-    <tbody>
-    <tr>
-    <td width="50%"><font color="#215272" size="6" face="verdana">Highlands Reserve Villas</font></td>
-    <td width="50%" align="right" valign="bottom"><font size="2" face="verdana">Transaction ID</font>&nbsp;&nbsp;</td>
-    <td valign="bottom" align="right"><font size="2" face="verdana">BOOKING_ID</font></td>
-    </tr>
-    <tr>
-    <td width="50%"><font size="2" face="verdana"><a href="http://www.highlandsreservevillas.com" target="_blank" data-saferedirecturl="https://www.google.com/url?q=http://www.highlandsreservevillas.com&amp;source=gmail&amp;ust=1652953610962000&amp;usg=AOvVaw37D-ULWsoOnnifH3JVraMp">www.highlandsreservevillas.com</a></font></td>
-    <td width="50%" align="right"><font size="2" face="verdana"><span class="il">Invoice</span> Date</font>&nbsp;&nbsp;&nbsp;</td>
-    <td align="right"><font size="2" face="verdana">INVOICE_DATE</font></td>
-    </tr>
-    <tr>
-    <td width="50%">&nbsp;</td>
-    <td width="50%" align="left">&nbsp;</td>
-    <td align="right">&nbsp;</td>
-    </tr>
-    <tr>
-    <td width="50%">&nbsp;</td>
-    <td width="50%" align="left">&nbsp;</td>
-    <td align="right">&nbsp;</td>
-    </tr>
-    </tbody>
-    </table>
-    </td>
-    </tr>
-    <tr>
-    <td colspan="2" width="100%">
-    <table width="100%" cellpadding="0" cellspacing="0" border="0">
-    <tbody>
-    <tr height="25px">
-    <td><font size="2" face="verdana"><b>Property</b></font></td>
-    <td width="100%" colspan="5"><font size="2" face="verdana">PROPERTY_NAME</font></td>
-    </tr>
-    <tr height="25px">
-    <td width="22%"><font size="2" face="verdana"><b>Guest&nbsp;details</b></font></td>
-    <td><font face="verdana" size="2">[GUEST_NAME]</font></td>
-    <td><font face="verdana" size="2">NO_ADULTS&nbsp;Adults </font></td>
-    <td></td>
-    <td><font face="verdana" size="2">NO_CHILDREN&nbsp;Children</font> </td>
-    <td></td>
-    </tr>
-    <tr height="25px">
-    <td width="22%"><font size="2" face="verdana"><b>Arrival&nbsp;Date</b></font></td>
-    <td><font size="2" face="verdana">ARRIVAL_DATE</font> </td>
-    <td><font size="2" face="verdana"><b>for</b> NO_NIGHTS</font> <b><font size="2" face="verdana">nights<b></b></font></b></td>
-    <td colspan="2"><font size="2" face="verdana"><b>Departing</b>&nbsp;DEPARTURE_DATE</font></td>
-    </tr>
-    </tbody>
-    </table>
-    </td>
-    </tr>
-    </tbody>
-    </table>
-    <font size="2" face="verdana"></font>
-    <table width="100%" cellpadding="0" cellspacing="0">
-    <tbody>
-    <tr width="80%">
-    <td colspan="6">
-    <hr size="4" color="#000000">
-    </td>
-    </tr>
-    <tr>
-    <td colspan="2">
-    <table width="100%" cellpadding="0" cellspacing="0" align="right">
-    <tbody>
-    <tr>
-    <td width="25%" valign="top" align="left"><font size="2" face="verdana"><b>&nbsp;&nbsp;&nbsp;&nbsp;Fees</b></font>
-    </td>
-    <td width="100%" align="right">
-    <table border="0" cellpadding="0" cellspacing="0" width="100%">
-    <tbody>
-    <tr>
-    <td><font size="2" face="verdana">Home rental - (includes all fees and all taxes)</font>
-    </td>
-    <td align="right"><font size="2" face="verdana">$HOME_RENTAL_PRICE</font> </td>
-    </tr>
-    <tr>
-    <td><font size="2" face="verdana"></font></td>
-    </tr>
-    OTHER_ADDONS
-    
-    <tr>
-    <td><font face="verdana" size="2">Golf fees (includes carts and taxes)</font> </td>
-    <td align="right"><font face="verdana" size="2">$0.00</font> </td>
-    </tr>
-    <tr>
-    <td colspan="2">
-    <hr>
-    </td>
-    </tr>
-    <tr>
-    <td><font size="2" face="verdana"><b>Total</b></font> </td>
-    <td align="right"><font face="verdana" size="2">$TOTAL_PRICE</font> </td>
-    </tr>
-    <tr>
-    <td><font size="2" face="verdana"><b>Deposit Paid </b></font></td>
-    <td align="right"><font face="verdana" size="2">$TOTAL_DEPOSIT</font> </td>
-    </tr>
-    <tr>
-    <td colspan="2">
-    <hr>
-    </td>
-    </tr>
-    <tr>
-    <td><font size="2" face="verdana"><b>Balance Due On - DUE_DATE</b> </font></td>
-    <td align="right"><font face="verdana" size="2">$TOTAL_BALANCE</font> </td>
-    </tr>
-    <tr>
-    <td><font face="verdana" size="2"></font></td>
-    </tr>
-    </tbody>
-    </table>
-    </td>
-    </tr>
-    </tbody>
-    </table>
-    </td>
-    </tr>
-    <tr height="25px">
-    <td align="center">
-    </td>
-    </tr>
-    <tr>
-    </tr>
-    </tbody>
-</table>
+	<table border="0" width="100%" cellpadding="0" cellspacing="0">
+		<tbody>
+			<tr width="100%">
+				<td width="60%"></td>
+				<td width="40%" align="right">
+					<font size="2" face="verdana">&nbsp;</font>
+				</td>
+			</tr>
+			<tr>
+				<td colspan="2">
+					<table width="97%" cellpadding="0" cellspacing="0" border="0" bgcolor="">
+						<tbody>
+							<tr>
+								<td width="50%">
+									<font color="#215272" size="6" face="verdana">Highlands Reserve Villas</font>
+								</td>
+								<td width="50%" align="right" valign="bottom">
+									<font size="2" face="verdana">Transaction ID</font>&nbsp;&nbsp;
+								</td>
+								<td valign="bottom" align="right">
+									<font size="2" face="verdana">BOOKING_ID</font>
+								</td>
+							</tr>
+							<tr>
+								<td width="50%">
+									<font size="2" face="verdana"><a href="http://www.highlandsreservevillas.com"
+											target="_blank"
+											data-saferedirecturl="https://www.google.com/url?q=http://www.highlandsreservevillas.com&amp;source=gmail&amp;ust=1652953610962000&amp;usg=AOvVaw37D-ULWsoOnnifH3JVraMp">www.highlandsreservevillas.com</a>
+									</font>
+								</td>
+								<td width="50%" align="right">
+									<font size="2" face="verdana"><span class="il">Invoice</span> Date</font>
+									&nbsp;&nbsp;&nbsp;
+								</td>
+								<td align="right">
+									<font size="2" face="verdana">INVOICE_DATE</font>
+								</td>
+							</tr>
+							<tr>
+								<td width="50%">&nbsp;</td>
+								<td width="50%" align="left">&nbsp;</td>
+								<td align="right">&nbsp;</td>
+							</tr>
+							<tr>
+								<td width="50%">&nbsp;</td>
+								<td width="50%" align="left">&nbsp;</td>
+								<td align="right">&nbsp;</td>
+							</tr>
+						</tbody>
+					</table>
+				</td>
+			</tr>
+			<tr>
+				<td colspan="2" width="100%">
+					<table width="100%" cellpadding="0" cellspacing="0" border="0">
+						<tbody>
+							<tr height="25px">
+								<td>
+									<font size="2" face="verdana"><b>Property</b></font>
+								</td>
+								<td width="100%" colspan="5">
+									<font size="2" face="verdana">PROPERTY_NAME</font>
+								</td>
+							</tr>
+							<tr height="25px">
+								<td width="22%">
+									<font size="2" face="verdana"><b>Guest&nbsp;details</b></font>
+								</td>
+								<td>
+									<font face="verdana" size="2">[GUEST_NAME]</font>
+								</td>
+								<td>
+									<font face="verdana" size="2">NO_ADULTS&nbsp;Adults </font>
+								</td>
+								<td></td>
+								<td>
+									<font face="verdana" size="2">NO_CHILDREN&nbsp;Children</font>
+								</td>
+								<td></td>
+							</tr>
+							<tr height="25px">
+								<td width="22%">
+									<font size="2" face="verdana"><b>Arrival&nbsp;Date</b></font>
+								</td>
+								<td>
+									<font size="2" face="verdana">ARRIVAL_DATE</font>
+								</td>
+								<td>
+									<font size="2" face="verdana"><b>for</b> NO_NIGHTS</font> <b>
+										<font size="2" face="verdana">nights<b></b></font>
+									</b>
+								</td>
+								<td colspan="2">
+									<font size="2" face="verdana"><b>Departing</b>&nbsp;DEPARTURE_DATE</font>
+								</td>
+							</tr>
+						</tbody>
+					</table>
+				</td>
+			</tr>
+		</tbody>
+	</table>
+	<font size="2" face="verdana"></font>
+	<table width="100%" cellpadding="0" cellspacing="0">
+		<tbody>
+			<tr width="80%">
+				<td colspan="6">
+					<hr size="4" color="#000000">
+				</td>
+			</tr>
+			<tr>
+				<td colspan="2">
+					<table width="100%" cellpadding="0" cellspacing="0" align="right">
+						<tbody>
+							<tr>
+								<td width="25%" valign="top" align="left">
+									<font size="2" face="verdana"><b>&nbsp;&nbsp;&nbsp;&nbsp;Fees</b></font>
+								</td>
+								<td width="100%" align="right">
+									<table border="0" cellpadding="0" cellspacing="0" width="100%">
+										<tbody>
+											<tr>
+												<td>
+													<font size="2" face="verdana">Home rental - (includes all fees and
+														all taxes)</font>
+												</td>
+												<td align="right">
+													<font size="2" face="verdana">$HOME_RENTAL_PRICE</font>
+												</td>
+											</tr>
+											<tr>
+												<td>
+													<font size="2" face="verdana"></font>
+												</td>
+											</tr>
+											OTHER_ADDONS
+
+											<tr>
+												<td>
+													<font face="verdana" size="2">Golf fees (includes carts and taxes)
+													</font>
+												</td>
+												<td align="right">
+													<font face="verdana" size="2">$0.00</font>
+												</td>
+											</tr>
+											<tr>
+												<td colspan="2">
+													<hr>
+												</td>
+											</tr>
+											<tr>
+												<td>
+													<font size="2" face="verdana"><b>Total</b></font>
+												</td>
+												<td align="right">
+													<font face="verdana" size="2">$TOTAL_PRICE</font>
+												</td>
+											</tr>
+											<tr>
+												<td>
+													<font size="2" face="verdana"><b>Deposit Paid </b></font>
+												</td>
+												<td align="right">
+													<font face="verdana" size="2">$TOTAL_DEPOSIT</font>
+												</td>
+											</tr>
+											<tr>
+												<td colspan="2">
+													<hr>
+												</td>
+											</tr>
+											<tr>
+												<td>
+													<font size="2" face="verdana"><b>Balance Due On - DUE_DATE</b>
+													</font>
+												</td>
+												<td align="right">
+													<font face="verdana" size="2">$TOTAL_BALANCE</font>
+												</td>
+											</tr>
+											<tr>
+												<td>
+													<font face="verdana" size="2"></font>
+												</td>
+											</tr>
+										</tbody>
+									</table>
+								</td>
+							</tr>
+						</tbody>
+					</table>
+				</td>
+			</tr>
+			<tr height="25px">
+				<td align="center">
+				</td>
+			</tr>
+			<tr>
+			</tr>
+		</tbody>
+	</table>
 </div>
 
-<?php
+		<?php
 
-		return ob_get_clean();
+				return ob_get_clean();
 	}
 
 
@@ -1576,295 +1666,416 @@ class HRV_MLA_Admin {
 		ob_start();
 		?>
 <div style="padding:20px;border: 1px solid #000;">
-<table border="0" width="100%" cellpadding="0" cellspacing="0">
-    <tbody>
-    <tr width="100%">
-    <td width="60%"></td>
-    <td width="40%" align="right"><font size="2" face="verdana">&nbsp;</font> </td>
-    </tr>
-    <tr>
-    <td colspan="2">
-    <table width="97%" cellpadding="0" cellspacing="0" border="0" bgcolor="">
-    <tbody>
-    <tr>
-    <td width="50%"><font color="#215272" size="6" face="verdana">Highlands Reserve Villas</font></td>
-    <td width="50%" align="right" valign="bottom"><font size="2" face="verdana">Transaction ID</font>&nbsp;&nbsp;</td>
-    <td valign="bottom" align="right"><font size="2" face="verdana">BOOKING_ID</font></td>
-    </tr>
-    <tr>
-    <td width="50%"><font size="2" face="verdana"><a href="http://www.highlandsreservevillas.com" target="_blank" data-saferedirecturl="https://www.google.com/url?q=http://www.highlandsreservevillas.com&amp;source=gmail&amp;ust=1652953610962000&amp;usg=AOvVaw37D-ULWsoOnnifH3JVraMp">www.highlandsreservevillas.com</a></font></td>
-    <td width="50%" align="right"><font size="2" face="verdana"><span class="il">Invoice</span> Date</font>&nbsp;&nbsp;&nbsp;</td>
-    <td align="right"><font size="2" face="verdana">INVOICE_DATE</font></td>
-    </tr>
-    <tr>
-    <td width="50%">&nbsp;</td>
-    <td width="50%" align="left">&nbsp;</td>
-    <td align="right">&nbsp;</td>
-    </tr>
-    <tr>
-    <td width="50%">&nbsp;</td>
-    <td width="50%" align="left">&nbsp;</td>
-    <td align="right">&nbsp;</td>
-    </tr>
-    </tbody>
-    </table>
-    </td>
-    </tr>
-    <tr>
-    <td colspan="2" width="100%">
-    <table width="100%" cellpadding="0" cellspacing="0" border="0">
-    <tbody>
-    <tr height="25px">
-    <td><font size="2" face="verdana"><b>Property</b></font></td>
-    <td width="100%" colspan="5"><font size="2" face="verdana">PROPERTY_NAME</font></td>
-    </tr>
-    <tr height="25px">
-    <td width="22%"><font size="2" face="verdana"><b>Guest&nbsp;details</b></font></td>
-    <td><font face="verdana" size="2">[GUEST_NAME]</font></td>
-    <td><font face="verdana" size="2">NO_ADULTS&nbsp;Adults </font></td>
-    <td></td>
-    <td><font face="verdana" size="2">NO_CHILDREN&nbsp;Children</font> </td>
-    <td></td>
-    </tr>
-    <tr height="25px">
-    <td width="22%"><font size="2" face="verdana"><b>Arrival&nbsp;Date</b></font></td>
-    <td><font size="2" face="verdana">ARRIVAL_DATE</font> </td>
-    <td><font size="2" face="verdana"><b>for</b> NO_NIGHTS</font> <b><font size="2" face="verdana">nights<b></b></font></b></td>
-    <td colspan="2"><font size="2" face="verdana"><b>Departing</b>&nbsp;DEPARTURE_DATE</font></td>
-    </tr>
-    </tbody>
-    </table>
-    </td>
-    </tr>
-    </tbody>
-</table>
-<table width="100%" cellpadding="0" cellspacing="0">
-    <tbody>
-    <tr width="80%">
-    <td colspan="6">
-    <hr size="4" color="#000000">
-    </td>
-    </tr>
-    <tr>
-    <td colspan="2">
-    <table width="100%" cellpadding="0" cellspacing="0" align="right">
-    <tbody>
-    <tr>
-    <td width="25%" valign="top" align="left"><font size="2" face="verdana"><b>&nbsp;&nbsp;&nbsp;&nbsp;Fees</b></font>
-    </td>
-    <td width="100%" align="right">
-    <table border="0" cellpadding="0" cellspacing="0" width="100%">
-    <tbody>
-    <tr>
-    <td><font size="2" face="verdana">Home rental - (includes all fees and all taxes)</font>
-    </td>
-    <td align="right"><font size="2" face="verdana">$RENT_PRICE</font> </td>
-    </tr>
-    <tr>
-    <td><font size="2" face="verdana"></font></td>
-    </tr>
-    OTHER_ADDONS
-    
-    <tr>
-    <td><font face="verdana" size="2">Golf fees (includes carts and taxes)</font> </td>
-    <td align="right"><font face="verdana" size="2">$0.00</font> </td>
-    </tr>
-    <tr>
-    <td colspan="2">
-    <hr>
-    </td>
-    </tr>
-    <tr>
-    <td><font size="2" face="verdana"><b>Total</b></font> </td>
-    <td align="right"><font face="verdana" size="2">$TOTAL_PRICE</font> </td>
-    </tr>
-    <tr>
-    </tr>
-    <tr>
-    <td colspan="2">
-    <hr>
-    </td>
-    </tr>
-    <tr>
-    <td></td>
-    <td align="right"></td>
-    </tr>
-    <tr>
-    <td><font face="verdana" size="2"></font></td>
-    </tr>
-    </tbody>
-    </table>
-    </td>
-    </tr>
-    </tbody>
-    </table>
-    </td>
-    </tr>
-    <tr height="25px">
-    <td align="center">
-    </td>
-    </tr>
-    <tr>
-    </tr>
-    </tbody>
-</table>
+	<table border="0" width="100%" cellpadding="0" cellspacing="0">
+		<tbody>
+			<tr width="100%">
+				<td width="60%"></td>
+				<td width="40%" align="right">
+					<font size="2" face="verdana">&nbsp;</font>
+				</td>
+			</tr>
+			<tr>
+				<td colspan="2">
+					<table width="97%" cellpadding="0" cellspacing="0" border="0" bgcolor="">
+						<tbody>
+							<tr>
+								<td width="50%">
+									<font color="#215272" size="6" face="verdana">Highlands Reserve Villas</font>
+								</td>
+								<td width="50%" align="right" valign="bottom">
+									<font size="2" face="verdana">Transaction ID</font>&nbsp;&nbsp;
+								</td>
+								<td valign="bottom" align="right">
+									<font size="2" face="verdana">BOOKING_ID</font>
+								</td>
+							</tr>
+							<tr>
+								<td width="50%">
+									<font size="2" face="verdana"><a href="http://www.highlandsreservevillas.com"
+											target="_blank"
+											data-saferedirecturl="https://www.google.com/url?q=http://www.highlandsreservevillas.com&amp;source=gmail&amp;ust=1652953610962000&amp;usg=AOvVaw37D-ULWsoOnnifH3JVraMp">www.highlandsreservevillas.com</a>
+									</font>
+								</td>
+								<td width="50%" align="right">
+									<font size="2" face="verdana"><span class="il">Invoice</span> Date</font>
+									&nbsp;&nbsp;&nbsp;
+								</td>
+								<td align="right">
+									<font size="2" face="verdana">INVOICE_DATE</font>
+								</td>
+							</tr>
+							<tr>
+								<td width="50%">&nbsp;</td>
+								<td width="50%" align="left">&nbsp;</td>
+								<td align="right">&nbsp;</td>
+							</tr>
+							<tr>
+								<td width="50%">&nbsp;</td>
+								<td width="50%" align="left">&nbsp;</td>
+								<td align="right">&nbsp;</td>
+							</tr>
+						</tbody>
+					</table>
+				</td>
+			</tr>
+			<tr>
+				<td colspan="2" width="100%">
+					<table width="100%" cellpadding="0" cellspacing="0" border="0">
+						<tbody>
+							<tr height="25px">
+								<td>
+									<font size="2" face="verdana"><b>Property</b></font>
+								</td>
+								<td width="100%" colspan="5">
+									<font size="2" face="verdana">PROPERTY_NAME</font>
+								</td>
+							</tr>
+							<tr height="25px">
+								<td width="22%">
+									<font size="2" face="verdana"><b>Guest&nbsp;details</b></font>
+								</td>
+								<td>
+									<font face="verdana" size="2">[GUEST_NAME]</font>
+								</td>
+								<td>
+									<font face="verdana" size="2">NO_ADULTS&nbsp;Adults </font>
+								</td>
+								<td></td>
+								<td>
+									<font face="verdana" size="2">NO_CHILDREN&nbsp;Children</font>
+								</td>
+								<td></td>
+							</tr>
+							<tr height="25px">
+								<td width="22%">
+									<font size="2" face="verdana"><b>Arrival&nbsp;Date</b></font>
+								</td>
+								<td>
+									<font size="2" face="verdana">ARRIVAL_DATE</font>
+								</td>
+								<td>
+									<font size="2" face="verdana"><b>for</b> NO_NIGHTS</font> <b>
+										<font size="2" face="verdana">nights<b></b></font>
+									</b>
+								</td>
+								<td colspan="2">
+									<font size="2" face="verdana"><b>Departing</b>&nbsp;DEPARTURE_DATE</font>
+								</td>
+							</tr>
+						</tbody>
+					</table>
+				</td>
+			</tr>
+		</tbody>
+	</table>
+	<table width="100%" cellpadding="0" cellspacing="0">
+		<tbody>
+			<tr width="80%">
+				<td colspan="6">
+					<hr size="4" color="#000000">
+				</td>
+			</tr>
+			<tr>
+				<td colspan="2">
+					<table width="100%" cellpadding="0" cellspacing="0" align="right">
+						<tbody>
+							<tr>
+								<td width="25%" valign="top" align="left">
+									<font size="2" face="verdana"><b>&nbsp;&nbsp;&nbsp;&nbsp;Fees</b></font>
+								</td>
+								<td width="100%" align="right">
+									<table border="0" cellpadding="0" cellspacing="0" width="100%">
+										<tbody>
+											<tr>
+												<td>
+													<font size="2" face="verdana">Home rental - (includes all fees and
+														all taxes)</font>
+												</td>
+												<td align="right">
+													<font size="2" face="verdana">$RENT_PRICE</font>
+												</td>
+											</tr>
+											<tr>
+												<td>
+													<font size="2" face="verdana"></font>
+												</td>
+											</tr>
+											OTHER_ADDONS
+
+											<tr>
+												<td>
+													<font face="verdana" size="2">Golf fees (includes carts and taxes)
+													</font>
+												</td>
+												<td align="right">
+													<font face="verdana" size="2">$0.00</font>
+												</td>
+											</tr>
+											<tr>
+												<td colspan="2">
+													<hr>
+												</td>
+											</tr>
+											<tr>
+												<td>
+													<font size="2" face="verdana"><b>Total</b></font>
+												</td>
+												<td align="right">
+													<font face="verdana" size="2">$TOTAL_PRICE</font>
+												</td>
+											</tr>
+											<tr>
+											</tr>
+											<tr>
+												<td colspan="2">
+													<hr>
+												</td>
+											</tr>
+											<tr>
+												<td></td>
+												<td align="right"></td>
+											</tr>
+											<tr>
+												<td>
+													<font face="verdana" size="2"></font>
+												</td>
+											</tr>
+										</tbody>
+									</table>
+								</td>
+							</tr>
+						</tbody>
+					</table>
+				</td>
+			</tr>
+			<tr height="25px">
+				<td align="center">
+				</td>
+			</tr>
+			<tr>
+			</tr>
+		</tbody>
+	</table>
 </div>
-<?php
+		<?php
 		return ob_get_clean();
 	}
 
 	public function to_property_owner_email_hrv_content() {
-		ob_start();
+		 ob_start();
 		?>
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="https://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
-	<head>
-<title>Highlands Reserve Villas</title>
-<meta http–equiv="Content-Type" content="text/html; charset=utf-8">
-<meta http–equiv="X-UA-Compatible" content="IE=edge">
-<meta name="viewport" content="width=device-width, initial-scale=1.0 ">
-<meta name="format-detection" content="telephone=no">
+<!DOCTYPE html
+	PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="https://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml"
+	xmlns:o="urn:schemas-microsoft-com:office:office">
+
+<head>
+	<title>Highlands Reserve Villas</title>
+	<meta http–equiv="Content-Type" content="text/html; charset=utf-8">
+	<meta http–equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0 ">
+	<meta name="format-detection" content="telephone=no">
 </head>
+
 <body>
-<table border="0" width="100%" cellpadding="0" cellspacing="0">
-	<tbody>
-	<tr width="100%">
-	<td width="60%"></td>
-	<td width="40%" align="right"><font size="2" face="verdana">&nbsp;</font> </td>
-	</tr>
-	<tr>
-	<td colspan="2">
-	<table width="97%" cellpadding="0" cellspacing="0" border="0" bgcolor="">
-	<tbody>
-	<tr>
-	<td width="50%"><font color="#215272" size="6" face="verdana">Highlands Reserve Villas</font></td>
-	<td width="50%" align="right" valign="bottom"><font size="2" face="verdana">Transaction ID</font>&nbsp;&nbsp;</td>
-	<td valign="bottom" align="right"><font size="2" face="verdana">BOOKING_ID</font></td>
-	</tr>
-	<tr>
-	<td width="50%"><font size="2" face="verdana"><a href="http://www.highlandsreservevillas.com" target="_blank" data-saferedirecturl="https://www.google.com/url?q=http://www.highlandsreservevillas.com&amp;source=gmail&amp;ust=1652953610962000&amp;usg=AOvVaw37D-ULWsoOnnifH3JVraMp">www.highlandsreservevillas.com</a></font></td>
-	<td width="50%" align="right"><font size="2" face="verdana"><span class="il">Invoice</span> Date</font>&nbsp;&nbsp;&nbsp;</td>
-	<td align="right"><font size="2" face="verdana">INVOICE_DATE</font></td>
-	</tr>
-	<tr>
-	<td width="50%">&nbsp;</td>
-	<td width="50%" align="left">&nbsp;</td>
-	<td align="right">&nbsp;</td>
-	</tr>
-	<tr>
-	<td width="50%">&nbsp;</td>
-	<td width="50%" align="left">&nbsp;</td>
-	<td align="right">&nbsp;</td>
-	</tr>
-	</tbody>
-	</table>
-	</td>
-	</tr>
-	<tr>
-	<td colspan="2" width="100%">
-	<table width="100%" cellpadding="0" cellspacing="0" border="0">
-	<tbody>
-	<tr height="25px">
-	<td><font size="2" face="verdana"><b>Property</b></font></td>
-	<td width="100%" colspan="5"><font size="2" face="verdana">PROPERTY_NAME</font></td>
-	</tr>
-	<tr height="25px">
-	<td width="22%"><font size="2" face="verdana"><b>Guest&nbsp;details</b></font></td>
-	<td><font face="verdana" size="2">[GUEST_NAME]</font></td>
-	<td><font face="verdana" size="2">NO_ADULTS&nbsp;Adults </font></td>
-	<td></td>
-	<td><font face="verdana" size="2">NO_CHILDREN&nbsp;Children</font> </td>
-	<td></td>
-	</tr>
-	<tr height="25px">
-	<td width="22%"><font size="2" face="verdana"><b>Arrival&nbsp;Date</b></font></td>
-	<td><font size="2" face="verdana">ARRIVAL_DATE</font> </td>
-	<td><font size="2" face="verdana"><b>for</b> NO_NIGHTS</font> <b><font size="2" face="verdana">nights<b></b></font></b></td>
-	<td colspan="2"><font size="2" face="verdana"><b>Departing</b>&nbsp;DEPARTURE_DATE</font></td>
-	</tr>
-	</tbody>
-	</table>
-	</td>
-	</tr>
-	</tbody>
+	<table border="0" width="100%" cellpadding="0" cellspacing="0">
+		<tbody>
+			<tr width="100%">
+				<td width="60%"></td>
+				<td width="40%" align="right">
+					<font size="2" face="verdana">&nbsp;</font>
+				</td>
+			</tr>
+			<tr>
+				<td colspan="2">
+					<table width="97%" cellpadding="0" cellspacing="0" border="0" bgcolor="">
+						<tbody>
+							<tr>
+								<td width="50%">
+									<font color="#215272" size="6" face="verdana">Highlands Reserve Villas</font>
+								</td>
+								<td width="50%" align="right" valign="bottom">
+									<font size="2" face="verdana">Transaction ID</font>&nbsp;&nbsp;
+								</td>
+								<td valign="bottom" align="right">
+									<font size="2" face="verdana">BOOKING_ID</font>
+								</td>
+							</tr>
+							<tr>
+								<td width="50%">
+									<font size="2" face="verdana"><a href="http://www.highlandsreservevillas.com"
+											target="_blank"
+											data-saferedirecturl="https://www.google.com/url?q=http://www.highlandsreservevillas.com&amp;source=gmail&amp;ust=1652953610962000&amp;usg=AOvVaw37D-ULWsoOnnifH3JVraMp">www.highlandsreservevillas.com</a>
+									</font>
+								</td>
+								<td width="50%" align="right">
+									<font size="2" face="verdana"><span class="il">Invoice</span> Date</font>
+									&nbsp;&nbsp;&nbsp;
+								</td>
+								<td align="right">
+									<font size="2" face="verdana">INVOICE_DATE</font>
+								</td>
+							</tr>
+							<tr>
+								<td width="50%">&nbsp;</td>
+								<td width="50%" align="left">&nbsp;</td>
+								<td align="right">&nbsp;</td>
+							</tr>
+							<tr>
+								<td width="50%">&nbsp;</td>
+								<td width="50%" align="left">&nbsp;</td>
+								<td align="right">&nbsp;</td>
+							</tr>
+						</tbody>
+					</table>
+				</td>
+			</tr>
+			<tr>
+				<td colspan="2" width="100%">
+					<table width="100%" cellpadding="0" cellspacing="0" border="0">
+						<tbody>
+							<tr height="25px">
+								<td>
+									<font size="2" face="verdana"><b>Property</b></font>
+								</td>
+								<td width="100%" colspan="5">
+									<font size="2" face="verdana">PROPERTY_NAME</font>
+								</td>
+							</tr>
+							<tr height="25px">
+								<td width="22%">
+									<font size="2" face="verdana"><b>Guest&nbsp;details</b></font>
+								</td>
+								<td>
+									<font face="verdana" size="2">[GUEST_NAME]</font>
+								</td>
+								<td>
+									<font face="verdana" size="2">NO_ADULTS&nbsp;Adults </font>
+								</td>
+								<td></td>
+								<td>
+									<font face="verdana" size="2">NO_CHILDREN&nbsp;Children</font>
+								</td>
+								<td></td>
+							</tr>
+							<tr height="25px">
+								<td width="22%">
+									<font size="2" face="verdana"><b>Arrival&nbsp;Date</b></font>
+								</td>
+								<td>
+									<font size="2" face="verdana">ARRIVAL_DATE</font>
+								</td>
+								<td>
+									<font size="2" face="verdana"><b>for</b> NO_NIGHTS</font> <b>
+										<font size="2" face="verdana">nights<b></b></font>
+									</b>
+								</td>
+								<td colspan="2">
+									<font size="2" face="verdana"><b>Departing</b>&nbsp;DEPARTURE_DATE</font>
+								</td>
+							</tr>
+						</tbody>
+					</table>
+				</td>
+			</tr>
+		</tbody>
 	</table>
 	<font size="2" face="verdana"></font>
 	<table width="100%" cellpadding="0" cellspacing="0">
-	<tbody>
-	<tr width="80%">
-	<td colspan="6">
-	<hr size="4" color="#000000">
-	</td>
-	</tr>
-	<tr>
-	<td colspan="2">
-	<table width="100%" cellpadding="0" cellspacing="0" align="right">
-	<tbody>
-	<tr>
-	<td width="25%" valign="top" align="left"><font size="2" face="verdana"><b>&nbsp;&nbsp;&nbsp;&nbsp;Fees</b></font>
-	</td>
-	<td width="100%" align="right">
-	<table border="0" cellpadding="0" cellspacing="0" width="100%">
-	<tbody>
-	<tr>
-	<td><font size="2" face="verdana">Home rental - (includes all fees and all taxes)</font>
-	</td>
-	<td align="right"><font size="2" face="verdana">$HOME_RENTAL_PRICE</font> </td>
-	</tr>
-	<tr>
-	<td><font size="2" face="verdana"></font></td>
-	</tr>
-	OTHER_ADDONS
-	
-	<tr>
-	<td><font face="verdana" size="2">Golf fees (includes carts and taxes)</font> </td>
-	<td align="right"><font face="verdana" size="2">$0.00</font> </td>
-	</tr>
-	<tr>
-	<td colspan="2">
-	<hr>
-	</td>
-	</tr>
-	<tr>
-	<td><font size="2" face="verdana"><b>Total</b></font> </td>
-	<td align="right"><font face="verdana" size="2">$TOTAL_PRICE</font> </td>
-	</tr>
-	<tr>
-	<td colspan="2">
-	<hr>
-	</td>
-	</tr>
-	<tr>
-	<td><font face="verdana" size="2"></font></td>
-	</tr>
-	</tbody>
-	</table>
-	</td>
-	</tr>
-	</tbody>
-	</table>
-	</td>
-	</tr>
-	<tr height="90px">
-	<td colspan="2">
-	<table width="100%" border="0" cellpadding="0" cellspacing="0">
-	<tbody>
-	<tr>
-	<td colspan="2">
-	<hr size="4" color="#000000">
-	</td>
-	</tr>
-	</tbody>
-	</table>
-	</td>
-	</tr>
-	<tr>
-	</tr>
-	</tbody>
+		<tbody>
+			<tr width="80%">
+				<td colspan="6">
+					<hr size="4" color="#000000">
+				</td>
+			</tr>
+			<tr>
+				<td colspan="2">
+					<table width="100%" cellpadding="0" cellspacing="0" align="right">
+						<tbody>
+							<tr>
+								<td width="25%" valign="top" align="left">
+									<font size="2" face="verdana"><b>&nbsp;&nbsp;&nbsp;&nbsp;Fees</b></font>
+								</td>
+								<td width="100%" align="right">
+									<table border="0" cellpadding="0" cellspacing="0" width="100%">
+										<tbody>
+											<tr>
+												<td>
+													<font size="2" face="verdana">Home rental - (includes all fees and
+														all taxes)</font>
+												</td>
+												<td align="right">
+													<font size="2" face="verdana">$HOME_RENTAL_PRICE</font>
+												</td>
+											</tr>
+											<tr>
+												<td>
+													<font size="2" face="verdana"></font>
+												</td>
+											</tr>
+											OTHER_ADDONS
+
+											<tr>
+												<td>
+													<font face="verdana" size="2">Golf fees (includes carts and taxes)
+													</font>
+												</td>
+												<td align="right">
+													<font face="verdana" size="2">$0.00</font>
+												</td>
+											</tr>
+											<tr>
+												<td colspan="2">
+													<hr>
+												</td>
+											</tr>
+											<tr>
+												<td>
+													<font size="2" face="verdana"><b>Total</b></font>
+												</td>
+												<td align="right">
+													<font face="verdana" size="2">$TOTAL_PRICE</font>
+												</td>
+											</tr>
+											<tr>
+												<td colspan="2">
+													<hr>
+												</td>
+											</tr>
+											<tr>
+												<td>
+													<font face="verdana" size="2"></font>
+												</td>
+											</tr>
+										</tbody>
+									</table>
+								</td>
+							</tr>
+						</tbody>
+					</table>
+				</td>
+			</tr>
+			<tr height="90px">
+				<td colspan="2">
+					<table width="100%" border="0" cellpadding="0" cellspacing="0">
+						<tbody>
+							<tr>
+								<td colspan="2">
+									<hr size="4" color="#000000">
+								</td>
+							</tr>
+						</tbody>
+					</table>
+				</td>
+			</tr>
+			<tr>
+			</tr>
+		</tbody>
 	</table>
 
 </body>
+
 </html>
 
 		<?php
@@ -1876,86 +2087,98 @@ class HRV_MLA_Admin {
 		ob_start();
 		?>
 
-		<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-		<html xmlns="https://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
-			<head>
-		<title>Golf Agents TeeTime Booking</title>
-		<meta http–equiv="Content-Type" content="text/html; charset=utf-8">
-		<meta http–equiv="X-UA-Compatible" content="IE=edge">
-		<meta name="viewport" content="width=device-width, initial-scale=1.0 ">
-		<meta name="format-detection" content="telephone=no">
-		</head>
-		<body>
-		<table border="0" width="90%">
+<!DOCTYPE html
+	PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="https://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml"
+	xmlns:o="urn:schemas-microsoft-com:office:office">
+
+<head>
+	<title>Golf Agents TeeTime Booking</title>
+	<meta http–equiv="Content-Type" content="text/html; charset=utf-8">
+	<meta http–equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0 ">
+	<meta name="format-detection" content="telephone=no">
+</head>
+
+<body>
+	<table border="0" width="90%">
 		<tbody>
-		<tr>
-		<td align="center" colspan="5">&nbsp; </td>
-		</tr>
-		<tr>
-		<td align="center" colspan="5"><font color="#215272" size="7" face="verdana">Golf Agents TeeTime Booking</font>
-		</td>
-		</tr>
-		<tr>
-		<td colspan="5">&nbsp;</td>
-		</tr>
-		<tr>
-		<td align="center" colspan="5"><font face="verdana" color="00,33,66" size="2px"><b>Barrie &amp; Jane Pike, 69 Nant Talwg Way, Barry, South Glamorgan, CF62 6LZ, Wales, UK.<br>
-		Tel/Fax 01446 407557 (Intl. +44 1446 407557) Email : <a href="mailto:barrie.pike@gmail.com" target="_blank">
-		barrie.pike@gmail.com</a> <br>
-		</b></font></td>
-		</tr>
+			<tr>
+				<td align="center" colspan="5">&nbsp; </td>
+			</tr>
+			<tr>
+				<td align="center" colspan="5">
+					<font color="#215272" size="7" face="verdana">Golf Agents TeeTime Booking</font>
+				</td>
+			</tr>
+			<tr>
+				<td colspan="5">&nbsp;</td>
+			</tr>
+			<tr>
+				<td align="center" colspan="5">
+					<font face="verdana" color="00,33,66" size="2px"><b>Barrie &amp; Jane Pike, 69 Nant Talwg Way,
+							Barry, South Glamorgan, CF62 6LZ, Wales, UK.<br>
+							Tel/Fax 01446 407557 (Intl. +44 1446 407557) Email : <a href="mailto:barrie.pike@gmail.com"
+								target="_blank">
+								barrie.pike@gmail.com</a> <br>
+						</b></font>
+				</td>
+			</tr>
 		</tbody>
-		</table>
-		<table border="0" width="90%">
+	</table>
+	<table border="0" width="90%">
 		<tbody>
-		<tr>
-		<td colspan="5">&nbsp; </td>
-		</tr>
-		<tr>
-		<td colspan="5"><font size="4">Please make the following reservations and confirm by email.
-		</font></td>
-		</tr>
-		<tr>
-		<td colspan="5">&nbsp; </td>
-		</tr>
-		<tr>
-		<td colspan="5"><b>Guest Name : </b>&nbsp; <b>GUEST_EMAIL</b></td>
-		</tr>
+			<tr>
+				<td colspan="5">&nbsp; </td>
+			</tr>
+			<tr>
+				<td colspan="5">
+					<font size="4">Please make the following reservations and confirm by email.
+					</font>
+				</td>
+			</tr>
+			<tr>
+				<td colspan="5">&nbsp; </td>
+			</tr>
+			<tr>
+				<td colspan="5"><b>Guest Name : </b>&nbsp; <b>GUEST_EMAIL</b></td>
+			</tr>
 		</tbody>
-		</table>
-		<table border="0" width="90%">
+	</table>
+	<table border="0" width="90%">
 		<tbody>
-		<tr>
-		<td colspan="5">
-		<hr size="1">
-		</td>
-		</tr>
-		<tr>
-		<td valign="top" align="center"><b>Date</b></td>
-		<td valign="top" align="center"><b>Course Name</b></td>
-		<td valign="top" align="center"><b>Preferred Time </b></td>
-		<td valign="top" align="center"><b>Holes </b></td>
-		<td valign="top" align="center"><b>Golfers</b> </td>
-		</tr>
-		<tr>
-		<td colspan="5">
-		<hr size="1">
-		</td>
-		</tr>
-		<!-- START -->
-		GOLF_BOOKING_DETAILS
-		<!-- END -->
+			<tr>
+				<td colspan="5">
+					<hr size="1">
+				</td>
+			</tr>
+			<tr>
+				<td valign="top" align="center"><b>Date</b></td>
+				<td valign="top" align="center"><b>Course Name</b></td>
+				<td valign="top" align="center"><b>Preferred Time </b></td>
+				<td valign="top" align="center"><b>Holes </b></td>
+				<td valign="top" align="center"><b>Golfers</b> </td>
+			</tr>
+			<tr>
+				<td colspan="5">
+					<hr size="1">
+				</td>
+			</tr>
+			<!-- START -->
+			GOLF_BOOKING_DETAILS
+			<!-- END -->
 
 
-		<tr>
-		<td colspan="5">
-		<hr size="1">
-		</td>
-		</tr>
+			<tr>
+				<td colspan="5">
+					<hr size="1">
+				</td>
+			</tr>
 		</tbody>
-		</table>
-		</body>
-		</html>
+	</table>
+</body>
+
+</html>
 
 
 
@@ -1972,166 +2195,237 @@ class HRV_MLA_Admin {
 	public function request_payment_email_content_old() {
 		ob_start();
 		?>
-		<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="https://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
-	<head>
-<title>Highlands Reserve Villas</title>
-<meta http–equiv="Content-Type" content="text/html; charset=utf-8">
-<meta http–equiv="X-UA-Compatible" content="IE=edge">
-<meta name="viewport" content="width=device-width, initial-scale=1.0 ">
-<meta name="format-detection" content="telephone=no">
+<!DOCTYPE html
+	PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="https://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml"
+	xmlns:o="urn:schemas-microsoft-com:office:office">
+
+<head>
+	<title>Highlands Reserve Villas</title>
+	<meta http–equiv="Content-Type" content="text/html; charset=utf-8">
+	<meta http–equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0 ">
+	<meta name="format-detection" content="telephone=no">
 </head>
+
 <body>
-<table border="0" width="100%" cellpadding="0" cellspacing="0">
-	<tbody>
-	<tr width="100%">
-	<td width="60%"></td>
-	<td width="40%" align="right"><font size="2" face="verdana">&nbsp;</font> </td>
-	</tr>
-	<tr>
-	<td colspan="2">
-	<table width="97%" cellpadding="0" cellspacing="0" border="0" bgcolor="">
-	<tbody>
-	<tr>
-	<td width="50%"><font color="#215272" size="6" face="verdana">Highlands Reserve Villas</font></td>
-	<td width="50%" align="right" valign="bottom"><font size="2" face="verdana">Transaction ID</font>&nbsp;&nbsp;</td>
-	<td valign="bottom" align="right"><font size="2" face="verdana">BOOKING_ID</font></td>
-	</tr>
-	<tr>
-	<td width="50%"><font size="2" face="verdana"><a href="http://www.highlandsreservevillas.com" target="_blank" data-saferedirecturl="https://www.google.com/url?q=http://www.highlandsreservevillas.com&amp;source=gmail&amp;ust=1652953610962000&amp;usg=AOvVaw37D-ULWsoOnnifH3JVraMp">www.highlandsreservevillas.com</a></font></td>
-	<td width="50%" align="right"><font size="2" face="verdana"><span class="il">Invoice</span> Date</font>&nbsp;&nbsp;&nbsp;</td>
-	<td align="right"><font size="2" face="verdana">INVOICE_DATE</font></td>
-	</tr>
-	<tr>
-	<td width="50%">&nbsp;</td>
-	<td width="50%" align="left">&nbsp;</td>
-	<td align="right">&nbsp;</td>
-	</tr>
-	<tr>
-	<td width="50%">&nbsp;</td>
-	<td width="50%" align="left">&nbsp;</td>
-	<td align="right">&nbsp;</td>
-	</tr>
-	</tbody>
-	</table>
-	</td>
-	</tr>
-	<tr>
-	<td colspan="2" width="100%">
-	<table width="100%" cellpadding="0" cellspacing="0" border="0">
-	<tbody>
-	<tr height="25px">
-	<td><font size="2" face="verdana"><b>Property</b></font></td>
-	<td width="100%" colspan="5"><font size="2" face="verdana">PROPERTY_NAME</font></td>
-	</tr>
-	<tr height="25px">
-	<td width="22%"><font size="2" face="verdana"><b>Guest&nbsp;details</b></font></td>
-	<td><font face="verdana" size="2">[GUEST_NAME]</font></td>
-	<td><font face="verdana" size="2">NO_ADULTS&nbsp;Adults </font></td>
-	<td></td>
-	<td><font face="verdana" size="2">NO_CHILDREN&nbsp;Children</font> </td>
-	<td></td>
-	</tr>
-	<tr height="25px">
-	<td width="22%"><font size="2" face="verdana"><b>Arrival&nbsp;Date</b></font></td>
-	<td><font size="2" face="verdana">ARRIVAL_DATE</font> </td>
-	<td><font size="2" face="verdana"><b>for</b> NO_NIGHTS</font> <b><font size="2" face="verdana">nights<b></b></font></b></td>
-	<td colspan="2"><font size="2" face="verdana"><b>Departing</b>&nbsp;DEPARTURE_DATE</font></td>
-	</tr>
-	</tbody>
-	</table>
-	</td>
-	</tr>
-	</tbody>
+	<table border="0" width="100%" cellpadding="0" cellspacing="0">
+		<tbody>
+			<tr width="100%">
+				<td width="60%"></td>
+				<td width="40%" align="right">
+					<font size="2" face="verdana">&nbsp;</font>
+				</td>
+			</tr>
+			<tr>
+				<td colspan="2">
+					<table width="97%" cellpadding="0" cellspacing="0" border="0" bgcolor="">
+						<tbody>
+							<tr>
+								<td width="50%">
+									<font color="#215272" size="6" face="verdana">Highlands Reserve Villas</font>
+								</td>
+								<td width="50%" align="right" valign="bottom">
+									<font size="2" face="verdana">Transaction ID</font>&nbsp;&nbsp;
+								</td>
+								<td valign="bottom" align="right">
+									<font size="2" face="verdana">BOOKING_ID</font>
+								</td>
+							</tr>
+							<tr>
+								<td width="50%">
+									<font size="2" face="verdana"><a href="http://www.highlandsreservevillas.com"
+											target="_blank"
+											data-saferedirecturl="https://www.google.com/url?q=http://www.highlandsreservevillas.com&amp;source=gmail&amp;ust=1652953610962000&amp;usg=AOvVaw37D-ULWsoOnnifH3JVraMp">www.highlandsreservevillas.com</a>
+									</font>
+								</td>
+								<td width="50%" align="right">
+									<font size="2" face="verdana"><span class="il">Invoice</span> Date</font>
+									&nbsp;&nbsp;&nbsp;
+								</td>
+								<td align="right">
+									<font size="2" face="verdana">INVOICE_DATE</font>
+								</td>
+							</tr>
+							<tr>
+								<td width="50%">&nbsp;</td>
+								<td width="50%" align="left">&nbsp;</td>
+								<td align="right">&nbsp;</td>
+							</tr>
+							<tr>
+								<td width="50%">&nbsp;</td>
+								<td width="50%" align="left">&nbsp;</td>
+								<td align="right">&nbsp;</td>
+							</tr>
+						</tbody>
+					</table>
+				</td>
+			</tr>
+			<tr>
+				<td colspan="2" width="100%">
+					<table width="100%" cellpadding="0" cellspacing="0" border="0">
+						<tbody>
+							<tr height="25px">
+								<td>
+									<font size="2" face="verdana"><b>Property</b></font>
+								</td>
+								<td width="100%" colspan="5">
+									<font size="2" face="verdana">PROPERTY_NAME</font>
+								</td>
+							</tr>
+							<tr height="25px">
+								<td width="22%">
+									<font size="2" face="verdana"><b>Guest&nbsp;details</b></font>
+								</td>
+								<td>
+									<font face="verdana" size="2">[GUEST_NAME]</font>
+								</td>
+								<td>
+									<font face="verdana" size="2">NO_ADULTS&nbsp;Adults </font>
+								</td>
+								<td></td>
+								<td>
+									<font face="verdana" size="2">NO_CHILDREN&nbsp;Children</font>
+								</td>
+								<td></td>
+							</tr>
+							<tr height="25px">
+								<td width="22%">
+									<font size="2" face="verdana"><b>Arrival&nbsp;Date</b></font>
+								</td>
+								<td>
+									<font size="2" face="verdana">ARRIVAL_DATE</font>
+								</td>
+								<td>
+									<font size="2" face="verdana"><b>for</b> NO_NIGHTS</font> <b>
+										<font size="2" face="verdana">nights<b></b></font>
+									</b>
+								</td>
+								<td colspan="2">
+									<font size="2" face="verdana"><b>Departing</b>&nbsp;DEPARTURE_DATE</font>
+								</td>
+							</tr>
+						</tbody>
+					</table>
+				</td>
+			</tr>
+		</tbody>
 	</table>
 	<font size="2" face="verdana"></font>
 	<table width="100%" cellpadding="0" cellspacing="0">
-	<tbody>
-	<tr width="80%">
-	<td colspan="6">
-	<hr size="4" color="#000000">
-	</td>
-	</tr>
-	<tr>
-	<td colspan="2">
-	<table width="100%" cellpadding="0" cellspacing="0" align="right">
-	<tbody>
-	<tr>
-	<td width="25%" valign="top" align="left"><font size="2" face="verdana"><b>&nbsp;&nbsp;&nbsp;&nbsp;Fees</b></font>
-	</td>
-	<td width="100%" align="right">
-	<table border="0" cellpadding="0" cellspacing="0" width="100%">
-	<tbody>
-	<tr>
-	<td><font size="2" face="verdana">Home rental - (includes all fees and all taxes)</font>
-	</td>
-	<td align="right"><font size="2" face="verdana">$HOME_RENTAL_PRICE</font> </td>
-	</tr>
-	<tr>
-	<td><font size="2" face="verdana"></font></td>
-	</tr>
-	OTHER_ADDONS
-	
-	<tr>
-	<td><font face="verdana" size="2">Golf fees (includes carts and taxes)</font> </td>
-	<td align="right"><font face="verdana" size="2">$0.00</font> </td>
-	</tr>
-	<tr>
-	<td colspan="2">
-	<hr>
-	</td>
-	</tr>
-	<tr>
-	<td><font size="2" face="verdana"><b>Total</b></font> </td>
-	<td align="right"><font face="verdana" size="2">$TOTAL_PRICE</font> </td>
-	</tr>
-	<tr>
-	<td><font size="2" face="verdana"><b>Deposit paid </b></font></td>
-	<td align="right"><font face="verdana" size="2">$TOTAL_DEPOSIT</font> </td>
-	</tr>
-	<tr>
-	<td colspan="2">
-	<hr>
-	</td>
-	</tr>
-	<tr>
-	<td><font size="2" face="verdana"><b>Balance Due On DUE_DATE</b> </font></td>
-	<td align="right"><font face="verdana" size="2">$TOTAL_BALANCE</font> </td>
-	</tr>
-	<tr>
-	<td><font face="verdana" size="2"></font></td>
-	</tr>
-	</tbody>
-	</table>
-	</td>
-	</tr>
-	</tbody>
-	</table>
-	</td>
-	</tr>
-	<tr height="90px" style="display: none;">
-	<td colspan="2">
-	<table width="100%" border="0" cellpadding="0" cellspacing="0">
-	<tbody>
-	<tr>
-	<td colspan="2">
-	<hr size="4" color="#000000">
-	</td>
-	</tr>
-	</tbody>
-	</table>
-	</td>
-	</tr>
-	<tr height="25px">
-	<td align="center">
-	</td>
-	</tr>
-	<tr>
-	</tr>
-	</tbody>
+		<tbody>
+			<tr width="80%">
+				<td colspan="6">
+					<hr size="4" color="#000000">
+				</td>
+			</tr>
+			<tr>
+				<td colspan="2">
+					<table width="100%" cellpadding="0" cellspacing="0" align="right">
+						<tbody>
+							<tr>
+								<td width="25%" valign="top" align="left">
+									<font size="2" face="verdana"><b>&nbsp;&nbsp;&nbsp;&nbsp;Fees</b></font>
+								</td>
+								<td width="100%" align="right">
+									<table border="0" cellpadding="0" cellspacing="0" width="100%">
+										<tbody>
+											<tr>
+												<td>
+													<font size="2" face="verdana">Home rental - (includes all fees and
+														all taxes)</font>
+												</td>
+												<td align="right">
+													<font size="2" face="verdana">$HOME_RENTAL_PRICE</font>
+												</td>
+											</tr>
+											<tr>
+												<td>
+													<font size="2" face="verdana"></font>
+												</td>
+											</tr>
+											OTHER_ADDONS
+
+											<tr>
+												<td>
+													<font face="verdana" size="2">Golf fees (includes carts and taxes)
+													</font>
+												</td>
+												<td align="right">
+													<font face="verdana" size="2">$0.00</font>
+												</td>
+											</tr>
+											<tr>
+												<td colspan="2">
+													<hr>
+												</td>
+											</tr>
+											<tr>
+												<td>
+													<font size="2" face="verdana"><b>Total</b></font>
+												</td>
+												<td align="right">
+													<font face="verdana" size="2">$TOTAL_PRICE</font>
+												</td>
+											</tr>
+											<tr>
+												<td>
+													<font size="2" face="verdana"><b>Deposit paid </b></font>
+												</td>
+												<td align="right">
+													<font face="verdana" size="2">$TOTAL_DEPOSIT</font>
+												</td>
+											</tr>
+											<tr>
+												<td colspan="2">
+													<hr>
+												</td>
+											</tr>
+											<tr>
+												<td>
+													<font size="2" face="verdana"><b>Balance Due On DUE_DATE</b> </font>
+												</td>
+												<td align="right">
+													<font face="verdana" size="2">$TOTAL_BALANCE</font>
+												</td>
+											</tr>
+											<tr>
+												<td>
+													<font face="verdana" size="2"></font>
+												</td>
+											</tr>
+										</tbody>
+									</table>
+								</td>
+							</tr>
+						</tbody>
+					</table>
+				</td>
+			</tr>
+			<tr height="90px" style="display: none;">
+				<td colspan="2">
+					<table width="100%" border="0" cellpadding="0" cellspacing="0">
+						<tbody>
+							<tr>
+								<td colspan="2">
+									<hr size="4" color="#000000">
+								</td>
+							</tr>
+						</tbody>
+					</table>
+				</td>
+			</tr>
+			<tr height="25px">
+				<td align="center">
+				</td>
+			</tr>
+			<tr>
+			</tr>
+		</tbody>
 	</table>
 
 </body>
+
 </html>
 		<?php
 		return ob_get_clean();
@@ -2142,7 +2436,7 @@ class HRV_MLA_Admin {
 	 * Get deposit email content old
 	 */
 
-	 public function request_payment_email_content() {
+	public function request_payment_email_content() {
 		ob_start();
 		require_once 'emails/template.html';
 		$content = ob_get_clean();
@@ -2182,9 +2476,7 @@ class HRV_MLA_Admin {
 			$deposit_price = $deposit_price > 250 ? 250 : $deposit_price;
 
 			if ( $days <= $this->days_to_notify ) {
-
 				if ( get_post_meta( get_the_ID(), 'payment_email_sent', true ) != 'yes' ) {
-
 					$request_payment_email_content = $this->request_payment_email_content();
 
 					$other_addons = '';
@@ -2224,7 +2516,6 @@ class HRV_MLA_Admin {
 
 		endwhile;
 		wp_reset_post_data();
-
 	}
 
 	public function send_ask_review_email_function() {
@@ -2247,9 +2538,7 @@ class HRV_MLA_Admin {
 			$deposit_price = $deposit_price > 250 ? 250 : $deposit_price;
 
 			if ( $days <= $this->days_to_notify ) {
-
 				if ( get_post_meta( get_the_ID(), 'payment_email_sent', true ) != 'yes' ) {
-
 					$request_payment_email_content = $this->request_payment_email_content();
 
 					$other_addons = '';
@@ -2288,7 +2577,6 @@ class HRV_MLA_Admin {
 
 		endwhile;
 		wp_reset_post_data();
-
 	}
 
 
@@ -2315,7 +2603,6 @@ class HRV_MLA_Admin {
 			}
 
 			update_field( 'total_price', $total_all, $post_id );
-
 		}
 	}
 
@@ -2333,51 +2620,53 @@ class HRV_MLA_Admin {
 	public function booking_golf_email_metabox_callback( $post ) {
 		ob_start();
 		?>
-		<div style="background: #ddd; color: #000; padding: 10px; margin-bottom: 10px;">Please update first before sending an email.</div>
-		<div id="booking_golf_email_status" style="display: none;">
-			<h4 id="statusText">Sending Email...</h4>
-		</div>
-		<div id="booking_golf_email_wrap">
-		<input type="email" id="booking_golf_email" value="orlando.rentals@gmail.com">
-		<button id="booking_email_btn" class="button button-primary button-large" style="margin-top: 5px;">Send Golf Booking Email</button>
-		</div>
-		<script>
-		const booking_golf_email_wrap = document.getElementById('booking_golf_email_wrap');
-		const booking_golf_email_status = document.getElementById('booking_golf_email_status');
-		const booking_email_btn = document.getElementById('booking_email_btn');
-		const booking_golf_email = document.getElementById('booking_golf_email');
-			if ( booking_email_btn ) {
-			booking_email_btn.addEventListener('click', function(e) {
-				e.preventDefault();
-				if ( ! booking_golf_email.value ) {
-					alert('Please enter an email');
-					return;
-				}
-				booking_golf_email_status.style.display = "block";
-				booking_golf_email_wrap.style.display = "none";
-				const form = new FormData();
-				form.append('action', 'send_golf_booking_email');
-				form.append('nonce', XERO.golfnonce);
-				form.append('post_id', <?php echo $post->ID; ?>);
-				form.append('golf_booking_email', booking_golf_email.value );
+<div style="background: #ddd; color: #000; padding: 10px; margin-bottom: 10px;">Please update first before sending an
+	email.</div>
+<div id="booking_golf_email_status" style="display: none;">
+	<h4 id="statusText">Sending Email...</h4>
+</div>
+<div id="booking_golf_email_wrap">
+	<input type="email" id="booking_golf_email" value="orlando.rentals@gmail.com">
+	<button id="booking_email_btn" class="button button-primary button-large" style="margin-top: 5px;">Send Golf Booking
+		Email</button>
+</div>
+<script>
+	const booking_golf_email_wrap = document.getElementById('booking_golf_email_wrap');
+	const booking_golf_email_status = document.getElementById('booking_golf_email_status');
+	const booking_email_btn = document.getElementById('booking_email_btn');
+	const booking_golf_email = document.getElementById('booking_golf_email');
+	if (booking_email_btn) {
+		booking_email_btn.addEventListener('click', function(e) {
+			e.preventDefault();
+			if (!booking_golf_email.value) {
+				alert('Please enter an email');
+				return;
+			}
+			booking_golf_email_status.style.display = "block";
+			booking_golf_email_wrap.style.display = "none";
+			const form = new FormData();
+			form.append('action', 'send_golf_booking_email');
+			form.append('nonce', XERO.golfnonce);
+			form.append('post_id', <?php echo $post->ID; ?> );
+			form.append('golf_booking_email', booking_golf_email.value);
 
-				const params = new URLSearchParams(form);
-				const statusText = document.querySelector('#statusText');
+			const params = new URLSearchParams(form);
+			const statusText = document.querySelector('#statusText');
 
-				fetch( XERO.ajax_url, {
-				method: 'POST',	
-				credentials: 'same-origin',
-				headers: {
-				'Content-Type': 'application/x-www-form-urlencoded',
-				'Cache-Control': 'no-cache',
-				},
-				body: params,		
+			fetch(XERO.ajax_url, {
+					method: 'POST',
+					credentials: 'same-origin',
+					headers: {
+						'Content-Type': 'application/x-www-form-urlencoded',
+						'Cache-Control': 'no-cache',
+					},
+					body: params,
 				})
 				.then((response) => response.json())
 				.then((data) => {
 					if (data) {
 						console.log(data);
-						if ( 2 == data.code ) {
+						if (2 == data.code) {
 							alert("Golf Booking empty");
 							booking_golf_email_status.style.display = "none";
 							booking_golf_email_wrap.style.display = "block";
@@ -2390,38 +2679,37 @@ class HRV_MLA_Admin {
 					console.error(error);
 				});
 
-			});
-		}
-		</script>
+		});
+	}
+</script>
 		<?php
 		echo ob_get_clean();
 	}
 
 	public function send_golf_booking_email() {
-		$status = array(
-			'code' => 2,
-		);
-		if ( ! wp_verify_nonce( $_POST['nonce'], 'golf-nonce' ) ) {
-			wp_send_json( 'Nonce Error' );
-		}
+		 $status = array(
+			 'code' => 2,
+		 );
+		 if ( ! wp_verify_nonce( $_POST['nonce'], 'golf-nonce' ) ) {
+			 wp_send_json( 'Nonce Error' );
+		 }
 
-		$rows = get_field( 'golf_booking', $_POST['post_id'] );
+		 $rows = get_field( 'golf_booking', $_POST['post_id'] );
 
-		if ( ! $rows ) {
-			wp_send_json( $status );
-		}
+		 if ( ! $rows ) {
+			 wp_send_json( $status );
+		 }
 
-		$golf_booking_email_content = $this->golf_booking_email_content();
+		 $golf_booking_email_content = $this->golf_booking_email_content();
 
-		$golf_bookings = '';
+		 $golf_bookings = '';
 
-		if ( have_rows( 'golf_booking', $_POST['post_id'] ) ) {
+		 if ( have_rows( 'golf_booking', $_POST['post_id'] ) ) {
+			 while ( have_rows( 'golf_booking', $_POST['post_id'] ) ) {
+				 the_row();
+				 $golf_courses = get_sub_field( 'golf_course' );
 
-			while ( have_rows( 'golf_booking', $_POST['post_id'] ) ) {
-				the_row();
-				$golf_courses = get_sub_field( 'golf_course' );
-
-				$golf_bookings .= '<tr>
+				 $golf_bookings .= '<tr>
 				<td valign="top" align="center"><font face="verdana" size="2px">' . get_sub_field( 'date' ) . '</font>
 				</td>
 				<td valign="top" align="center"><font face="verdana" size="2px">' . get_the_title( $golf_courses ) . '</font></td>
@@ -2429,18 +2717,18 @@ class HRV_MLA_Admin {
 				<td valign="top" align="center"><font face="verdana" size="2px">' . get_sub_field( 'number_of_rounds' ) . ' Holes</font></td>
 				<td valign="top" align="center"><font face="verdana" size="2px">' . get_sub_field( 'number_of_players' ) . ' Golfers</font></td>
 				</tr>';
-			}
-		}
+			 }
+		 }
 
-		$guest_name = get_field( 'first_name', $_POST['post_id'] ) . ' ' . get_field( 'surname', $_POST['post_id'] );
+		 $guest_name = get_field( 'first_name', $_POST['post_id'] ) . ' ' . get_field( 'surname', $_POST['post_id'] );
 
-		$golf_booking_email_content = str_replace( 'GUEST_EMAIL', $guest_name, $golf_booking_email_content );
-		$golf_booking_email_content = str_replace( 'GOLF_BOOKING_DETAILS', $golf_bookings, $golf_booking_email_content );
+		 $golf_booking_email_content = str_replace( 'GUEST_EMAIL', $guest_name, $golf_booking_email_content );
+		 $golf_booking_email_content = str_replace( 'GOLF_BOOKING_DETAILS', $golf_bookings, $golf_booking_email_content );
 
-		$this->send_hrv_email( $_POST['golf_booking_email'], 'Barrie Pike golf reservations', $golf_booking_email_content );
-		$status['code'] = 1;
-		$status['post'] = $_POST;
-		wp_send_json( $status );
+		 $this->send_hrv_email( $_POST['golf_booking_email'], 'Barrie Pike golf reservations', $golf_booking_email_content );
+		 $status['code'] = 1;
+		 $status['post'] = $_POST;
+		 wp_send_json( $status );
 	}
 
 	public function get_all_owners() {
@@ -2469,20 +2757,22 @@ class HRV_MLA_Admin {
 	public function render_owner_filter_options( $which ) {
 		if ( $which == 'top' ) {
 			if ( 'edit-bookings' === get_current_screen()->id ) {
-
 				$owners = $this->get_all_owners();
 				?>
-		<form method="GET">
-			<select name="property_owner" id="selectPropertyOwner">
-				<option value="">Choose Property Owner</option> 	
+<form method="GET">
+	<select name="property_owner" id="selectPropertyOwner">
+		<option value="">Choose Property Owner</option>
 				<?php
 				foreach ( $owners as $owner ) {
 					?>
-				<option value="<?php echo $owner['id']; ?>" <?php echo( isset( $_GET['property_owner'] ) && $owner['id'] == $_GET['property_owner'] && ! empty( $_GET['property_owner'] ) ? 'selected' : '' ); ?>><?php echo $owner['title']; ?></option>
-				<?php } ?>
-			</select>	
+		<option
+			value="<?php echo $owner['id']; ?>"
+					<?php echo( isset( $_GET['property_owner'] ) && $owner['id'] == $_GET['property_owner'] && ! empty( $_GET['property_owner'] ) ? 'selected' : '' ); ?>><?php echo $owner['title']; ?>
+		</option>
+		<?php } ?>
+	</select>
 
-			<input type="submit" class="button" value="Filter" id="propertyOwnerSubmit">
+	<input type="submit" class="button" value="Filter" id="propertyOwnerSubmit">
 				<?php
 				$linkargs = array();
 				foreach ( $_GET as $label => $value ) :
@@ -2496,15 +2786,16 @@ class HRV_MLA_Admin {
 					'edit.php'
 				);
 				?>
-		</form>
-		<script>
-			const propertyOwnerSubmit = document.getElementById('propertyOwnerSubmit'),
-				  selectPropertyOwner = document.getElementById('selectPropertyOwner');
-			propertyOwnerSubmit.addEventListener('click', function(event) {
-				event.preventDefault();
-				window.location.href = "<?php echo $link; ?>&property_owner=" + selectPropertyOwner.value;
-			});
-		</script>
+</form>
+<script>
+	const propertyOwnerSubmit = document.getElementById('propertyOwnerSubmit'),
+		selectPropertyOwner = document.getElementById('selectPropertyOwner');
+	propertyOwnerSubmit.addEventListener('click', function(event) {
+		event.preventDefault();
+		window.location.href = "<?php echo $link; ?>&property_owner=" +
+			selectPropertyOwner.value;
+	});
+</script>
 
 				<?php
 			}
@@ -2527,7 +2818,7 @@ class HRV_MLA_Admin {
 	public function get_to_owner_email_subject() {
 		return get_field( 'to_property_owner_email_subject', 'option' );
 	}
-	
+
 	/**
 	 * Get to customer Email subject
 	 */
@@ -2544,7 +2835,7 @@ class HRV_MLA_Admin {
 
 
 	public function booking_details_content() {
-		ob_start();
+		 ob_start();
 		require 'emails/booking-details.html';
 		return ob_get_clean();
 	}
@@ -2584,8 +2875,8 @@ class HRV_MLA_Admin {
 	 * Get to customer Email content
 	 */
 	public function get_request_payment_content() {
-		$content = $this->email_template();
-		$content = str_replace('EMAIL_CONTENT', '[BOOKING_DETAILS]', $content);
+		 $content = $this->email_template();
+		$content  = str_replace( 'EMAIL_CONTENT', '[BOOKING_DETAILS]', $content );
 		return $content;
 	}
 
@@ -2593,8 +2884,8 @@ class HRV_MLA_Admin {
 	 * Get to admin Email content
 	 */
 	public function get_admin_email_hrv_content() {
-		$content = $this->email_template();
-		$content = str_replace('EMAIL_CONTENT', '[BOOKING_DETAILS]', $content);
+		 $content = $this->email_template();
+		$content  = str_replace( 'EMAIL_CONTENT', '[BOOKING_DETAILS]', $content );
 		return $content;
 	}
 
@@ -2616,6 +2907,5 @@ class HRV_MLA_Admin {
 		$content = str_replace( 'EMAIL_CONTENT', get_field( 'to_property_owner_email_content', 'option' ), $content );
 		return $content;
 	}
-
-
 }
+?>
