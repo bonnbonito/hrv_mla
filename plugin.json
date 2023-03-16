@@ -1,8 +1,0 @@
-{
-	"name": "MLA HRV Plugin",
-	"version": "2.0",
-	"download_url": "https://github.com/bonnbonito/hrv_mla/archive/refs/tags/hrv_mla.zip",
-	"sections": {
-		"description": "Plugin for HRV by MLA"
-	}
-}
