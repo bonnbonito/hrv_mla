@@ -1348,13 +1348,8 @@ class HRV_MLA_Public {
 
 
 					endwhile;
-
 					wp_reset_postdata();
-
-
-
 				endif;
-
 				return $property_ids;
 
 	}
@@ -1362,38 +1357,19 @@ class HRV_MLA_Public {
 	
 
 	public function mailchimp_test(){
-
 	    $MailChimp = new MailChimp( $this->get_mailchimp_api() );
-
 	    $result = $MailChimp->get('lists');
-
 	    echo '<pre>';
-
 	    print_r($result['lists'][0]['id']);
-
 	    echo '</pre>';
-
 	    $list_id = '2061e80bec';
-
-
-
         $result = $MailChimp->post("lists/$list_id/members", [
-
         				'email_address' => 'nyhynipa@vomoto.com',
-
         				'merge_fields' => ['FNAME'=> 'THIS', 'LNAME'=>'TEST'],
-
         				'status'        => 'subscribed',
-
         			]);
-
-        
-
         print_r($result['status']);
-
 	}
-
-
 
 }
 
