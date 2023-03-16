@@ -71,11 +71,11 @@ use YahnisElsts\PluginUpdateChecker\v5\PucFactory;
 $myUpdateChecker = PucFactory::buildUpdateChecker(
 	'https://github.com/bonnbonito/hrv_mla/',
 	__FILE__,
-	'hrv_mla'
+	'hrv-mla'
 );
 
-//Set the branch that contains the stable release.
-$myUpdateChecker->setBranch('master');
+// Set the branch that contains the stable release.
+$myUpdateChecker->setBranch( 'master' );
 
 /**
  * Begins execution of the plugin.
