@@ -1,0 +1,10 @@
+{
+	"name": "MLA HRV Plugin",
+	"version": "2.0",
+	"download_url": "https://github.com/bonnbonito/hrv_mla/archive/refs/tags/hrv_mla.zip",
+	"homepage": "http://example.com/",
+	"last_updated": "2023-03-16 16:17:00",
+	"upgrade_notice": "First update",
+	"author": "Bonn Joel",
+	"author_homepage": "https://www.bonnjoel.com/",
+}
