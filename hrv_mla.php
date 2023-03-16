@@ -64,9 +64,9 @@ register_deactivation_hook( __FILE__, 'deactivate_hrv_mla' );
  */
 require_once plugin_dir_path( __FILE__ ) . 'vendor/autoload.php';
 require plugin_dir_path( __FILE__ ) . 'includes/class-hrv_mla.php';
-require plugin_dir_path( __FILE__ ) . 'plugin-update-checker/plugin-update-checker.php';
+require plugin_dir_path( __FILE__ ) . 'bonn-update-checker/plugin-update-checker.php';
 
-use YahnisElsts\PluginUpdateChecker\v5\PucFactory;
+use Bonn\PluginUpdateChecker\v5\PucFactory;
 
 $myUpdateChecker = PucFactory::buildUpdateChecker(
 	'https://github.com/bonnbonito/hrv_mla/',
