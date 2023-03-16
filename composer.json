@@ -1,0 +1,8 @@
+{
+    "require": {
+        "stripe/stripe-php": "^7.116",
+        "xeroapi/xero-php-oauth2": "^2.12",
+        "monolog/monolog": "^2.4",
+        "drewm/mailchimp-api": "^2.5"
+    }
+}
