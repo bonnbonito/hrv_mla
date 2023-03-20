@@ -65,7 +65,7 @@ directory take precedence. For example, `/assets/screenshot-1.png` would win ove
 
 == Changelog ==
 
-= 2.1.9 =
+= 2.2.0 =
 * Fix addon email text alignment
 
 = 2.1.9 =
