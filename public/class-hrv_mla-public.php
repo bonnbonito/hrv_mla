@@ -479,7 +479,7 @@ class HRV_MLA_Public {
 					);
 					$other_addons .= '<tr>
                         <td>' . $cost . '</td>
-                        <td colspan="2" align="right">$' . $extracostprice[ $key ] . '</td>
+                        <td colspan="2">$' . $extracostprice[ $key ] . '</td>
                         </tr>';
 				}
 
