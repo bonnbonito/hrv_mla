@@ -2,3 +2,15 @@
  * All of the CSS for your public-facing functionality should be
  * included in this file.
  */
+
+.wpcf7-field-groups .wpcf7-field-group .holes__1 select {
+    width: 180px;
+}
+
+.wpcf7-field-groups .wpcf7-field-group .date__1 input {
+    width: 250px;
+}
+
+.wpcf7-field-groups  .wpcf7-field-group [data-name="holes"] > select {
+    width: 180px;
+}

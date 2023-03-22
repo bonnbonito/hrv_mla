@@ -1037,6 +1037,36 @@ class HRV_MLA_Public {
 		);
 	}
 
+	public function contact_date_picker() {
+		if ( is_page( 'contact-us' ) ) {
+			?>
+			<script>
+				document.addEventListener( 'DOMContentLoaded', function(){
+					const addBtn = document.querySelectorAll('.wpcf7-field-group-add');
+					const dates = document.querySelectorAll('[data-name="date"] > input');
+					dates.forEach( (date, i) => {
+						 new Datepicker( date, {
+							minDate: 'tomorrow',
+							autohide: true,
+							format: 'dd M yyyy',
+						}); 
+					});
+					
+					jQuery('body').on('wpcf7-field-groups/added', function(){
+						document.querySelectorAll('[data-name="date"] > input').forEach( (date, i) => {
+							new Datepicker( date, {
+								minDate: 'tomorrow',
+								autohide: true,
+								format: 'dd M yyyy',
+							}); 
+						});
+					});		
+				} );				
+			</script>
+			<?php
+		}
+	}
+
 
 
 	public function search_result_ids() {
@@ -1092,6 +1122,7 @@ class HRV_MLA_Public {
 		);
 		print_r( $result['status'] );
 	}
+
 }
 
 ?>

@@ -199,7 +199,8 @@ class HRV_MLA {
 		$this->loader->add_action( 'wp_ajax_get_all_property_details', $plugin_public, 'get_all_property_details' );
 		$this->loader->add_action( 'wp_ajax_nopriv_check_availability', $plugin_public, 'check_availability' );
 		$this->loader->add_action( 'wp_ajax_check_availability', $plugin_public, 'check_availability' );
-		//$this->loader->add_action( 'wp_footer', $plugin_public, 'mailchimp_test' );
+		$this->loader->add_action( 'wp_footer', $plugin_public, 'contact_date_picker', 99 );
+		// $this->loader->add_action( 'wp_footer', $plugin_public, 'mailchimp_test' );
 	}
 
 	/**
