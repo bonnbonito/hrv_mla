@@ -65,6 +65,9 @@ directory take precedence. For example, `/assets/screenshot-1.png` would win ove
 
 == Changelog ==
 
+= 2.2.3 =
+* Fix FAQ Tabs
+
 = 2.2.2 =
 * Add Date picker to other date fields
 
