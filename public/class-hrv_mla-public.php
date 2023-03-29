@@ -1043,7 +1043,7 @@ class HRV_MLA_Public {
 			<script>
 				document.addEventListener( 'DOMContentLoaded', function(){
 					const addBtn = document.querySelectorAll('.wpcf7-field-group-add');
-					const dates = document.querySelectorAll('[data-name="date"] > input');
+					const dates = document.querySelectorAll('[data-name="date"] > input, .wpcf7-text.date');
 					dates.forEach( (date, i) => {
 						 new Datepicker( date, {
 							minDate: 'tomorrow',
