@@ -65,6 +65,9 @@ directory take precedence. For example, `/assets/screenshot-1.png` would win ove
 
 == Changelog ==
 
+= 2.2.4 =
+* Ciirus API pricing fix
+
 = 2.2.3 =
 * Fix FAQ Tabs
 
