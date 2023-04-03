@@ -204,11 +204,13 @@ function stripeBooking( token ) {
 	form.append('totalRoomRate', document.querySelector('#totalRoomRate').value);
 	form.append('ownerPrice', document.querySelector('#ownerPrice').value);
 	form.append('bookingprice', document.querySelector('#bookingprice').value);
-  	form.append('owner_id', document.querySelector('#ownerID').value);
+	form.append('owner_id', document.querySelector('#ownerID').value);
 	form.append('ownerName', document.querySelector('#ownerName').value);
 	form.append('ownerbookingpercent', document.querySelector('#ownerbookingpercent').value);
 	form.append('property_owner_email', document.querySelector('#ownerEmail').value);
 	form.append('dueDate', document.querySelector('#dueDate').value);
+	form.append('deposit', document.querySelector('#depositPrice').value);
+	form.append('apiPrice', document.querySelector('#apiPrice').value);
 	
 	let extraCostName = [];	
 	let extraCostPrice = [];	
@@ -253,7 +255,7 @@ function stripeBooking( token ) {
 				loadingText.innerText = "Successful. Redirecting...";
 				
 				setTimeout(function(e){
-					window.location.href = `<?php echo home_url( '/' ) . 'thank-you-for-booking?booking='; ?>${data.booking}`;
+					//window.location.href = `<?php echo home_url( '/' ) . 'thank-you-for-booking?booking='; ?>${data.booking}`;
 				}, 750);
 			}
 		})
@@ -269,24 +271,33 @@ function stripeBooking( token ) {
 
 </script>
 
-<script>
-	function getCookie(cname) {
-	  let name = cname + "=";
-	  let decodedCookie = decodeURIComponent(document.cookie);
-	  let ca = decodedCookie.split(';');
-	  for(let i = 0; i <ca.length; i++) {
-		let c = ca[i];
-		while (c.charAt(0) == ' ') {
-		  c = c.substring(1);
-		}
-		if (c.indexOf(name) == 0) {
-		  return c.substring(name.length, c.length);
-		}
-	  }
-	  return "";
-	}
-</script>	
 <?php
+
+$hrv_public = new HRV_MLA_Public( 'hrv_mla', HRV_MLA_VERSION );
+$hrv_admin  = new HRV_MLA_Admin( 'hrv_mla', HRV_MLA_VERSION );
+
+$price_cat_ID        = wp_get_post_terms( $_GET['id'], 'price_categories' );
+$currentprice        = $hrv_public->compute_price( $price_cat_ID[0]->term_id, $_GET['date_checkin'] );
+$total_room_rate     = $currentprice ? $currentprice * $_GET['nights'] : 0;
+$ownerbookingpercent = get_field( 'property_owner_booking_percentage', $_GET['id'] ) ? get_field( 'property_owner_booking_percentage', $_GET['id'] ) : get_field( 'default_property_owner_booking_percentage', 'option' );
+$owner_price         = 0;
+$bookingprice        = $currentprice;
+
+if ( $ownerbookingpercent ) {
+	$owner_price = ( $ownerbookingpercent / 100 ) * $total_room_rate;
+}
+$total_price = $total_room_rate + $owner_price;
+/* compute discount price */
+$deposit_compute  = $total_price * .10;
+$deposit_price    = $deposit_compute > 250 ? 250 : $deposit_compute;
+$cleaning_fees    = 0;
+$propertyTaxRates = 0;
+
+
+function percentage_tax_price( $price, $percent ) {
+	return ( $percent / 100 ) * $price;
+}
+
 function previous_page() {
 
 	$previous = 'javascript:history.go(-1)';
@@ -297,30 +308,6 @@ function previous_page() {
 
 }
 
-$hrv_public = new HRV_MLA_Public( 'hrv_mla', HRV_MLA_VERSION );
-$hrv_admin  = new HRV_MLA_Admin( 'hrv_mla', HRV_MLA_VERSION );
-
-$price_cat_ID     = wp_get_post_terms( $_GET['id'], 'price_categories' );
-$currentprice     = $hrv_public->compute_price( $price_cat_ID[0]->term_id, $_GET['date_checkin'] );
-$total_room_rate    = $currentprice ? $currentprice * $_GET['nights'] : 0;
-$ownerbookingpercent = get_field( 'property_owner_booking_percentage', $_GET['id'] ) ? get_field( 'property_owner_booking_percentage', $_GET['id'] ) : get_field( 'default_property_owner_booking_percentage', 'option' );
-$owner_price = 0;
-$bookingprice     = $currentprice;
-
-if ( $ownerbookingpercent  ) {
-	$owner_price = ($ownerbookingpercent/100) * $total_room_rate;
-}
-$total_price = $total_room_rate + $owner_price;
-$deposit_compute = $total_price * .10;
-$deposit_price    = $deposit_compute > 250 ? 250 : $deposit_compute;
-$cleaning_fees    = 0;
-$propertyTaxRates = 0;
-
-
-function percentage_tax_price( $price, $percent ) {
-	return ( $percent / 100 ) * $price;
-}
-
 if ( get_field( 'api_price', $_GET['id'] ) ) {
 	$api_get_price       = $hrv_admin->ciirus_get_property_rates( get_field( 'ciirus_id', $_GET['id'] ), $_GET['date_checkin'], $_GET['nights'] );
 	$cleaning_fees       = $hrv_admin->ciirus_get_cleaning_fee( get_field( 'ciirus_id', $_GET['id'] ), $_GET['nights'] );
@@ -328,13 +315,16 @@ if ( get_field( 'api_price', $_GET['id'] ) ) {
 	$propertyTaxRates    = $propertyTaxRatesApi['total_rates'];
 	$bookingprice        = $api_get_price['total_rates'];
 	$total_price         = round( $api_get_price['total_rates'] + percentage_tax_price( $api_get_price['total_rates'], $propertyTaxRates ) + $cleaning_fees, 2 );
+	/* compute discount price */
+	$deposit_compute = $total_price * .10;
+	$deposit_price   = $deposit_compute > 250 ? 250 : $deposit_compute;
 }
 
-$date_checkin        = isset( $_GET['date_checkin'] ) ? $_GET['date_checkin'] : date( 'd M Y' );
-$date_checkout       = isset( $_GET['date_checkout'] ) ? $_GET['date_checkout'] : date( 'd M Y' );
-$due_date_get = new DateTime($date_checkin);
-$due_date_get->sub(new DateInterval('P30D')); 
-$due_date = $due_date_get->format('d M Y');
+$date_checkin  = isset( $_GET['date_checkin'] ) ? $_GET['date_checkin'] : date( 'd M Y' );
+$date_checkout = isset( $_GET['date_checkout'] ) ? $_GET['date_checkout'] : date( 'd M Y' );
+$due_date_get  = new DateTime( $date_checkin );
+$due_date_get->sub( new DateInterval( 'P30D' ) );
+$due_date = $due_date_get->format( 'd M Y' );
 ?>
 <div class="paymentform" style="position: relative;">
 <div id="paymentLoading" class="paymentLoading" style="display: none;">
@@ -426,6 +416,7 @@ $due_date = $due_date_get->format('d M Y');
 				<input type="hidden" name="ownerPrice" id="ownerPrice" value="<?php echo $owner_price; ?>">
 				<input type="hidden" name="totalRoomRate" id="totalRoomRate" value="<?php echo $total_room_rate; ?>">
 				<input type="hidden" name="dueDate" id="dueDate" value="<?php echo $due_date; ?>">
+				<input type="hidden" name="apiPrice" id="apiPrice" value="<?php echo ( get_field( 'api_price', $_GET['id'] ) ? 1 : 0 ); ?>">
 				<?php
 				$property_owner_id = get_field( 'property_owner', $_GET['id'] );
 				$owner_email       = get_field( 'owner_email', $property_owner_id[0] );
@@ -454,12 +445,12 @@ $due_date = $due_date_get->format('d M Y');
 						the_row();
 
 						// Load sub field value.
-						$name       = get_sub_field( 'name' );
-						$price_field      = get_sub_field( 'price' );
-						$percentage = get_sub_field( 'owner_percentage' ) ? get_sub_field( 'owner_percentage' ) : get_field( 'default_additional_costs_property_owner_percentage', 'option' );
-						$price = $price_field + ($price_field * $percentage/100);
+						$name        = get_sub_field( 'name' );
+						$price_field = get_sub_field( 'price' );
+						$percentage  = get_sub_field( 'owner_percentage' ) ? get_sub_field( 'owner_percentage' ) : get_field( 'default_additional_costs_property_owner_percentage', 'option' );
+						$price       = $price_field + ( $price_field * $percentage / 100 );
 						$price_total = $price * $_GET['nights'];
-						$extraCost  = $extraCost + $price_total;
+						$extraCost   = $extraCost + $price_total;
 						// Do something...
 						?>
 							<p class="extra-cost-checkbox">
@@ -483,20 +474,20 @@ $due_date = $due_date_get->format('d M Y');
 
 		</div>
 		<style>
-		    h1.custom-form-header.stripe-payment-title {
-                display: flex;
-                align-items: center;
-            }
-            
-            h1.custom-form-header.stripe-payment-title img {
-                height: 2em;
-                padding-left: 2em;
-            }
+			h1.custom-form-header.stripe-payment-title {
+				display: flex;
+				align-items: center;
+			}
+			
+			h1.custom-form-header.stripe-payment-title img {
+				height: 2em;
+				padding-left: 2em;
+			}
 		</style>
-		<h1 class="custom-form-header stripe-payment-title">PAYMENT <img src="<?php echo bloginfo('url'); ?>/wp-content/uploads/2022/10/stripe.png" alt="stripe payment"></h1>
+		<h1 class="custom-form-header stripe-payment-title">PAYMENT <img src="<?php echo bloginfo( 'url' ); ?>/wp-content/uploads/2022/10/stripe.png" alt="stripe payment"></h1>
 		<div class="custom-form-booking-input-wrapper">
-		    
-		    <div class="custom-book-form-row-5">
+			
+			<div class="custom-book-form-row-5">
 				<div class="cardNumberLine">
 					<p class="custom-form"><label for="Address">Card Number</label></p>
 					<p class="custom-form-input-box"><div id="cardNumber" class="stripe-input"></div></p>
@@ -580,6 +571,7 @@ function compute_nights() {
 //compute_nights();		
 <?php if ( get_field( 'api_price', $_GET['id'] ) ) { ?>
 	function getTotalPrice() {
+
 		let total = 0;
 		extracosts.forEach( function(cost){
 			
@@ -588,18 +580,21 @@ function compute_nights() {
 			}	
 		});	
 
-		
-		
 		let computedTotal = total + <?php echo ( $bookingprice ? $bookingprice : 0 ); ?>;
 		if ( taxrate.value != 0 ) {
 			computedTotal = computedTotal + ((Number(taxrate.value)/100) * computedTotal) + Number(cleaningfees.value);
 		}
 
 		console.log( computedTotal );
+
+		let depositCompute = computedTotal * .10;
+		let depositTotal = Number(depositCompute).toFixed(1) < 250 ? depositCompute.toFixed(1) : 250;
 		
 		pricetotalcompute.innerText = Number(computedTotal).toFixed(2);	
 		totalPrice.value = Number(computedTotal).toFixed(2);
-		
+		depositPrice.value = depositTotal;
+		document.getElementById('depositpricecompute').innerText = depositTotal;
+
 	}
 <?php } else { ?>
 	function getTotalPrice() {
@@ -623,6 +618,7 @@ function compute_nights() {
 	totalPrice.value = computedTotal;
 	depositPrice.value = depositTotal;
 	document.getElementById('depositpricecompute').innerText = depositTotal;
+
 	
 }
 <?php } ?>

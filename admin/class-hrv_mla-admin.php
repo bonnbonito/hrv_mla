@@ -2840,15 +2840,33 @@ class HRV_MLA_Admin {
 		return ob_get_clean();
 	}
 
+	public function booking_details_content_api() {
+		 ob_start();
+		require 'emails/booking-details-api.html';
+		return ob_get_clean();
+	}
+
 	public function booking_owner_details_content() {
 		ob_start();
 		require 'emails/booking-owner-details.html';
 		return ob_get_clean();
 	}
 
+	public function booking_owner_details_content_api() {
+		ob_start();
+		require 'emails/booking-owner-details-api.html';
+		return ob_get_clean();
+	}
+
 	public function booking_admin_details_content() {
 		ob_start();
 		require 'emails/booking-admin-details.html';
+		return ob_get_clean();
+	}
+
+	public function booking_admin_details_content_api() {
+		ob_start();
+		require 'emails/booking-admin-details-api.html';
 		return ob_get_clean();
 	}
 

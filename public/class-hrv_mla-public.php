@@ -402,6 +402,7 @@ class HRV_MLA_Public {
 		$deposit_compute        = $total_price * 0.10;
 		$deposit_price          = $deposit_compute > 250 ? 250 : $deposit_compute;
 		$rental_price           = ( $bookingprice * $nights ) + $owner_price;
+		$api_price              = $_POST['apiPrice'] == 1 ? 1 : 0;
 
 		// $charge = $stripe->charges->create(
 		// array(
@@ -462,6 +463,7 @@ class HRV_MLA_Public {
 				update_field( 'stripe_charge_id', $payment_intents->id, $booking_id );
 				update_field( 'booking_season_price', $bookingprice, $booking_id );
 				update_field( 'booking_property_owner', $owner_id, $booking_id );
+				update_field( 'api_price', $api_price, $booking_id );
 				update_field( 'payment_status', 'deposit', $booking_id );
 				update_post_meta( $booking_id, 'payment_email_sent', 'no' );
 
@@ -485,7 +487,7 @@ class HRV_MLA_Public {
 
 				update_field( 'field_61fbad0ce3c30', $rows, $booking_id );
 				$hrv_admin = new HRV_MLA_Admin( $this->plugin_name, $this->version );
-				if ( get_field( 'api_price', $property ) ) {
+				if ( $api_price == 1 ) {
 					$booking_api_details = '<?xml version="1.0" encoding="utf-8"?>
                         <soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
                         <soap:Body>
@@ -546,15 +548,21 @@ class HRV_MLA_Public {
 					}
 				}
 
-				$owner_total_price = $total_room_rate + $extra_owner_total;
-				$profit            = $total_price - $owner_total_price;
+				if ( $api_price == 0 ) {
+					$owner_total_price = $total_room_rate + $extra_owner_total;
+					$profit            = $total_price - $owner_total_price;
+				}
 
 				if ( $days_left <= $hrv_admin->days_to_notify ) {
 					$request_payment_email_content = $hrv_admin->get_request_payment_content();
 					$request_payment_email_content = str_replace( 'BOOKING_ID', 'HRV-' . $booking_id, $request_payment_email_content );
 					$request_payment_email_content = str_replace( 'INVOICE_DATE', date( 'd/M/Y' ), $request_payment_email_content );
 					$directions_acf                = get_field( 'directions_from_airport', $property );
-					$request_payment_email_content = str_replace( '[BOOKING_DETAILS]', $hrv_admin->booking_details_content(), $request_payment_email_content );
+					if ( $api_price == 1 ) {
+						$request_payment_email_content = str_replace( '[BOOKING_DETAILS]', $hrv_admin->booking_details_content_api(), $request_payment_email_content );
+					} else {
+						$request_payment_email_content = str_replace( '[BOOKING_DETAILS]', $hrv_admin->booking_details_content(), $request_payment_email_content );
+					}
 					$request_payment_email_content = str_replace( 'NO_ADULTS', $adults, $request_payment_email_content );
 					$request_payment_email_content = str_replace( 'NO_NIGHTS', $nights, $request_payment_email_content );
 					$request_payment_email_content = str_replace( 'NO_CHILDREN', $children, $request_payment_email_content );
@@ -582,7 +590,11 @@ class HRV_MLA_Public {
 				$admin_email_subject        = str_replace( '[GUEST_NAME]', $firstname . ' ' . $surname, $admin_email_subject );
 				$admin_email_subject        = str_replace( '[OWNER_NAME]', $owner_name, $admin_email_subject );
 				$get_to_admin_email_content = $hrv_admin->get_to_admin_email_content();
-				$get_to_admin_email_content = str_replace( '[BOOKING_DETAILS]', $hrv_admin->booking_admin_details_content(), $get_to_admin_email_content );
+				if ( $api_price == 1 ) {
+					$get_to_admin_email_content = str_replace( '[BOOKING_DETAILS]', $hrv_admin->booking_admin_details_content_api(), $get_to_admin_email_content );
+				}else {
+					$get_to_admin_email_content = str_replace( '[BOOKING_DETAILS]', $hrv_admin->booking_admin_details_content(), $get_to_admin_email_content );
+				}
 				$get_to_admin_email_content = str_replace( 'BOOKING_ID', 'HRV-' . $booking_id, $get_to_admin_email_content );
 				$get_to_admin_email_content = str_replace( 'NO_ADULTS', $adults, $get_to_admin_email_content );
 				$get_to_admin_email_content = str_replace( 'NO_NIGHTS', $nights, $get_to_admin_email_content );
@@ -615,7 +627,11 @@ class HRV_MLA_Public {
 				$customer_email_subject = str_replace( '[OWNER_NAME]', $owner_name, $customer_email_subject );
 				$customer_email_subject = str_replace( '[GUEST_NAME]', $firstname . ' ' . $surname, $customer_email_subject );
 				$email_to_customer      = $hrv_admin->get_to_customer_email_content();
-				$email_to_customer      = str_replace( '[BOOKING_DETAILS]', $hrv_admin->booking_details_content(), $email_to_customer );
+				if ( $api_price == 1 ) {
+					$email_to_customer      = str_replace( '[BOOKING_DETAILS]', $hrv_admin->booking_details_content_api(), $email_to_customer );
+				} else {
+					$email_to_customer      = str_replace( '[BOOKING_DETAILS]', $hrv_admin->booking_details_content(), $email_to_customer );
+				}
 				$email_to_customer      = str_replace( 'BOOKING_ID', 'HRV-' . $booking_id, $email_to_customer );
 				$email_to_customer      = str_replace( 'NO_ADULTS', $adults, $email_to_customer );
 				$email_to_customer      = str_replace( 'NO_NIGHTS', $nights, $email_to_customer );
@@ -639,7 +655,12 @@ class HRV_MLA_Public {
 				 * Send Email to Property Owner
 				 */
 				$email_to_owner = $hrv_admin->get_to_owner_email_content();
-				$email_to_owner = str_replace( '[OWNER_DETAILS]', $hrv_admin->booking_owner_details_content(), $email_to_owner );
+				if ( $api_price == 1 ) {
+					$email_to_owner = str_replace( '[OWNER_DETAILS]', $hrv_admin->booking_owner_details_content_api(), $email_to_owner );
+				} else {
+					$email_to_owner = str_replace( '[OWNER_DETAILS]', $hrv_admin->booking_owner_details_content(), $email_to_owner );
+				}
+				
 
 				$email_to_owner         = str_replace( 'BOOKING_ID', 'HRV-' . $booking_id, $email_to_owner );
 				$email_to_owner         = str_replace( 'NO_ADULTS', $adults, $email_to_owner );
@@ -650,7 +671,11 @@ class HRV_MLA_Public {
 				$email_to_owner         = str_replace( 'DEPARTURE_DATE', date( 'd/M/Y', strtotime( $enddate ) ), $email_to_owner );
 				$email_to_owner         = str_replace( 'ARRIVAL_DATE', date( 'd/M/Y', strtotime( $startdate ) ), $email_to_owner );
 				$email_to_owner         = str_replace( 'PROPERTY_NAME', get_field( 'address', $property ), $email_to_owner );
-				$email_to_owner         = str_replace( 'TOTAL_PRICE', $owner_total_price, $email_to_owner );
+				if ( $api_price == 1 ) {
+					$email_to_owner         = str_replace( 'TOTAL_PRICE', $total_price, $email_to_owner );
+				} else {
+					$email_to_owner         = str_replace( 'TOTAL_PRICE', $owner_total_price, $email_to_owner );
+				}
 				$email_to_owner         = str_replace( 'RENT_PRICE', $total_room_rate, $email_to_owner );
 				$email_to_owner         = str_replace( 'HOME_RENTAL_PRICE', $bookingprice * $nights, $email_to_owner );
 				$email_to_owner         = str_replace( 'OTHER_ADDONS', $other_addons_owner, $email_to_owner );
@@ -665,8 +690,10 @@ class HRV_MLA_Public {
 					$hrv_admin->send_hrv_email( $property_owner_email, $owner_email_subject, $email_to_owner_content );
 				}
 
-				update_field( 'owner_total_price', $owner_total_price, $booking_id );
-				update_field( 'total_profit', $profit, $booking_id );
+				if ( $api_price == 0 ) {
+					update_field( 'owner_total_price', $owner_total_price, $booking_id );
+					update_field( 'total_profit', $profit, $booking_id );
+				}
 
 				if ( get_option( 'xero_access_token' ) && false ) {
 					$contact_array = array(
