@@ -579,22 +579,22 @@ function compute_nights() {
 //compute_nights();		
 <?php if ( get_field( 'api_price', $_GET['id'] ) ) { ?>
 	function getTotalPrice() {
-
+		const totalRoomRate = document.getElementById( 'totalRoomRate' );
 		let total = 0;
+		let computedTotal = 0;
 		extracosts.forEach( function(cost){
 			
 			if ( cost.checked ) {
-				total += parseInt(cost.value);
+				total = Number(total) + Number(cost.value);
 			}	
 		});	
 
-		let computedTotal = Number(total) + Number(totalRoomRate.value);
-		if ( taxrate.value != 0 ) {
-			computedTotal = computedTotal + ((Number(taxrate.value)/100) * computedTotal) + Number(cleaningfees.value);
-		}
+		computedTotal = Number(total) + Number(totalRoomRate.value);
+		// if ( taxrate.value != 0 ) {
+		// 	computedTotal = computedTotal + ((Number(taxrate.value)/100) * computedTotal) + Number(cleaningfees.value);
+		// }
 
-		console.log( computedTotal );
-
+		console.log(total, Number(totalRoomRate.value), Number(total) + Number(totalRoomRate.value), computedTotal);
 		let depositCompute = computedTotal * .10;
 		let depositTotal = Number(depositCompute).toFixed(1) < 250 ? depositCompute.toFixed(1) : 250;
 		let compuptedTotal = Number(computedTotal).toFixed(2);
@@ -603,7 +603,7 @@ function compute_nights() {
 		depositPrice.value = depositTotal;
 		apiProfit.value = Number(compuptedTotal * .18).toFixed(2);
 		document.getElementById('depositpricecompute').innerText = depositTotal;
-		console.log(total, computedTotal);
+		
 
 	}
 <?php } else { ?>

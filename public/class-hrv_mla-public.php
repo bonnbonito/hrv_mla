@@ -690,7 +690,7 @@ class HRV_MLA_Public {
 				$email_to_owner = str_replace( 'PROPERTY_NAME', get_field( 'address', $property ), $email_to_owner );
 				if ( $api_price == 1 ) {
 					$email_to_owner = str_replace( 'TOTAL_ROOM_RATE', $total_room_rate, $email_to_owner );
-					$email_to_owner = str_replace( 'TOTAL_PRICE', $total_price, $email_to_owner );
+					$email_to_owner = str_replace( 'TOTAL_PRICE', $total_price - $api_profit, $email_to_owner );
 				} else {
 					$email_to_owner = str_replace( 'TOTAL_PRICE', $owner_total_price, $email_to_owner );
 				}
