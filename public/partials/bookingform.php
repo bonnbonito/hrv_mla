@@ -588,7 +588,7 @@ function compute_nights() {
 			}	
 		});	
 
-		let computedTotal = total + <?php echo ( $total_room_rate ? $total_room_rate : 0 ); ?>;
+		let computedTotal = Number(total) + Number(totalRoomRate.value);
 		if ( taxrate.value != 0 ) {
 			computedTotal = computedTotal + ((Number(taxrate.value)/100) * computedTotal) + Number(cleaningfees.value);
 		}
@@ -601,7 +601,7 @@ function compute_nights() {
 		pricetotalcompute.innerText = compuptedTotal;	
 		totalPrice.value = compuptedTotal;
 		depositPrice.value = depositTotal;
-		apiProfit.value = Number(depositTotal * .18).toFixed(2);
+		apiProfit.value = Number(compuptedTotal * .18).toFixed(2);
 		document.getElementById('depositpricecompute').innerText = depositTotal;
 		console.log(total, computedTotal);
 
