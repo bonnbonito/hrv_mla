@@ -257,7 +257,7 @@ function stripeBooking( token ) {
 				loadingText.innerText = "Successful. Redirecting...";
 				
 				setTimeout(function(e){
-					//window.location.href = `<?php echo home_url( '/' ) . 'thank-you-for-booking?booking='; ?>${data.booking}`;
+					window.location.href = `<?php echo home_url( '/' ) . 'thank-you-for-booking?booking='; ?>${data.booking}`;
 				}, 750);
 			}
 		})
@@ -588,7 +588,7 @@ function compute_nights() {
 			}	
 		});	
 
-		let computedTotal = total + <?php echo ( $total_price ? $total_price : 0 ); ?>;
+		let computedTotal = total + <?php echo ( $total_room_rate ? $total_room_rate : 0 ); ?>;
 		if ( taxrate.value != 0 ) {
 			computedTotal = computedTotal + ((Number(taxrate.value)/100) * computedTotal) + Number(cleaningfees.value);
 		}
