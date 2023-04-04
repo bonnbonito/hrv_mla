@@ -603,6 +603,7 @@ function compute_nights() {
 		depositPrice.value = depositTotal;
 		apiProfit.value = Number(depositTotal * .18).toFixed(2);
 		document.getElementById('depositpricecompute').innerText = depositTotal;
+		console.log(total, computedTotal);
 
 	}
 <?php } else { ?>
