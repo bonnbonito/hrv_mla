@@ -211,6 +211,8 @@ function stripeBooking( token ) {
 	form.append('dueDate', document.querySelector('#dueDate').value);
 	form.append('deposit', document.querySelector('#depositPrice').value);
 	form.append('apiPrice', document.querySelector('#apiPrice').value);
+	form.append('apiProfit', document.querySelector('#apiProfit').value);
+	form.append('roomPrice', document.querySelector('#roomPrice').value);
 	
 	let extraCostName = [];	
 	let extraCostPrice = [];	
@@ -313,8 +315,11 @@ if ( get_field( 'api_price', $_GET['id'] ) ) {
 	$cleaning_fees       = $hrv_admin->ciirus_get_cleaning_fee( get_field( 'ciirus_id', $_GET['id'] ), $_GET['nights'] );
 	$propertyTaxRatesApi = $hrv_admin->ciirus_get_tax_rates( get_field( 'ciirus_id', $_GET['id'] ) );
 	$propertyTaxRates    = $propertyTaxRatesApi['total_rates'];
-	$bookingprice        = $api_get_price['total_rates'];
-	$total_price         = round( $api_get_price['total_rates'] + percentage_tax_price( $api_get_price['total_rates'], $propertyTaxRates ) + $cleaning_fees, 2 );
+	$api_total_rate      = $api_get_price['total_rates'];
+	$bookingprice        = round( $api_total_rate + percentage_tax_price( $api_total_rate, $propertyTaxRates ) + $cleaning_fees, 2 );
+	$profit              = round( $bookingprice * .18, 2 );
+	$total_price         = $bookingprice + $profit;
+	$total_room_rate     = $total_price;
 	/* compute discount price */
 	$deposit_compute = $total_price * .10;
 	$deposit_price   = $deposit_compute > 250 ? 250 : $deposit_compute;
@@ -411,7 +416,9 @@ $due_date = $due_date_get->format( 'd M Y' );
 				<input type="hidden" name="ownerbookingpercent" id="ownerbookingpercent" value="<?php echo $ownerbookingpercent; ?>">
 				<input type="hidden" name="cleaningfees" id="cleaningfees" value="<?php echo $cleaning_fees; ?>">
 				<input type="hidden" name="taxrate" id="taxrate" value="<?php echo $propertyTaxRates; ?>">
+				<input type="hidden" name="roomPrice" id="roomPrice" value="<?php echo $bookingprice; ?>">
 				<input type="hidden" name="totalPrice" id="totalPrice" value="<?php echo $total_price; ?>">
+				<input type="hidden" name="apiProfit" id="apiProfit" value="<?php echo $profit; ?>">
 				<input type="hidden" name="depositPrice" id="depositPrice" value="<?php echo $deposit_price; ?>">
 				<input type="hidden" name="ownerPrice" id="ownerPrice" value="<?php echo $owner_price; ?>">
 				<input type="hidden" name="totalRoomRate" id="totalRoomRate" value="<?php echo $total_room_rate; ?>">
@@ -547,6 +554,7 @@ const cleaningfees = document.querySelector('#cleaningfees');
 let extracosts = document.querySelectorAll('input[name="extra-cost[]"]');
 const depositPrice = document.querySelector('#depositPrice');
 const dueDate = document.querySelector('#dueDate');
+const apiProfit = document.getElementById('apiProfit');
 
 Date.prototype.addDays = function (days) {
   const date = new Date(this.valueOf())
@@ -580,7 +588,7 @@ function compute_nights() {
 			}	
 		});	
 
-		let computedTotal = total + <?php echo ( $bookingprice ? $bookingprice : 0 ); ?>;
+		let computedTotal = total + <?php echo ( $total_price ? $total_price : 0 ); ?>;
 		if ( taxrate.value != 0 ) {
 			computedTotal = computedTotal + ((Number(taxrate.value)/100) * computedTotal) + Number(cleaningfees.value);
 		}
@@ -589,10 +597,11 @@ function compute_nights() {
 
 		let depositCompute = computedTotal * .10;
 		let depositTotal = Number(depositCompute).toFixed(1) < 250 ? depositCompute.toFixed(1) : 250;
-		
-		pricetotalcompute.innerText = Number(computedTotal).toFixed(2);	
-		totalPrice.value = Number(computedTotal).toFixed(2);
+		let compuptedTotal = Number(computedTotal).toFixed(2);
+		pricetotalcompute.innerText = compuptedTotal;	
+		totalPrice.value = compuptedTotal;
 		depositPrice.value = depositTotal;
+		apiProfit.value = Number(depositTotal * .18).toFixed(2);
 		document.getElementById('depositpricecompute').innerText = depositTotal;
 
 	}
