@@ -318,7 +318,7 @@ if ( get_field( 'api_price', $_GET['id'] ) ) {
 	$api_total_rate      = $api_get_price['total_rates'];
 	$bookingprice        = round( $api_total_rate + percentage_tax_price( $api_total_rate, $propertyTaxRates ) + $cleaning_fees, 2 );
 	$profit              = round( $bookingprice * .18, 2 );
-	$total_price         = $bookingprice + $profit;
+	$total_price         = $bookingprice;
 	$total_room_rate     = $total_price;
 	/* compute discount price */
 	$deposit_compute = $total_price * .10;
