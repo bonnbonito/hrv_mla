@@ -216,15 +216,10 @@ if ( $show ) {
 <script>
 
 	const date_checkin = document.getElementById('check-in');
-
 	const date_checkout = document.getElementById('check-out');
-
 	const nights = document.getElementById('nights');
-
 	const bedrooms = document.getElementById('bedrooms');
-
 	const bedroomshidden = document.getElementById('bedroomshidden');
-
 	const bedroomsSelect = document.querySelectorAll('.div-select > div');
 
 
@@ -249,49 +244,27 @@ if ( $show ) {
 		});
 	});
 
-	
-
 	const datepicker1 = new Datepicker(date_checkin, {
-
 		minDate: 'tomorrow',
-
 		autohide: true,
-
 		format: 'dd M yyyy',
 
 	}); 
-
-
 
 	const datepicker2 = new Datepicker(date_checkout, {
-
 		minDate: 'tomorrow',
-
 		autohide: true,
-
 		format: 'dd M yyyy',
 
 	}); 
-
-	
 
 	date_checkin.addEventListener('changeDate', function (e, details) { 
 
 		datepicker2.setOptions( {
-
 			minDate: datepicker1.getDate(),
-
 		} );
-
 		date_checkout.focus();
 
 	});
-
-	
-
-	
-
-	
-
 </script>
 

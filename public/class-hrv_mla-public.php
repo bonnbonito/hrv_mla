@@ -216,6 +216,10 @@ class HRV_MLA_Public {
 		return $age->format( '%y' );
 	}
 
+	public function percentage_tax_price( $price, $percent ) {
+		return ( $percent / 100 ) * $price;
+	}
+
 	/**
 	 * Property Available
 	 */
@@ -231,12 +235,19 @@ class HRV_MLA_Public {
 		$nights                 = round( $datediff / ( 60 * 60 * 24 ) );
 		$id                     = $_REQUEST['ciirus_id'];
 		$property_id            = $_REQUEST['property_id'];
+		$api_get_price          = $hrv_admin->ciirus_get_property_rates( $id, $checkin, $nights );
+		$cleaning_fees          = $hrv_admin->ciirus_get_cleaning_fee( $id, $nights );
+		$propertyTaxRatesApi    = $hrv_admin->ciirus_get_tax_rates( $id );
+		$propertyTaxRates       = $propertyTaxRatesApi['total_rates'];
+		$api_total_rate         = $api_get_price['total_rates'];
+		$bookingprice           = round( $api_total_rate + $this->percentage_tax_price( $api_total_rate, $propertyTaxRates ) + $cleaning_fees, 2 );
 		$results['status']      = $hrv_admin->ciirus_is_property_available( $id, $checkin, $checkout );
 		$results['nights']      = $nights;
 		$results['checkin']     = $checkin;
 		$results['checkout']    = $checkout;
 		$results['property_id'] = $property_id;
 		$results['ciirus_id']   = $id;
+		$results['price']       = $bookingprice;
 		wp_send_json( $results );
 	}
 

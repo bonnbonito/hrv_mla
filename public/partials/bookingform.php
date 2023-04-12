@@ -263,6 +263,7 @@ function stripeBooking( token ) {
 		})
 		.catch((error) => {
 			console.log('[STRIPE BOOKING ERROR]');
+			console.log(error);
 			console.error(error);
 		})
 
