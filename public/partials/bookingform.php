@@ -342,7 +342,6 @@ $due_date = $due_date_get->format( 'd M Y' );
 	<input type="hidden" id="id" name="id" value="<?php echo $_GET['id']; ?>">
 	<input type="hidden" id="booking_name" name="booking_name" value="<?php echo get_the_title( $_GET['id'] ); ?>">	
 	<input type="hidden" id="auth" name="auth" value="<?php echo time(); ?>">
-	<input type="hidden" id="auth" name="price" value="<?php echo $cookie['price']; ?>">
   <input type="hidden" id="ciirus_id" name="ciirus_id" value="<?php echo get_field( 'ciirus_id', $_GET['id'] ); ?>">
 	<div class="form-container">
 		<h1 class="custom-form-header">BOOKING FORM</h1>

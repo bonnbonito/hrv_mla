@@ -487,7 +487,7 @@ class HRV_MLA_Public {
 				}
 
 				if ( $api_price == 1 ) {
-					update_field( 'ciirus_room_price', $total_room_rate - $api_profit, $booking_id );
+					update_field( 'ciirus_room_price', (int)$total_room_rate - (int)$api_profit, $booking_id );
 					update_field( 'total_ciirus_price_with_comission', $total_room_rate, $booking_id );
 				}
 
