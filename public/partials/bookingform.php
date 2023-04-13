@@ -273,6 +273,8 @@ function stripeBooking( token ) {
 
 
 </script>
+<?php $post_id = $_GET['id']; ?>
+
 
 <?php
 
@@ -332,6 +334,58 @@ $due_date_get  = new DateTime( $date_checkin );
 $due_date_get->sub( new DateInterval( 'P30D' ) );
 $due_date = $due_date_get->format( 'd M Y' );
 ?>
+<style>
+	.booking-property-summary {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		grid-gap: 20px;
+		margin-bottom: 50px;
+	}
+	@media ( max-width: 767px ) {
+		.booking-property-summary {
+			grid-template-columns: 1fr;
+		}
+	}
+	.booking-property-image img {
+		width: 100%;
+		height: auto;
+		object-fit: contain;
+		display: block;
+	}
+	.booking-property-content {
+		padding: 20px;
+		background: #fbfbfb;
+		border: 1px solid #ddd;
+		border-radius: 4px;
+		text-align: left;
+		display: flex;
+		align-items: center;
+	}
+	span.price-highlight {
+		font-size: 130%;
+		font-weight: 600;
+		color: #315d76;
+	}
+</style>
+<div class="booking-property-summary">
+	<div class="booking-property-content">
+		<div>
+			<h2>Booking Summary</h2>
+			<h3>Property: <?php echo get_the_title( $post_id ); ?></h3>
+			<p>Bedrooms: <strong><?php the_field( 'bedrooms', $post_id ); ?></strong> | Sleeps: <strong><?php the_field( 'sleeps', $post_id ); ?></strong> | Bathrooms: <strong><?php the_field( 'bathrooms', $post_id ); ?></strong></p>
+			<div class="booking-summary-box">
+				<p>Total Accomodation Price: <span class="price-highlight">$<span id="summaryPrice"><?php echo $total_price; ?></span></span>
+				<br><small>only <span class="price-highlight">$<span id="summaryDeposit"><?php echo $deposit_price; ?></span></span> deposit</small>
+				</p>
+				<h4>Check In: <?php echo date( 'F j, Y', strtotime( $date_checkin ) ); ?></h4>
+				<h4>Check Out: <?php echo date( 'F j, Y', strtotime( $date_checkout ) ); ?></h4>
+			</div>
+		</div>
+	</div>
+	<div class="booking-property-image">
+		<?php echo get_the_post_thumbnail( $_GET['id'] ); ?>
+	</div>
+</div>
 <div class="paymentform" style="position: relative;">
 <div id="paymentLoading" class="paymentLoading" style="display: none;">
 	<h3 id="loadingText">Please wait...</h3>
@@ -580,6 +634,8 @@ function compute_nights() {
 <?php if ( get_field( 'api_price', $_GET['id'] ) ) { ?>
 	function getTotalPrice() {
 		const totalRoomRate = document.getElementById( 'totalRoomRate' );
+		const summaryPrice = document.getElementById( 'summaryPrice' );
+		const summaryDeposit = document.getElementById( 'summaryDeposit' );
 		let total = 0;
 		let computedTotal = 0;
 		extracosts.forEach( function(cost){
@@ -600,10 +656,11 @@ function compute_nights() {
 		let compuptedTotal = Number(computedTotal).toFixed(2);
 		pricetotalcompute.innerText = compuptedTotal;	
 		totalPrice.value = compuptedTotal;
+		summaryPrice.innerText = compuptedTotal;
 		depositPrice.value = depositTotal;
 		apiProfit.value = Number(compuptedTotal * .18).toFixed(2);
 		document.getElementById('depositpricecompute').innerText = depositTotal;
-		
+		summaryDeposit.innerText = depositTotal;
 
 	}
 <?php } else { ?>
@@ -616,7 +673,8 @@ function compute_nights() {
 		}	
 	});	
 
-
+	const summaryPrice = document.getElementById( 'summaryPrice' );
+	const summaryDeposit = document.getElementById( 'summaryDeposit' );
 	let computedPrice = bookingprice.value * noNights.value + parseInt( ownerPrice.value );
 	
 	let computedTotal = total + parseInt( computedPrice );
@@ -626,8 +684,10 @@ function compute_nights() {
 	
 	pricetotalcompute.innerText = computedTotal;	
 	totalPrice.value = computedTotal;
+	summaryPrice.innerText = compuptedTotal;
 	depositPrice.value = depositTotal;
 	document.getElementById('depositpricecompute').innerText = depositTotal;
+	summaryDeposit.innerText = depositTotal;
 
 	
 }
