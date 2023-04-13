@@ -402,10 +402,10 @@ class HRV_MLA_Public {
 		$zip                    = $_POST['zip'];
 		$total_price            = $_POST['totalPrice'];
 		$property_owner_email   = $_POST['property_owner_email'];
-		$extracostname          = isset( $_POST['extracostname'] ) ? explode( ',', $_POST['extracostname'] ) : '';
-		$extracostprice         = isset( $_POST['extracostprice'] ) ? explode( ',', $_POST['extracostprice'] ) : '';
-		$extracostownerpercent  = isset( $_POST['extracostownerpercent'] ) ? explode( ',', $_POST['extracostownerpercent'] ) : '';
-		$extracostoriginalprice = isset( $_POST['extracostoriginalprice'] ) ? explode( ',', $_POST['extracostoriginalprice'] ) : '';
+		$extracostname          = isset( $_POST['extracostname'] ) ? explode( ',', $_POST['extracostname'] ) : array();
+		$extracostprice         = isset( $_POST['extracostprice'] ) ? explode( ',', $_POST['extracostprice'] ) : array();
+		$extracostownerpercent  = isset( $_POST['extracostownerpercent'] ) ? explode( ',', $_POST['extracostownerpercent'] ) : array();
+		$extracostoriginalprice = isset( $_POST['extracostoriginalprice'] ) ? explode( ',', $_POST['extracostoriginalprice'] ) : array();
 		$ownerbookingpercent    = $_POST['ownerbookingpercent'];
 		$total_room_rate        = $_POST['totalRoomRate'];
 		$owner_price            = $_POST['ownerPrice'];
@@ -429,7 +429,7 @@ class HRV_MLA_Public {
 
 		$payment_intents = $stripe->paymentIntents->create(
 			array(
-				'amount'               => $deposit_price * 100,
+				'amount'               => number_format( $deposit_price, 2, '.', '' ) * 100,
 				'currency'             => 'gbp',
 				'payment_method_types' => array( 'card' ),
 				'description'          => $nights . ' nights booking of ' . get_the_title( $property ),
@@ -456,6 +456,12 @@ class HRV_MLA_Public {
 			);
 
 			if ( $booking_id ) {
+				wp_update_post(
+					array(
+						'ID'         => $booking_id,
+						'post_title' => 'HRV-' . $booking_id . ' - ' . $firstname . ' ' . $surname,
+					)
+				);
 				update_field( 'first_name', $firstname, $booking_id );
 				update_field( 'surname', $surname, $booking_id );
 				update_field( 'email', $email, $booking_id );
@@ -487,7 +493,7 @@ class HRV_MLA_Public {
 				}
 
 				if ( $api_price == 1 ) {
-					update_field( 'ciirus_room_price', (int)$total_room_rate - (int)$api_profit, $booking_id );
+					update_field( 'ciirus_room_price', (int) $total_room_rate - (int) $api_profit, $booking_id );
 					update_field( 'total_ciirus_price_with_comission', $total_room_rate, $booking_id );
 				}
 
@@ -497,16 +503,18 @@ class HRV_MLA_Public {
 				 * Other Addons
 				 */
 				$other_addons = '';
-				foreach ( $extracostname as $key => $cost ) {
-					$rows[]        = array(
-						'extra_cost'       => $cost,
-						'price'            => $extracostprice[ $key ],
-						'owner_percentage' => $extracostownerpercent[ $key ],
-					);
-					$other_addons .= '<tr>
-                        <td>' . $cost . '</td>
-                        <td colspan="2">$' . $extracostprice[ $key ] . '</td>
-                        </tr>';
+				if ( ! empty( $extracostname ) ) {
+					foreach ( $extracostname as $key => $cost ) {
+						$rows[]        = array(
+							'extra_cost'       => $cost,
+							'price'            => $extracostprice[ $key ],
+							'owner_percentage' => $extracostownerpercent[ $key ],
+						);
+						$other_addons .= '<tr>
+							<td>' . $cost . '</td>
+							<td colspan="2">$' . $extracostprice[ $key ] . '</td>
+							</tr>';
+					}
 				}
 
 				update_field( 'field_61fbad0ce3c30', $rows, $booking_id );
@@ -538,6 +546,7 @@ class HRV_MLA_Public {
                         </soap:Envelope>';
 
 					// $booking_api = $hrv_admin->ciirus_make_booking( $booking_api_details );
+					/*
 					$booking_api = array();
 					if ( 'true' == $booking_api['BookingPlaced'] ) {
 						$return['BookingID']               = $booking_api['BookingID'];
@@ -547,6 +556,7 @@ class HRV_MLA_Public {
 						// update_field( 'ciirus_total_amount_inc_tax', $booking_api['TotalAmountIncludingTax'], $booking_id );
 					}
 					$return['booking_api'] = $booking_api;
+					*/
 				}
 
 				$arrival_date = strtotime( $startdate );
@@ -560,7 +570,7 @@ class HRV_MLA_Public {
 				 */
 				$extra_owner_total  = 0;
 				$other_addons_owner = '';
-				if ( $extracostname ) {
+				if ( ! empty( $extracostname ) ) {
 					foreach ( $extracostname as $key => $cost ) {
 						// $compute           = ( 1 - ( (int) $extracostownerpercent[ $key ] / 100 ) ) * $extracostprice[ $key ];
 						$compute           = $extracostoriginalprice[ $key ] * $nights;
