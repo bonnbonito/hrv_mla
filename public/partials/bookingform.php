@@ -354,12 +354,16 @@ $due_date = $due_date_get->format( 'd M Y' );
 	}
 	.booking-property-content {
 		padding: 20px;
-		background: #fbfbfb;
+		background: #315d76;
 		border: 1px solid #ddd;
 		border-radius: 4px;
 		text-align: left;
 		display: flex;
 		align-items: center;
+		color: #fff;
+	}
+	.booking-property-content * {
+		color: #fff;
 	}
 	span.price-highlight {
 		font-size: 130%;

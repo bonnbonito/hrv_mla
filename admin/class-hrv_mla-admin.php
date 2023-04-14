@@ -1840,5 +1840,32 @@ class HRV_MLA_Admin {
 		$content = str_replace( 'EMAIL_CONTENT', get_field( 'to_property_owner_email_content', 'option' ), $content );
 		return $content;
 	}
+
+	/**
+	 * Change booking title on post
+	 */
+	public function bookings_save_post( $post_id ) {
+		if ( 'bookings' !== get_post_type( $post_id ) ) return;
+			$first_name = get_field('first_name', $post_id);
+			$surname = get_field('surname', $post_id);
+			$property_id = get_field('property_post', $post_id);
+			$property_link     = array(
+				'title'  => get_the_title( $property_id[0] ),
+				'url'    => get_the_permalink( $property_id[0] ),
+				'target' => '_blank',
+			);
+			
+			if ( $property_id ) {
+				update_field('property', get_the_title( $property_id[0] ), $post_id);
+				update_field( 'property_link', $property_link, $post_id );
+			}
+			
+			$post_update = array(
+				'ID'         => $post_id,
+				'post_title' => 'HRV-' . $post_id . ' - ' . $first_name . ' ' . $surname,
+			);
+
+		wp_update_post( $post_update );
+	}
 }
 ?>
