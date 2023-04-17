@@ -166,6 +166,7 @@ class HRV_MLA {
 		$this->loader->add_action( 'send_ask_payment_email_hook', $plugin_admin, 'send_ask_payment_email_function' );
 		$this->loader->add_action( 'send_ask_review_hook', $plugin_admin, 'send_ask_review_email_function' );
 		$this->loader->add_action( 'acf/save_post', $plugin_admin, 'calculate_total_price' );
+		$this->loader->add_action( 'acf/save_post', $plugin_admin, 'calculate_total_extra_price' );
 		$this->loader->add_action( 'init', $plugin_admin, 'booking_register_query_vars' );
 		$this->loader->add_action( 'load-post.php', $plugin_admin, 'booking_golf_email_metabox' );
 		$this->loader->add_action( 'wp_ajax_send_golf_booking_email', $plugin_admin, 'send_golf_booking_email' );

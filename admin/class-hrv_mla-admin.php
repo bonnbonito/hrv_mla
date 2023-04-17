@@ -1497,27 +1497,58 @@ class HRV_MLA_Admin {
 
 	public function calculate_total_price( $post_id ) {
 		if ( 'bookings' == get_post_type( $post_id ) ) {
-			$total_all            = 0;
-			$booking_season_price = get_field( 'booking_season_price', $post_id ) ? get_field( 'booking_season_price', $post_id ) : 0;
-			$total_all            = $total_all + $booking_season_price;
+			$total_all = 0;
+			if ( ! get_field( 'api_price', $post_id ) ) {
+				$booking_season_price = get_field( 'booking_season_price', $post_id ) ? get_field( 'booking_season_price', $post_id ) : 0;
+				$total_all            = $total_all + $booking_season_price;
 
-			$extra_costs = get_field( 'extra_cost', $post_id );
+				$extra_costs = get_field( 'extra_cost', $post_id );
 
-			if ( $extra_costs ) {
-				foreach ( $extra_costs as $cost ) {
-					$total_all = $total_all + $cost['price'];
+				if ( $extra_costs ) {
+					foreach ( $extra_costs as $cost ) {
+						$total_all = $total_all + $cost['price'];
+					}
 				}
-			}
 
-			$golf_bookings = get_field( 'golf_booking', $post_id );
+				$golf_bookings = get_field( 'golf_booking', $post_id );
 
-			if ( $golf_bookings ) {
-				foreach ( $golf_bookings as $golf ) {
-					$total_all = $total_all + $golf['price'];
+				if ( $golf_bookings ) {
+					foreach ( $golf_bookings as $golf ) {
+						$total_all = $total_all + $golf['price'];
+					}
 				}
-			}
 
-			update_field( 'total_price', $total_all, $post_id );
+				update_field( 'total_price', $total_all, $post_id );
+			}
+		}
+	}
+
+	public function calculate_total_extra_price( $post_id ) {
+		if ( 'bookings' == get_post_type( $post_id ) ) {
+			if ( get_field( 'api_price', $post_id ) ) {
+				$total_all   = 0;
+				$total_ciirus_price_with_comission = get_field('total_ciirus_price_with_comission', $post_id);
+				$extra_costs = get_field( 'extra_cost', $post_id );
+
+				if ( $extra_costs ) {
+					foreach ( $extra_costs as $cost ) {
+						$total_all = $total_all + $cost['price'];
+					}
+				}
+
+				$golf_bookings = get_field( 'golf_booking', $post_id );
+
+				if ( $golf_bookings ) {
+					foreach ( $golf_bookings as $golf ) {
+						$total_all = $total_all + $golf['price'];
+					}
+				}
+
+				$total_price_and_extras = $total_all + $total_ciirus_price_with_comission;
+
+				update_field( 'extra_price', $total_all, $post_id );
+				update_field( 'total_price_and_extras', $total_price_and_extras, $post_id );
+			}
 		}
 	}
 
@@ -1845,27 +1876,29 @@ class HRV_MLA_Admin {
 	 * Change booking title on post
 	 */
 	public function bookings_save_post( $post_id ) {
-		if ( 'bookings' !== get_post_type( $post_id ) ) return;
-			$first_name = get_field('first_name', $post_id);
-			$surname = get_field('surname', $post_id);
-			$property_id = get_field('property_post', $post_id);
-			$property_link     = array(
+		if ( 'bookings' !== get_post_type( $post_id ) ) {
+			return;
+		}
+			$first_name    = get_field( 'first_name', $post_id );
+			$surname       = get_field( 'surname', $post_id );
+			$property_id   = get_field( 'property_post', $post_id );
+			$property_link = array(
 				'title'  => get_the_title( $property_id[0] ),
 				'url'    => get_the_permalink( $property_id[0] ),
 				'target' => '_blank',
 			);
-			
+
 			if ( $property_id ) {
-				update_field('property', get_the_title( $property_id[0] ), $post_id);
+				update_field( 'property', get_the_title( $property_id[0] ), $post_id );
 				update_field( 'property_link', $property_link, $post_id );
 			}
-			
+
 			$post_update = array(
 				'ID'         => $post_id,
 				'post_title' => 'HRV-' . $post_id . ' - ' . $first_name . ' ' . $surname,
 			);
 
-		wp_update_post( $post_update );
+			wp_update_post( $post_update );
 	}
 }
 ?>
