@@ -165,6 +165,7 @@ class HRV_MLA {
 		$this->loader->add_action( 'admin_init', $plugin_admin, 'send_ask_review_schedule' );
 		$this->loader->add_action( 'send_ask_payment_email_hook', $plugin_admin, 'send_ask_payment_email_function' );
 		$this->loader->add_action( 'send_ask_review_hook', $plugin_admin, 'send_ask_review_email_function' );
+		$this->loader->add_action( 'acf/save_post', $plugin_admin, 'add_extras' );
 		$this->loader->add_action( 'acf/save_post', $plugin_admin, 'calculate_total_price' );
 		$this->loader->add_action( 'acf/save_post', $plugin_admin, 'calculate_total_extra_price' );
 		$this->loader->add_action( 'init', $plugin_admin, 'booking_register_query_vars' );

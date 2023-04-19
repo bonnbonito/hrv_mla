@@ -1525,6 +1525,7 @@ class HRV_MLA_Admin {
 
 	public function calculate_total_extra_price( $post_id ) {
 		if ( 'bookings' == get_post_type( $post_id ) ) {
+			
 			if ( get_field( 'api_price', $post_id ) ) {
 				$total_all   = 0;
 				$total_ciirus_price_with_comission = get_field('total_ciirus_price_with_comission', $post_id);
@@ -1549,6 +1550,28 @@ class HRV_MLA_Admin {
 				update_field( 'extra_price', $total_all, $post_id );
 				update_field( 'total_price_and_extras', $total_price_and_extras, $post_id );
 			}
+		}
+	}
+
+	public function add_extras( $post_id ){
+		if ( 'bookings' == get_post_type( $post_id ) ) {
+			$rows = array();
+			
+			$property_id = get_field( 'property_post', $post_id )[0];
+			$extra_costs = get_field( 'extra_cost', $property_id );
+			$current_extras = get_field( 'extra_cost', $post_id );
+
+			if ( !$current_extras && $extra_costs ) {
+
+				foreach ( $extra_costs as $cost ) {
+					$rows[]        = array(
+						'extra_cost'       => $cost['name'],
+					);
+				}
+
+				update_field( 'field_61fbad0ce3c30', $rows, $post_id );
+			}
+			
 		}
 	}
 
