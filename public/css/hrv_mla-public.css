@@ -14,3 +14,13 @@
 .wpcf7-field-groups  .wpcf7-field-group [data-name="holes"] > select {
     width: 180px;
 }
+
+.amenities-div {
+    padding: 1em;
+    border: 1px solid #bebebe;
+    margin-top: 1em;
+    margin-bottom: 1em;
+    font-size: 90%;
+    background: #fbfbfb;
+    border-radius: 8px;
+}

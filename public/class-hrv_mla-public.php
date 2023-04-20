@@ -275,6 +275,8 @@ class HRV_MLA_Public {
 		if ( $query->have_posts() ) :
 			while ( $query->have_posts() ) :
 				$query->the_post();
+				$amenities       = get_field( 'amenities_list' );
+				$amenities_icons = get_field( 'amenities_icons' );
 				?>
 				<div class="property-result-wrap">
 					<div class="img-wrap-property">
@@ -285,6 +287,13 @@ class HRV_MLA_Public {
 							</div>
 						</div>
 					</div>
+					<?php
+					if ( count( $amenities ) > 0 || count( $amenities_icons ) > 0 ) :
+						?>
+					<div class="amenities-div">
+						<?php echo do_shortcode( '[amenities]' ); ?>
+					</div>
+					<?php endif; ?>
 					<h3 class="property-result-title">
 						<?php echo get_the_title( get_the_ID() ); ?>
 					</h3>
@@ -312,10 +321,15 @@ class HRV_MLA_Public {
 		$id                     = $_REQUEST['property_id'];
 		$status['is_available'] = $hrv_admin->ciirus_is_property_available( get_field( 'ciirus_id', $id ), $checkin, $checkout );
 		ob_start();
+		$amenities       = get_field( 'amenities_list', $id );
+		$amenities_icons = get_field( 'amenities_icons', $id );
 		?>
 		<div class="property-result-wrap">
 			<div class="img-wrap-property">
 				<?php echo get_the_post_thumbnail( $id, 'full' ); ?>
+				<div class="amenities-div">
+					<?php echo do_shortcode( '[amenities]' ); ?>
+				</div>
 				<div class="hover-btns">
 					<?php
 					$datediff = strtotime( $checkout ) - strtotime( $checkin );
@@ -337,6 +351,13 @@ class HRV_MLA_Public {
 				?>
 				Price: <strong>&dollar;<?php echo $price; ?></strong>
 			<?php } ?>
+			<?php
+			if ( count( $amenities ) > 0 || count( $amenities_icons ) > 0 ) :
+				?>
+			<div class="amenities-div">
+				<?php echo do_shortcode( '[amenities]' ); ?>
+			</div>
+			<?php endif; ?>
 			<h3 class="property-result-title">
 				<?php echo get_the_title( $id ); ?>
 			</h3>
