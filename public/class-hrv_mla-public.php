@@ -327,9 +327,6 @@ class HRV_MLA_Public {
 		<div class="property-result-wrap">
 			<div class="img-wrap-property">
 				<?php echo get_the_post_thumbnail( $id, 'full' ); ?>
-				<div class="amenities-div">
-					<?php echo do_shortcode( '[amenities]' ); ?>
-				</div>
 				<div class="hover-btns">
 					<?php
 					$datediff = strtotime( $checkout ) - strtotime( $checkin );
@@ -352,10 +349,10 @@ class HRV_MLA_Public {
 				Price: <strong>&dollar;<?php echo $price; ?></strong>
 			<?php } ?>
 			<?php
-			if ( count( $amenities ) > 0 || count( $amenities_icons ) > 0 ) :
+			if ( $amenities || $amenities_icons ) :
 				?>
 			<div class="amenities-div">
-				<?php echo do_shortcode( '[amenities]' ); ?>
+				<?php echo do_shortcode( '[amenities id="' . $id . '"]' ); ?>
 			</div>
 			<?php endif; ?>
 			<h3 class="property-result-title">
@@ -881,7 +878,7 @@ class HRV_MLA_Public {
 	}
 
 
-	public function add_shortcodes() {
+	public function add_shortcodes( $atts ) {
 		add_shortcode(
 			'hrv_booking_form',
 			function () {
@@ -911,6 +908,100 @@ class HRV_MLA_Public {
 				return $content;
 			}
 		);
+
+		add_shortcode(
+			'amenities',
+			array( $this, 'amenities_output' )
+		);
+	}
+
+	public function amenities_output( $atts ) {
+		$atts = shortcode_atts(
+			array(
+				'id' => get_the_ID(),
+			),
+			$atts,
+			'amenities'
+		);
+
+		ob_start();
+		$amenities       = get_field( 'amenities_list', $atts['id'] );
+		$amenities_icons = get_field( 'amenities_icons', $atts['id'] );
+		if ( $amenities || $amenities_icons ) :
+			?>
+			<style>
+				ul.aminities-list {
+				margin: 0;
+				padding: 0;
+				display: flex;
+				list-style: none;
+				grid-gap: 1em;
+				font-size: 12px;
+				width: 100%;
+			}
+				ul.amenities-text {
+				margin-top: 0;
+				font-weight: 600;
+				list-style: none;
+				padding: 0;
+			}
+				
+
+			ul.aminities-list img {
+				height: 30px;
+				object-fit: contain;
+				margin-right: 1rem;
+			}
+
+			ul.aminities-list li {
+				display: flex;
+				align-items: center;
+				line-height: 1.6;
+				text-align: left;
+			}
+			</style>
+			<?php if ( $amenities ) : ?>
+			<ul class="amenities-text">
+				<?php $amenities_text = wp_list_pluck( $amenities, 'label' ); ?>
+				<?php foreach ( $amenities_text as $item ) : ?>
+				<li><?php echo $item; ?></li>
+				<?php endforeach; ?>
+			</ul>
+			<?php endif; ?>
+			<?php if ( $amenities_icons ) : ?>
+			<ul class="aminities-list">
+				<?php foreach ( $amenities_icons as $item ) : ?>
+						<?php if ( 'wifi' === $item['value'] ) { ?>
+							<li><img src="<?php echo home_url(); ?>/wp-content/uploads/2023/01/wifi.png" alt="<?php echo $item['label']; ?>" title="<?php echo $item['label']; ?>"></li>
+						<?php } ?>
+						<?php if ( 'fullaircon' === $item['value'] ) { ?>
+							<li><img src="<?php echo home_url(); ?>/wp-content/uploads/2023/01/air-conditioner.png" alt="<?php echo $item['label']; ?>" title="<?php echo $item['label']; ?>"></li>
+						<?php } ?>
+						<?php if ( 'gasbbq' === $item['value'] ) { ?>
+							<li><img src="<?php echo home_url(); ?>/wp-content/uploads/2023/01/gas-bbq.png" alt="<?php echo $item['label']; ?>" title="<?php echo $item['label']; ?>"></li>
+						<?php } ?>
+						<?php if ( 'soutwestpool' === $item['value'] ) { ?>
+							<li><img src="<?php echo home_url(); ?>/wp-content/uploads/2023/01/swimming-pool.png" alt="<?php echo $item['label']; ?>" title="<?php echo $item['label']; ?>">
+								</li>
+						<?php } ?>
+						<?php if ( 'pool' === $item['value'] ) { ?>
+							<li><img src="<?php echo home_url(); ?>/wp-content/uploads/2023/01/jacuzzi.png" alt="<?php echo $item['label']; ?>" title="<?php echo $item['label']; ?>">
+								</li>
+						<?php } ?>
+						<?php if ( 'hottub' === $item['value'] ) { ?>
+							<li><img src="<?php echo home_url(); ?>/wp-content/uploads/2023/01/hot-bath.png" alt="<?php echo $item['label']; ?>" title="<?php echo $item['label']; ?>">
+								</li>
+						<?php } ?>
+						<?php if ( 'gamesroom' === $item['value'] ) { ?>
+							<li><img src="<?php echo home_url(); ?>/wp-content/uploads/2023/01/game-room.png" alt="<?php echo $item['label']; ?>" title="<?php echo $item['label']; ?>">
+								</li>
+						<?php } ?>
+				<?php endforeach; ?>
+			</ul>
+				<?php
+			endif;
+			endif;
+		return ob_get_clean();
 	}
 
 	public function has_no_search_dates() {
