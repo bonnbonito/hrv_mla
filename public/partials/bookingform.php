@@ -368,7 +368,7 @@ $due_date = $due_date_get->format( 'd M Y' );
 	span.price-highlight {
 		font-size: 130%;
 		font-weight: 600;
-		color: #315d76;
+		color: #fff;
 	}
 </style>
 <div class="booking-property-summary">
@@ -520,7 +520,7 @@ $due_date = $due_date_get->format( 'd M Y' );
 						?>
 							<p class="extra-cost-checkbox">
 								<input type="checkbox" name="extra-cost[]" value="<?php echo $price_total; ?>" data-name="<?php echo $name; ?>" data-percentage="<?php echo $percentage; ?>" data-original="<?php echo $price_field; ?>">
-								<span><?php echo $name; ?> £<?php echo $price_total; ?></span>
+								<span><?php echo $name; ?> $<?php echo $price_total; ?></span>
 							</p>
 						<?php
 

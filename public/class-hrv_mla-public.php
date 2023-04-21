@@ -993,7 +993,7 @@ class HRV_MLA_Public {
 								</li>
 						<?php } ?>
 						<?php if ( 'gamesroom' === $item['value'] ) { ?>
-							<li><img src="<?php echo home_url(); ?>/wp-content/uploads/2023/01/game-room.png" alt="<?php echo $item['label']; ?>" title="<?php echo $item['label']; ?>">
+							<li><img src="<?php echo home_url(); ?>/wp-content/uploads/2023/04/table-tennis.png" alt="<?php echo $item['label']; ?>" title="<?php echo $item['label']; ?>">
 								</li>
 						<?php } ?>
 				<?php endforeach; ?>
