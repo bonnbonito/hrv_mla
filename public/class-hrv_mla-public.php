@@ -435,6 +435,7 @@ class HRV_MLA_Public {
 		$rental_price           = ( $bookingprice * $nights ) + $owner_price;
 		$api_price              = $_POST['apiPrice'] == 1 ? 1 : 0;
 		$api_profit             = $_POST['apiProfit'];
+		$total_extra            = $_POST['totalExtra'];
 
 		// $charge = $stripe->charges->create(
 		// array(
@@ -514,6 +515,8 @@ class HRV_MLA_Public {
 				if ( $api_price == 1 ) {
 					update_field( 'ciirus_room_price', (int) $total_room_rate - (int) $api_profit, $booking_id );
 					update_field( 'total_ciirus_price_with_comission', $total_room_rate, $booking_id );
+					update_field( 'extra_price', $total_extra, $booking_id );
+					update_field( 'total_price_and_extras', $total_price, $booking_id );
 				}
 
 				$rows = array();

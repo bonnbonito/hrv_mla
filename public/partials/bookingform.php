@@ -213,6 +213,7 @@ function stripeBooking( token ) {
 	form.append('apiPrice', document.querySelector('#apiPrice').value);
 	form.append('apiProfit', document.querySelector('#apiProfit').value);
 	form.append('roomPrice', document.querySelector('#roomPrice').value);
+	form.append('totalExtra', document.querySelector('#totalExtra').value);
 	
 	let extraCostName = [];	
 	let extraCostPrice = [];	
@@ -257,7 +258,7 @@ function stripeBooking( token ) {
 				loadingText.innerText = "Successful. Redirecting...";
 				
 				setTimeout(function(e){
-					window.location.href = `<?php echo home_url( '/' ) . 'thank-you-for-booking?booking='; ?>${data.booking}`;
+					//window.location.href = `<?php echo home_url( '/' ) . 'thank-you-for-booking?booking='; ?>${data.booking}`;
 				}, 750);
 			}
 		})
@@ -480,6 +481,7 @@ $due_date = $due_date_get->format( 'd M Y' );
 				<input type="hidden" name="depositPrice" id="depositPrice" value="<?php echo $deposit_price; ?>">
 				<input type="hidden" name="ownerPrice" id="ownerPrice" value="<?php echo $owner_price; ?>">
 				<input type="hidden" name="totalRoomRate" id="totalRoomRate" value="<?php echo $total_room_rate; ?>">
+				<input type="hidden" name="totalExtra" id="totalExtra" value="0">
 				<input type="hidden" name="dueDate" id="dueDate" value="<?php echo $due_date; ?>">
 				<input type="hidden" name="apiPrice" id="apiPrice" value="<?php echo ( get_field( 'api_price', $_GET['id'] ) ? 1 : 0 ); ?>">
 				<?php
@@ -514,7 +516,7 @@ $due_date = $due_date_get->format( 'd M Y' );
 						$price_field = get_sub_field( 'price' );
 						$percentage  = get_sub_field( 'owner_percentage' ) ? get_sub_field( 'owner_percentage' ) : get_field( 'default_additional_costs_property_owner_percentage', 'option' );
 						$price       = $price_field + ( $price_field * $percentage / 100 );
-						$price_total = $price * $_GET['nights'];
+						$price_total = round( $price * $_GET['nights'], 2 );
 						$extraCost   = $extraCost + $price_total;
 						// Do something...
 						?>
@@ -613,7 +615,7 @@ let extracosts = document.querySelectorAll('input[name="extra-cost[]"]');
 const depositPrice = document.querySelector('#depositPrice');
 const dueDate = document.querySelector('#dueDate');
 const apiProfit = document.getElementById('apiProfit');
-
+const totalExtra = document.getElementById('totalExtra');
 Date.prototype.addDays = function (days) {
   const date = new Date(this.valueOf())
   date.setDate(date.getDate() + days)
@@ -662,9 +664,9 @@ function compute_nights() {
 		totalPrice.value = compuptedTotal;
 		summaryPrice.innerText = compuptedTotal;
 		depositPrice.value = depositTotal;
-		apiProfit.value = Number(compuptedTotal * .18).toFixed(2);
 		document.getElementById('depositpricecompute').innerText = depositTotal;
 		summaryDeposit.innerText = depositTotal;
+		totalExtra.value = Number(total).toFixed(2);
 
 	}
 <?php } else { ?>
