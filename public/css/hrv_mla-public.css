@@ -19,3 +19,35 @@
     margin-top: 1em;
     margin-bottom: 1em;
 }
+
+.villa-search-results-wrap {
+    display: block;
+}
+
+.villa-search-results-wrap .property-result-wrap {
+    display: grid;
+    grid-gap: 2em;
+    grid-template-columns: 1fr 1fr 1fr;
+    margin-bottom: 4em;
+}
+
+.villa-search-results-wrap .img-wrap-property {
+    grid-column: span 2;
+    max-height: 350px;
+    width: 100%;
+}
+
+.villa-search-results-wrap .img-wrap-property img {
+    object-fit: cover;
+    display: block;
+}
+
+.villa-search-results-wrap .book-btns .book-btn {
+    margin-bottom: 0;
+}
+
+.property-results-content {
+    display: flex;
+    grid-gap: 1em;
+    flex-direction: column;
+}

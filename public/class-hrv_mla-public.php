@@ -281,22 +281,26 @@ class HRV_MLA_Public {
 				<div class="property-result-wrap">
 					<div class="img-wrap-property">
 						<?php echo get_the_post_thumbnail( get_the_ID(), 'full' ); ?>
-						<div class="hover-btns">
-							<div style="display: flex; grid-gap: 20px; max-width: 350px; width: 100%; margin: auto;">
+					</div>
+					<div class="property-results-content">
+						<h3 class="property-result-title">
+							<?php echo get_the_title( get_the_ID() ); ?>
+						</h3>
+
+						<?php
+						if ( count( $amenities ) > 0 || count( $amenities_icons ) > 0 ) :
+							?>
+						<div class="amenities-div">
+							<?php echo do_shortcode( '[amenities]' ); ?>
+						</div>
+						<?php endif; ?>
+						
+						<div class="book-btns">
+							<div style="display: flex; grid-gap: 20px; width: 100%; margin: auto;">
 								<a href="<?php echo get_the_permalink( get_the_ID() ); ?>" class="book-btn ct-link-button">View Property</a>
 							</div>
 						</div>
 					</div>
-					<?php
-					if ( count( $amenities ) > 0 || count( $amenities_icons ) > 0 ) :
-						?>
-					<div class="amenities-div">
-						<?php echo do_shortcode( '[amenities]' ); ?>
-					</div>
-					<?php endif; ?>
-					<h3 class="property-result-title">
-						<?php echo get_the_title( get_the_ID() ); ?>
-					</h3>
 				</div>
 				<?php
 			endwhile;
@@ -327,12 +331,40 @@ class HRV_MLA_Public {
 		<div class="property-result-wrap">
 			<div class="img-wrap-property">
 				<?php echo get_the_post_thumbnail( $id, 'full' ); ?>
-				<div class="hover-btns">
+				
+			</div>
+			<div class="property-results-content">
+				<h3 class="property-result-title">
+					<?php echo get_the_title( $id ); ?>
+				</h3>
+
+				<?php
+				if ( $amenities || $amenities_icons ) :
+					?>
+				<div class="amenities-div">
+					<?php echo do_shortcode( '[amenities id="' . $id . '"]' ); ?>
+				</div>
+				<?php endif; ?>
+
+
+
+				<?php
+				$price = $this->hrv_get_property_rates( $id, $checkin, $checkout );
+				if ( $price && $price > 0 ) {
+					?>
+					<div class="property-results-price">
+						Price: <strong>&dollar;<?php echo $price; ?></strong>
+					</div>
+				<?php } ?>
+				
+				
+
+				<div class="book-btns">
 					<?php
 					$datediff = strtotime( $checkout ) - strtotime( $checkin );
 					$nights   = round( $datediff / ( 60 * 60 * 24 ) );
 					?>
-					<div style="display: flex; grid-gap: 20px; max-width: 350px; width: 100%; margin: auto;">
+					<div style="display: flex; grid-gap: 20px; width: 100%; margin: auto;">
 						<?php if ( $datediff ) : ?>
 							<a href="<?php echo get_the_permalink( $id ); ?>?id=<?php echo $id; ?>&date_checkin=<?php echo $checkin; ?>&date_checkout=<?php echo $checkout; ?>&nights=<?php echo $nights; ?>" class="book-btn ct-link-button">View Property</a>
 							<a href="/book-online?id=<?php echo $id; ?>&date_checkin=<?php echo $checkin; ?>&date_checkout=<?php echo $checkout; ?>&nights=<?php echo $nights; ?>" class="book-btn blue-btn ct-link-button">Book Property</a>
@@ -342,22 +374,6 @@ class HRV_MLA_Public {
 					</div>
 				</div>
 			</div>
-			<?php
-			$price = $this->hrv_get_property_rates( $id, $checkin, $checkout );
-			if ( $price > 0 ) {
-				?>
-				Price: <strong>&dollar;<?php echo $price; ?></strong>
-			<?php } ?>
-			<?php
-			if ( $amenities || $amenities_icons ) :
-				?>
-			<div class="amenities-div">
-				<?php echo do_shortcode( '[amenities id="' . $id . '"]' ); ?>
-			</div>
-			<?php endif; ?>
-			<h3 class="property-result-title">
-				<?php echo get_the_title( $id ); ?>
-			</h3>
 		</div>
 		<?php
 		$status['content'] = ob_get_clean();
@@ -1011,7 +1027,7 @@ class HRV_MLA_Public {
 		 ob_start();
 		?>
 
-		<div class="villa-search-results searching" id="villaResults">
+		<div class="villa-search-results-wrap searching" id="villaResults">
 			<div id="loading">
 				<div class="loading-flex">
 					<h3>Searching properties <span id="percentStatus"></span></h3>
@@ -1089,7 +1105,7 @@ class HRV_MLA_Public {
 	public function has_search_dates() {
 		ob_start();
 		?>
-		<div class="villa-search-results searching" id="villaResults">
+		<div class="villa-search-results-wrap searching" id="villaResults">
 			<div id="loading">
 				<div class="loading-flex">
 					<h3>Searching properties <span id="percentStatus"></span></h3>
