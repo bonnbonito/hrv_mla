@@ -287,6 +287,8 @@ class HRV_MLA_Public {
 							<?php echo get_the_title( get_the_ID() ); ?>
 						</h3>
 
+						<?php the_content(); ?>
+
 						<?php
 						if ( count( $amenities ) > 0 || count( $amenities_icons ) > 0 ) :
 							?>
@@ -337,6 +339,8 @@ class HRV_MLA_Public {
 				<h3 class="property-result-title">
 					<?php echo get_the_title( $id ); ?>
 				</h3>
+
+				<?php the_content(); ?>
 
 				<?php
 				if ( $amenities || $amenities_icons ) :
