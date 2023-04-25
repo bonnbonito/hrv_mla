@@ -339,8 +339,10 @@ class HRV_MLA_Public {
 				<h3 class="property-result-title">
 					<?php echo get_the_title( $id ); ?>
 				</h3>
-
-				<?php the_content(); ?>
+				
+				<?php
+				echo apply_filters( 'the_content', get_the_content( null, false, $id ));
+				?>
 
 				<?php
 				if ( $amenities || $amenities_icons ) :
