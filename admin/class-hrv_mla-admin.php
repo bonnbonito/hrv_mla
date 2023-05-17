@@ -442,47 +442,45 @@ class HRV_MLA_Admin {
 		}
 		?>
 <style>
-	.xero-wrap button {
-		cursor: pointer;
-	}
+.xero-wrap button {
+    cursor: pointer;
+}
 
-	.xero-wrap .connected {
-		display: flex;
-		align-items: center;
-		grid-gap: 10px;
-	}
+.xero-wrap .connected {
+    display: flex;
+    align-items: center;
+    grid-gap: 10px;
+}
 
-	.xero-wrap .connected button {
-		background: red;
-		border: 1px solid #000;
-		border-radius: 4px;
-		color: #fff;
-		padding: 2px 10px;
-	}
+.xero-wrap .connected button {
+    background: red;
+    border: 1px solid #000;
+    border-radius: 4px;
+    color: #fff;
+    padding: 2px 10px;
+}
 </style>
 <h2>Xero Integration</h2>
 
 <div class="xero-wrap">
-		<?php if ( get_option( 'xero_token' ) ) : ?>
-	<div class="connected">
-		<p>Connected</p>
-		<a href="<?php echo admin_url( 'admin.php?page=xero-integration&disconnect=1' ); ?>"
-			id="xeroDisconnect" class="xero-btn red">Disconnect</a>
-	</div>
-	<div class="refresh">
-		<a id="xeroRefresh"
-			href="<?php echo admin_url( 'admin.php?page=xero-integration&refresh=1' ); ?>">Refresh
-			Token</a>
-	</div>
-			<?php
+    <?php if ( get_option( 'xero_token' ) ) : ?>
+    <div class="connected">
+        <p>Connected</p>
+        <a href="<?php echo admin_url( 'admin.php?page=xero-integration&disconnect=1' ); ?>" id="xeroDisconnect"
+            class="xero-btn red">Disconnect</a>
+    </div>
+    <div class="refresh">
+        <a id="xeroRefresh" href="<?php echo admin_url( 'admin.php?page=xero-integration&refresh=1' ); ?>">Refresh
+            Token</a>
+    </div>
+    <?php
 	else :
 		?>
-	<a
-		href="<?php echo $this->xero_authorization_url(); ?>">Connect</a>
-	<?php endif; ?>
+    <a href="<?php echo $this->xero_authorization_url(); ?>">Connect</a>
+    <?php endif; ?>
 </div>
 
-		<?php
+<?php
 	}
 
 	/**
@@ -1183,12 +1181,13 @@ class HRV_MLA_Admin {
 				CURLOPT_HTTP_VERSION   => CURL_HTTP_VERSION_1_1,
 				CURLOPT_CUSTOMREQUEST  => 'POST',
 				CURLOPT_POSTFIELDS     => '<?xml version="1.0" encoding="utf-8"?>
-        <soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
-          <soap:Body>
-            <MakeBooking xmlns="http://xml.ciirus.com/">
-              <APIUsername>74db9a060ce9426</APIUsername>
-              <APIPassword>4e1276922b63493</APIPassword>
-              <BD>
+<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+    xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+    <soap:Body>
+        <MakeBooking xmlns="http://xml.ciirus.com/">
+            <APIUsername>74db9a060ce9426</APIUsername>
+            <APIPassword>4e1276922b63493</APIPassword>
+            <BD>
                 <ArrivalDate>22 Sep 2024</ArrivalDate>
                 <DepartureDate>30 Sep 2024</DepartureDate>
                 <PropertyID>227504</PropertyID>
@@ -1197,152 +1196,152 @@ class HRV_MLA_Admin {
                 <GuestTelephone>1234567</GuestTelephone>
                 <GuestAddress>San Jose</GuestAddress>
                 <GuestList>
-                  <sGuests>
-                    <Name>Dominic Ace</Name>
-                    <Age>-1</Age>
-                  </sGuests>
+                    <sGuests>
+                        <Name>Dominic Ace</Name>
+                        <Age>-1</Age>
+                    </sGuests>
                 </GuestList>
-              </BD>
-            </MakeBooking>
-          </soap:Body>
-        </soap:Envelope>',
-				CURLOPT_HTTPHEADER     => array(
-					'Content-Type: text/xml; charset=utf-8',
-					'SOAPAction: http://xml.ciirus.com/MakeBooking',
-				),
-			)
-		);
+            </BD>
+        </MakeBooking>
+    </soap:Body>
+</soap:Envelope>',
+CURLOPT_HTTPHEADER => array(
+'Content-Type: text/xml; charset=utf-8',
+'SOAPAction: http://xml.ciirus.com/MakeBooking',
+),
+)
+);
 
-		$response = curl_exec( $curl );
-		$err      = curl_error( $curl );
+$response = curl_exec( $curl );
+$err = curl_error( $curl );
 
-		if ( $err ) {
-			return 'cURL Error #:' . $err;
-		} else {
-			$response    = preg_replace( '/(<\/?)(\w+):([^>]*>)/', '$1$2$3', $response );
-			$xml         = new SimpleXMLElement( $response );
-			$body        = $xml->xpath( '//soapBody ' )[0];
-			$json_encode = wp_json_encode( $body );
-			$arr_output  = json_decode( $json_encode, true );
-			$result      = $arr_output['MakeBookingResponse']['MakeBookingResult'];
+if ( $err ) {
+return 'cURL Error #:' . $err;
+} else {
+$response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
+    $xml = new SimpleXMLElement( $response );
+    $body = $xml->xpath( '//soapBody ' )[0];
+    $json_encode = wp_json_encode( $body );
+    $arr_output = json_decode( $json_encode, true );
+    $result = $arr_output['MakeBookingResponse']['MakeBookingResult'];
 
-			if ( 'true' == $result['BookingPlaced'] ) {
-				return array(
-					'BookingPlaced'           => $result['BookingPlaced'],
-					'BookingID'               => $result['BookingID'],
-					'TotalAmountIncludingTax' => $result['TotalAmountIncludingTax'],
-				);
-			} else {
-				return array(
-					'BookingPlaced' => $result['BookingPlaced'],
-					'ErrorMessage'  => $result['ErrorMessage'],
-				);
-			}
-		}
-	}
+    if ( 'true' == $result['BookingPlaced'] ) {
+    return array(
+    'BookingPlaced' => $result['BookingPlaced'],
+    'BookingID' => $result['BookingID'],
+    'TotalAmountIncludingTax' => $result['TotalAmountIncludingTax'],
+    );
+    } else {
+    return array(
+    'BookingPlaced' => $result['BookingPlaced'],
+    'ErrorMessage' => $result['ErrorMessage'],
+    );
+    }
+    }
+    }
 
-	public function get_season_total_price() {  }
+    public function get_season_total_price() { }
 
-	public function golf_booking_email_content() {
-		ob_start();
-		?>
+    public function golf_booking_email_content() {
+    ob_start();
+    ?>
 
-<!DOCTYPE html
-	PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="https://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml"
-	xmlns:o="urn:schemas-microsoft-com:office:office">
+    <!DOCTYPE html
+        PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+    <html xmlns="https://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml"
+        xmlns:o="urn:schemas-microsoft-com:office:office">
 
-<head>
-	<title>Golf Agents TeeTime Booking</title>
-	<meta http–equiv="Content-Type" content="text/html; charset=utf-8">
-	<meta http–equiv="X-UA-Compatible" content="IE=edge">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0 ">
-	<meta name="format-detection" content="telephone=no">
-</head>
+    <head>
+        <title>Golf Agents TeeTime Booking</title>
+        <meta http–equiv="Content-Type" content="text/html; charset=utf-8">
+        <meta http–equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0 ">
+        <meta name="format-detection" content="telephone=no">
+    </head>
 
-<body>
-	<table border="0" width="90%">
-		<tbody>
-			<tr>
-				<td align="center" colspan="5">&nbsp; </td>
-			</tr>
-			<tr>
-				<td align="center" colspan="5">
-					<font color="#215272" size="7" face="verdana">Golf Agents TeeTime Booking</font>
-				</td>
-			</tr>
-			<tr>
-				<td colspan="5">&nbsp;</td>
-			</tr>
-			<tr>
-				<td align="center" colspan="5">
-					<font face="verdana" color="00,33,66" size="2px"><b>Barrie &amp; Jane Pike, 69 Nant Talwg Way,
-							Barry, South Glamorgan, CF62 6LZ, Wales, UK.<br>
-							Tel/Fax 01446 407557 (Intl. +44 1446 407557) Email : <a href="mailto:barrie.pike@gmail.com"
-								target="_blank">
-								barrie.pike@gmail.com</a> <br>
-						</b></font>
-				</td>
-			</tr>
-		</tbody>
-	</table>
-	<table border="0" width="90%">
-		<tbody>
-			<tr>
-				<td colspan="5">&nbsp; </td>
-			</tr>
-			<tr>
-				<td colspan="5">
-					<font size="4">Please make the following reservations and confirm by email.
-					</font>
-				</td>
-			</tr>
-			<tr>
-				<td colspan="5">&nbsp; </td>
-			</tr>
-			<tr>
-				<td colspan="5"><b>Guest Name : </b>&nbsp; <b>GUEST_EMAIL</b></td>
-			</tr>
-		</tbody>
-	</table>
-	<table border="0" width="90%">
-		<tbody>
-			<tr>
-				<td colspan="5">
-					<hr size="1">
-				</td>
-			</tr>
-			<tr>
-				<td valign="top" align="center"><b>Date</b></td>
-				<td valign="top" align="center"><b>Course Name</b></td>
-				<td valign="top" align="center"><b>Preferred Time </b></td>
-				<td valign="top" align="center"><b>Holes </b></td>
-				<td valign="top" align="center"><b>Golfers</b> </td>
-			</tr>
-			<tr>
-				<td colspan="5">
-					<hr size="1">
-				</td>
-			</tr>
-			<!-- START -->
-			GOLF_BOOKING_DETAILS
-			<!-- END -->
-
-
-			<tr>
-				<td colspan="5">
-					<hr size="1">
-				</td>
-			</tr>
-		</tbody>
-	</table>
-</body>
-
-</html>
+    <body>
+        <table border="0" width="90%">
+            <tbody>
+                <tr>
+                    <td align="center" colspan="5">&nbsp; </td>
+                </tr>
+                <tr>
+                    <td align="center" colspan="5">
+                        <font color="#215272" size="7" face="verdana">Golf Agents TeeTime Booking</font>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="5">&nbsp;</td>
+                </tr>
+                <tr>
+                    <td align="center" colspan="5">
+                        <font face="verdana" color="00,33,66" size="2px"><b>Barrie &amp; Jane Pike, 69 Nant Talwg Way,
+                                Barry, South Glamorgan, CF62 6LZ, Wales, UK.<br>
+                                Tel/Fax 01446 407557 (Intl. +44 1446 407557) Email : <a
+                                    href="mailto:barrie.pike@gmail.com" target="_blank">
+                                    barrie.pike@gmail.com</a> <br>
+                            </b></font>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        <table border="0" width="90%">
+            <tbody>
+                <tr>
+                    <td colspan="5">&nbsp; </td>
+                </tr>
+                <tr>
+                    <td colspan="5">
+                        <font size="4">Please make the following reservations and confirm by email.
+                        </font>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="5">&nbsp; </td>
+                </tr>
+                <tr>
+                    <td colspan="5"><b>Guest Name : </b>&nbsp; <b>GUEST_EMAIL</b></td>
+                </tr>
+            </tbody>
+        </table>
+        <table border="0" width="90%">
+            <tbody>
+                <tr>
+                    <td colspan="5">
+                        <hr size="1">
+                    </td>
+                </tr>
+                <tr>
+                    <td valign="top" align="center"><b>Date</b></td>
+                    <td valign="top" align="center"><b>Course Name</b></td>
+                    <td valign="top" align="center"><b>Preferred Time </b></td>
+                    <td valign="top" align="center"><b>Holes </b></td>
+                    <td valign="top" align="center"><b>Golfers</b> </td>
+                </tr>
+                <tr>
+                    <td colspan="5">
+                        <hr size="1">
+                    </td>
+                </tr>
+                <!-- START -->
+                GOLF_BOOKING_DETAILS
+                <!-- END -->
 
 
+                <tr>
+                    <td colspan="5">
+                        <hr size="1">
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </body>
 
-		<?php
+    </html>
+
+
+
+    <?php
 		return ob_get_clean();
 	}
 
@@ -1354,6 +1353,13 @@ class HRV_MLA_Admin {
 	public function request_payment_email_content() {
 		ob_start();
 		require 'emails/template.html';
+		$content = ob_get_clean();
+		return $content;
+	}
+
+	public function request_golf_email_content() {
+		ob_start();
+		require 'emails/golf-template.html';
 		$content = ob_get_clean();
 		return $content;
 	}
@@ -1586,72 +1592,78 @@ class HRV_MLA_Admin {
 		);
 	}
 
-	public function booking_golf_email_metabox_callback( $post ) {
+	public function booking_golf_email_metabox_callback() {
+		$id = $_GET['post'];
+
+		if ( ! isset( $id ) && empty( $id ) ) return;
+		
 		ob_start();
 		?>
-<div style="background: #ddd; color: #000; padding: 10px; margin-bottom: 10px;">Please update first before sending an
-	email.</div>
-<div id="booking_golf_email_status" style="display: none;">
-	<h4 id="statusText">Sending Email...</h4>
-</div>
-<div id="booking_golf_email_wrap">
-	<input type="email" id="booking_golf_email" value="orlando.rentals@gmail.com">
-	<button id="booking_email_btn" class="button button-primary button-large" style="margin-top: 5px;">Send Golf Booking
-		Email</button>
-</div>
-<script>
-	const booking_golf_email_wrap = document.getElementById('booking_golf_email_wrap');
-	const booking_golf_email_status = document.getElementById('booking_golf_email_status');
-	const booking_email_btn = document.getElementById('booking_email_btn');
-	const booking_golf_email = document.getElementById('booking_golf_email');
-	if (booking_email_btn) {
-		booking_email_btn.addEventListener('click', function(e) {
-			e.preventDefault();
-			if (!booking_golf_email.value) {
-				alert('Please enter an email');
-				return;
-			}
-			booking_golf_email_status.style.display = "block";
-			booking_golf_email_wrap.style.display = "none";
-			const form = new FormData();
-			form.append('action', 'send_golf_booking_email');
-			form.append('nonce', XERO.golfnonce);
-			form.append('post_id', <?php echo $post->ID; ?> );
-			form.append('golf_booking_email', booking_golf_email.value);
+    <div style="background: #ddd; color: #000; padding: 10px; margin-bottom: 10px;">Please update first before sending
+        an
+        email.</div>
+    <div id="booking_golf_email_status" style="display: none;">
+        <h4 id="statusText">Sending Email...</h4>
+    </div>
+    <div id="booking_golf_email_wrap">
+        <input type="email" id="booking_golf_email" value="orlando.rentals@gmail.com">
+        <button id="booking_email_btn" class="button button-primary button-large" style="margin-top: 5px;">Send Golf
+            Booking
+            Email</button>
+    </div>
+    <script>
+    const booking_golf_email_wrap = document.getElementById('booking_golf_email_wrap');
+    const booking_golf_email_status = document.getElementById('booking_golf_email_status');
+    const booking_email_btn = document.getElementById('booking_email_btn');
+    const booking_golf_email = document.getElementById('booking_golf_email');
+    if (booking_email_btn) {
+        booking_email_btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (!booking_golf_email.value) {
+                alert('Please enter an email');
+                return;
+            }
+            booking_golf_email_status.style.display = "block";
+            booking_golf_email_wrap.style.display = "none";
+            const form = new FormData();
+            form.append('action', 'send_golf_booking_email');
+            form.append('nonce', XERO.golfnonce);
+            form.append('post_id', <?php echo $id; ?>);
+            form.append('golf_booking_email', booking_golf_email.value);
 
-			const params = new URLSearchParams(form);
-			const statusText = document.querySelector('#statusText');
+            const params = new URLSearchParams(form);
+            const statusText = document.querySelector('#statusText');
+            console.log(params);
+            fetch(XERO.ajax_url, {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'Cache-Control': 'no-cache',
+                    },
+                    body: params,
+                })
+                .then((response) => response.json())
+                .then((data) => {
+                    if (data) {
+                        console.log(data);
+                        if (2 == data.code) {
+                            alert("Golf Booking empty");
+                            booking_golf_email_status.style.display = "none";
+                            booking_golf_email_wrap.style.display = "block";
+                        }
+                        statusText.innerText = "EMAIL SENT";
+                    }
+                })
+                .catch((error) => {
+                    console.log('EMAIL FAILED');
+                    console.error(error);
+                });
 
-			fetch(XERO.ajax_url, {
-					method: 'POST',
-					credentials: 'same-origin',
-					headers: {
-						'Content-Type': 'application/x-www-form-urlencoded',
-						'Cache-Control': 'no-cache',
-					},
-					body: params,
-				})
-				.then((response) => response.json())
-				.then((data) => {
-					if (data) {
-						console.log(data);
-						if (2 == data.code) {
-							alert("Golf Booking empty");
-							booking_golf_email_status.style.display = "none";
-							booking_golf_email_wrap.style.display = "block";
-						}
-						statusText.innerText = "EMAIL SENT";
-					}
-				})
-				.catch((error) => {
-					console.log('EMAIL FAILED');
-					console.error(error);
-				});
-
-		});
-	}
-</script>
-		<?php
+        });
+    }
+    </script>
+    <?php
 		echo ob_get_clean();
 	}
 
@@ -1666,10 +1678,12 @@ class HRV_MLA_Admin {
 		 $rows = get_field( 'golf_booking', $_POST['post_id'] );
 
 		 if ( ! $rows ) {
-			 wp_send_json( $status );
+			$status['post'] = $_POST;
+			wp_send_json( $status );
 		 }
 
-		 $golf_booking_email_content = $this->golf_booking_email_content();
+		 $golf_booking_email_content = $this->request_golf_email_content();
+		 
 
 		 $golf_bookings = '';
 
@@ -1693,10 +1707,13 @@ class HRV_MLA_Admin {
 
 		 $golf_booking_email_content = str_replace( 'GUEST_EMAIL', $guest_name, $golf_booking_email_content );
 		 $golf_booking_email_content = str_replace( 'GOLF_BOOKING_DETAILS', $golf_bookings, $golf_booking_email_content );
+		 $golf_booking_email_content = str_replace( 'INVOICE_DATE', get_the_date( 'd/M/Y' ), $golf_booking_email_content );
 
-		 $this->send_hrv_email( $_POST['golf_booking_email'], 'Barrie Pike golf reservations', $golf_booking_email_content );
+		 $this->send_hrv_email( $_POST['golf_booking_email'], 'Golf Reservations', $golf_booking_email_content );
+
 		 $status['code'] = 1;
 		 $status['post'] = $_POST;
+		 $status['mail'] = $golf_bookings;
 		 wp_send_json( $status );
 	}
 
@@ -1728,21 +1745,21 @@ class HRV_MLA_Admin {
 			if ( 'edit-bookings' === get_current_screen()->id ) {
 				$owners = $this->get_all_owners();
 				?>
-<form method="GET">
-	<select name="property_owner" id="selectPropertyOwner">
-		<option value="">Choose Property Owner</option>
-				<?php
+    <form method="GET">
+        <select name="property_owner" id="selectPropertyOwner">
+            <option value="">Choose Property Owner</option>
+            <?php
 				foreach ( $owners as $owner ) {
 					?>
-		<option
-			value="<?php echo $owner['id']; ?>"
-					<?php echo( isset( $_GET['property_owner'] ) && $owner['id'] == $_GET['property_owner'] && ! empty( $_GET['property_owner'] ) ? 'selected' : '' ); ?>><?php echo $owner['title']; ?>
-		</option>
-		<?php } ?>
-	</select>
+            <option value="<?php echo $owner['id']; ?>"
+                <?php echo( isset( $_GET['property_owner'] ) && $owner['id'] == $_GET['property_owner'] && ! empty( $_GET['property_owner'] ) ? 'selected' : '' ); ?>>
+                <?php echo $owner['title']; ?>
+            </option>
+            <?php } ?>
+        </select>
 
-	<input type="submit" class="button" value="Filter" id="propertyOwnerSubmit">
-				<?php
+        <input type="submit" class="button" value="Filter" id="propertyOwnerSubmit">
+        <?php
 				$linkargs = array();
 				foreach ( $_GET as $label => $value ) :
 					if ( 'property_owner' != $label ) {
@@ -1755,18 +1772,18 @@ class HRV_MLA_Admin {
 					'edit.php'
 				);
 				?>
-</form>
-<script>
-	const propertyOwnerSubmit = document.getElementById('propertyOwnerSubmit'),
-		selectPropertyOwner = document.getElementById('selectPropertyOwner');
-	propertyOwnerSubmit.addEventListener('click', function(event) {
-		event.preventDefault();
-		window.location.href = "<?php echo $link; ?>&property_owner=" +
-			selectPropertyOwner.value;
-	});
-</script>
+    </form>
+    <script>
+    const propertyOwnerSubmit = document.getElementById('propertyOwnerSubmit'),
+        selectPropertyOwner = document.getElementById('selectPropertyOwner');
+    propertyOwnerSubmit.addEventListener('click', function(event) {
+        event.preventDefault();
+        window.location.href = "<?php echo $link; ?>&property_owner=" +
+            selectPropertyOwner.value;
+    });
+    </script>
 
-				<?php
+    <?php
 			}
 		}
 	}
