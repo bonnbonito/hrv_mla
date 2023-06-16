@@ -59,6 +59,7 @@ class HRV_MLA_Admin {
 		$this->ciirus_user     = '74db9a060ce9426';
 		$this->ciirus_password = '4e1276922b63493';
 		$this->days_to_notify  = 36;
+		$this->deposit  	   = 250;
 	}
 
 	/**
@@ -1394,7 +1395,7 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 			$days          = floor( $diff / ( 60 * 60 * 24 ) );
 			$total_price   = get_field( 'total_price' );
 			$deposit_price = $total_price - ( $total_price * 0.10 );
-			$deposit_price = $deposit_price > 250 ? 250 : $deposit_price;
+			$deposit_price = $deposit_price > $this->deposit ? $this->deposit : $deposit_price;
 
 			if ( $days <= $this->days_to_notify ) {
 				if ( get_post_meta( get_the_ID(), 'payment_email_sent', true ) != 'yes' ) {
@@ -1456,7 +1457,7 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 			$days          = floor( $diff / ( 60 * 60 * 24 ) );
 			$total_price   = get_field( 'total_price' );
 			$deposit_price = $total_price - ( $total_price * 0.10 );
-			$deposit_price = $deposit_price > 250 ? 250 : $deposit_price;
+			$deposit_price = $deposit_price > $this->deposit ? $this->deposit : $deposit_price;
 
 			if ( $days <= $this->days_to_notify ) {
 				if ( get_post_meta( get_the_ID(), 'payment_email_sent', true ) != 'yes' ) {

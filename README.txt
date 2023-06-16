@@ -65,7 +65,10 @@ directory take precedence. For example, `/assets/screenshot-1.png` would win ove
 
 == Changelog ==
 
-= 2.2.22 =
+= 2.2.23 =
+* Add Deposit Constant in Admin Class
+
+= 2.2.23 =
 * Responsive styles
 
 = 2.2.22 =
