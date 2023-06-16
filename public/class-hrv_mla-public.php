@@ -97,7 +97,7 @@ class HRV_MLA_Public {
 		 * between the defined hooks and the functions defined in this
 		 * class.
 		 */
-
+		$hrv_admin = new HRV_MLA_Admin( 'hrv_mla', '1.0.0' );
 		wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/hrv_mla-public.js', array( 'jquery' ), $this->version, false );
 		wp_enqueue_script( 'flexslider', plugin_dir_url( __FILE__ ) . 'js/jquery.flexslider-min.js', array( 'jquery' ), $this->version, false );
 		wp_enqueue_script( 'vanilla-datepicker', '//cdn.jsdelivr.net/npm/vanillajs-datepicker@1.2.0/dist/js/datepicker.min.js', array( 'jquery' ), $this->version, false );
@@ -115,6 +115,7 @@ class HRV_MLA_Public {
 				'properties_ids'        => $this->get_all_properties(),
 				'properties_beds'       => $this->get_all_beds(),
 				'properties_result_ids' => $this->get_result_properties(),
+				'stripe_deposit'		=> $hrv_admin->deposit,
 			)
 		);
 	}

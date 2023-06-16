@@ -709,8 +709,8 @@ span.price-highlight {
 
         console.log(total, Number(totalRoomRate.value), Number(total) + Number(totalRoomRate.value), computedTotal);
         let depositCompute = computedTotal * .10;
-        let depositTotal = Number(depositCompute).toFixed(1) < <?php echo $hrv_admin->deposit; ?> ? depositCompute
-            .toFixed(1) : <?php echo $hrv_admin->deposit; ?>;
+        let depositTotal = Number(depositCompute).toFixed(1) < HRV.stripe_deposit ? depositCompute
+            .toFixed(1) : HRV.stripe_deposit;
         let compuptedTotal = Number(computedTotal).toFixed(2);
         pricetotalcompute.innerText = compuptedTotal;
         totalPrice.value = compuptedTotal;
@@ -739,8 +739,8 @@ span.price-highlight {
         let computedTotal = total + parseInt(computedPrice);
 
         let depositCompute = computedTotal * .10;
-        let depositTotal = depositCompute.toFixed(1) < <?php echo $hrv_admin->deposit; ?> ? depositCompute.toFixed(
-            1) : <?php echo $hrv_admin->deposit; ?>;
+        let depositTotal = depositCompute.toFixed(1) < HRV.stripe_deposit ? depositCompute.toFixed(
+            1) : HRV.stripe_deposit;
 
         pricetotalcompute.innerText = computedTotal;
         totalPrice.value = computedTotal;

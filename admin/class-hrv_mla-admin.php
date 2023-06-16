@@ -59,7 +59,7 @@ class HRV_MLA_Admin {
 		$this->ciirus_user     = '74db9a060ce9426';
 		$this->ciirus_password = '4e1276922b63493';
 		$this->days_to_notify  = 36;
-		$this->deposit  	   = 250;
+		$this->deposit  	   = get_field( 'stripe_deposit', 'option' ) ? (int)get_field( 'stripe_deposit', 'option' ) : 250;
 	}
 
 	/**
