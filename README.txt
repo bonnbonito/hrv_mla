@@ -65,10 +65,13 @@ directory take precedence. For example, `/assets/screenshot-1.png` would win ove
 
 == Changelog ==
 
+= 2.2.231 =
+* Stripe deposit in ACF Option
+
 = 2.2.23 =
 * Add Deposit Constant in Admin Class
 
-= 2.2.23 =
+= 2.2.21 =
 * Responsive styles
 
 = 2.2.22 =
