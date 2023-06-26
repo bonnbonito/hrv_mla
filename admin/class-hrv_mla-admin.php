@@ -49,7 +49,7 @@ class HRV_MLA_Admin {
 	 * @param      string $version    The version of this plugin.
 	 */
 	public function __construct( $plugin_name, $version ) {
-		 $this->plugin_name    = $plugin_name;
+		$this->plugin_name    = $plugin_name;
 		$this->version         = $version;
 		$this->client_id       = get_field( 'xero_client_key', 'option' ) ? get_field( 'xero_client_key', 'option' ) : '';
 		$this->client_secret   = get_field( 'xero_secret_key', 'option' ) ? get_field( 'xero_secret_key', 'option' ) : '';

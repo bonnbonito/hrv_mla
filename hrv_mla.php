@@ -66,6 +66,7 @@ require_once plugin_dir_path( __FILE__ ) . 'vendor/autoload.php';
 require plugin_dir_path( __FILE__ ) . 'includes/class-hrv_mla.php';
 require plugin_dir_path( __FILE__ ) . 'bonn-update-checker/plugin-update-checker.php';
 
+
 use Bonn\PluginUpdateChecker\v5\PucFactory;
 
 $myUpdateChecker = PucFactory::buildUpdateChecker(
@@ -92,4 +93,5 @@ function run_hrv_mla() {
 	$plugin->run();
 
 }
-run_hrv_mla();
+
+add_action('acf/init', 'run_hrv_mla');

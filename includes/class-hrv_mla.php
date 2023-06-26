@@ -156,7 +156,7 @@ class HRV_MLA {
 
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_styles' );
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts' );
-		$this->loader->add_action( 'init', $plugin_admin, 'acf_options' );
+		$this->loader->add_action( 'acf/init', $plugin_admin, 'acf_options' );
 		$this->loader->add_action( 'admin_menu', $plugin_admin, 'add_hrv_page_menu_settings' );
 		$this->loader->add_action( 'init', $plugin_admin, 'add_booking_column' );
 		$this->loader->add_action( 'manage_bookings_posts_custom_column', $plugin_admin, 'hrv_mla_booking_days', 10, 2 );

@@ -258,7 +258,8 @@ function stripeBooking(token) {
                 loadingText.innerText = "Successful. Redirecting...";
 
                 setTimeout(function(e) {
-                    //window.location.href = `<?php echo home_url( '/' ) . 'thank-you-for-booking?booking='; ?>${data.booking}`;
+                    window.location.href =
+                        `<?php echo home_url( '/' ) . 'thank-you-for-booking?booking='; ?>${data.booking}`;
                 }, 750);
             }
         })
@@ -290,7 +291,7 @@ $bookingprice        = $currentprice;
 if ( $ownerbookingpercent ) {
 	$owner_price = ( $ownerbookingpercent / 100 ) * $total_room_rate;
 }
-$total_price = $total_room_rate + $owner_price;
+$total_price = number_format( $total_room_rate + $owner_price, 1 );
 /* compute discount price */
 $deposit_compute  = $total_price * .10;
 $deposit_price    = $deposit_compute > $hrv_admin->deposit ? $hrv_admin->deposit : $deposit_compute;
@@ -711,14 +712,14 @@ span.price-highlight {
         let depositCompute = computedTotal * .10;
         let depositTotal = Number(depositCompute).toFixed(1) < HRV.stripe_deposit ? depositCompute
             .toFixed(1) : HRV.stripe_deposit;
-        let compuptedTotal = Number(computedTotal).toFixed(2);
+        let compuptedTotal = Number(computedTotal).toFixed(1);
         pricetotalcompute.innerText = compuptedTotal;
         totalPrice.value = compuptedTotal;
         summaryPrice.innerText = compuptedTotal;
         depositPrice.value = depositTotal;
         document.getElementById('depositpricecompute').innerText = depositTotal;
         summaryDeposit.innerText = depositTotal;
-        totalExtra.value = Number(total).toFixed(2);
+        totalExtra.value = Number(total).toFixed(1);
 
     }
     <?php } else { ?>
