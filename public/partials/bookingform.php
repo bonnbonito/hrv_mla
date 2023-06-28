@@ -282,16 +282,16 @@ $hrv_public = new HRV_MLA_Public( 'hrv_mla', HRV_MLA_VERSION );
 $hrv_admin  = new HRV_MLA_Admin( 'hrv_mla', HRV_MLA_VERSION );
 
 $price_cat_ID        = wp_get_post_terms( $_GET['id'], 'price_categories' );
-$currentprice        = $hrv_public->compute_price( $price_cat_ID[0]->term_id, $_GET['date_checkin'] );
+$currentprice        = round( $hrv_public->compute_price( $price_cat_ID[0]->term_id, $_GET['date_checkin'] ), 1 );
 $total_room_rate     = $currentprice ? $currentprice * $_GET['nights'] : 0;
 $ownerbookingpercent = get_field( 'property_owner_booking_percentage', $_GET['id'] ) ? get_field( 'property_owner_booking_percentage', $_GET['id'] ) : get_field( 'default_property_owner_booking_percentage', 'option' );
 $owner_price         = 0;
-$bookingprice        = $currentprice;
+$bookingprice        = round( $currentprice, 1 );
 
 if ( $ownerbookingpercent ) {
 	$owner_price = ( $ownerbookingpercent / 100 ) * $total_room_rate;
 }
-$total_price = number_format( $total_room_rate + $owner_price, 1 );
+$total_price = round( $total_room_rate + $owner_price, 1 );
 /* compute discount price */
 $deposit_compute  = $total_price * .10;
 $deposit_price    = $deposit_compute > $hrv_admin->deposit ? $hrv_admin->deposit : $deposit_compute;
@@ -321,7 +321,7 @@ if ( get_field( 'api_price', $_GET['id'] ) ) {
 	$api_total_rate      = $api_get_price['total_rates'];
 	$bookingprice        = round( $api_total_rate + percentage_tax_price( $api_total_rate, $propertyTaxRates ) + $cleaning_fees, 2 );
 	$profit              = round( $bookingprice * .18, 2 );
-	$total_price         = $bookingprice;
+	$total_price         = round( $bookingprice, 1 );
 	$total_room_rate     = $total_price;
 	/* compute discount price */
 	$deposit_compute = $total_price * .10;
@@ -387,9 +387,10 @@ span.price-highlight {
             </p>
             <div class="booking-summary-box">
                 <p>Total Accomodation Price: <span class="price-highlight">$<span
-                            id="summaryPrice"><?php echo $total_price; ?></span></span>
+                            id="summaryPrice"><?php echo number_format( $total_price ); ?></span></span>
                     <br><small>only <span class="price-highlight">$<span
-                                id="summaryDeposit"><?php echo $deposit_price; ?></span></span> deposit</small>
+                                id="summaryDeposit"><?php echo number_format( $deposit_price ); ?></span></span>
+                        deposit</small>
                 </p>
                 <h4>Check In: <?php echo date( 'F j, Y', strtotime( $date_checkin ) ); ?></h4>
                 <h4>Check Out: <?php echo date( 'F j, Y', strtotime( $date_checkout ) ); ?></h4>
@@ -629,8 +630,8 @@ span.price-highlight {
         </div>
 
         <div class="total-price-wrap" style="text-align: right;">
-            <h3>Total: $<span id="pricetotalcompute"><?php echo $total_price; ?></span></h3>
-            <h4>Deposit: $<span id="depositpricecompute"><?php echo $deposit_price; ?></span></h4>
+            <h3>Total: $<span id="pricetotalcompute"><?php echo number_format( $total_price ); ?></span></h3>
+            <h4>Deposit: $<span id="depositpricecompute"><?php echo number_format ( $deposit_price ); ?></span></h4>
         </div>
 
         <div class="buttons">
@@ -712,13 +713,13 @@ span.price-highlight {
         let depositCompute = computedTotal * .10;
         let depositTotal = Number(depositCompute).toFixed(1) < HRV.stripe_deposit ? depositCompute
             .toFixed(1) : HRV.stripe_deposit;
-        let compuptedTotal = Number(computedTotal).toFixed(1);
-        pricetotalcompute.innerText = compuptedTotal;
-        totalPrice.value = compuptedTotal;
-        summaryPrice.innerText = compuptedTotal;
+        let computed = Number(computedTotal).toFixed(1);
+        pricetotalcompute.innerText = Number(computed).toLocaleString();
+        totalPrice.value = computed;
+        summaryPrice.innerText = Number(computed).toLocaleString();
         depositPrice.value = depositTotal;
-        document.getElementById('depositpricecompute').innerText = depositTotal;
-        summaryDeposit.innerText = depositTotal;
+        document.getElementById('depositpricecompute').innerText = Number(depositTotal).toLocaleString();
+        summaryDeposit.innerText = Number(depositTotal).toLocaleString();
         totalExtra.value = Number(total).toFixed(1);
 
     }
@@ -743,12 +744,12 @@ span.price-highlight {
         let depositTotal = depositCompute.toFixed(1) < HRV.stripe_deposit ? depositCompute.toFixed(
             1) : HRV.stripe_deposit;
 
-        pricetotalcompute.innerText = computedTotal;
+        pricetotalcompute.innerText = Number(computedTotal).toLocaleString();
         totalPrice.value = computedTotal;
-        summaryPrice.innerText = compuptedTotal;
+        summaryPrice.innerText = Number(computed).toLocaleString();
         depositPrice.value = depositTotal;
-        document.getElementById('depositpricecompute').innerText = depositTotal;
-        summaryDeposit.innerText = depositTotal;
+        document.getElementById('depositpricecompute').innerText = Number(depositTotal).toLocaleString();
+        summaryDeposit.innerText = Number(depositTotal).toLocaleString();
 
 
     }

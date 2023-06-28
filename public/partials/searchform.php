@@ -184,7 +184,8 @@ form.newserachform .form-field-submit {
 }
 </style>
 
-<form action="<?php bloginfo( 'url' ); ?>/villa-list-result" method="GET" autocomplete="off" class="newserachform">
+<form id="searchVillaForm" action="<?php bloginfo( 'url' ); ?>/villa-list-result" method="GET" autocomplete="off"
+    class="newserachform">
     <?php
 	$show = false;
 if ( $show ) {
@@ -275,6 +276,13 @@ const nights = document.getElementById('nights');
 const bedrooms = document.getElementById('bedrooms');
 const bedroomshidden = document.getElementById('bedroomshidden');
 const bedroomsSelect = document.querySelectorAll('.div-select > div');
+const searchVillaForm = document.getElementById('searchVillaForm');
+
+searchVillaForm.addEventListener('submit', e => {
+    e.preventDefault();
+    localStorage.removeItem('propertyResults');
+    searchVillaForm.submit();
+});
 
 
 bedrooms.addEventListener('focusin', (event) => {

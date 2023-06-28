@@ -414,7 +414,7 @@ class HRV_MLA_Public {
 			$total_rates  = $currentprice * $nights;
 		}
 
-		return $total_rates;
+		return round( $total_rates, 1 );
 	}
 
 	/**
@@ -474,7 +474,7 @@ class HRV_MLA_Public {
 
 		$payment_intents = $stripe->paymentIntents->create(
 			array(
-				'amount'               => number_format( $deposit_price, 2, '.', '' ) * 100,
+				'amount'               => round( $deposit_price, 2, '.', '' ) * 100,
 				'currency'             => 'gbp',
 				'payment_method_types' => array( 'card' ),
 				'description'          => $nights . ' nights booking of ' . get_the_title( $property ),
@@ -594,18 +594,16 @@ class HRV_MLA_Public {
     </soap:Body>
 </soap:Envelope>';
 
-// $booking_api = $hrv_admin->ciirus_make_booking( $booking_api_details );
-/*
-$booking_api = array();
+$booking_api = $hrv_admin->ciirus_make_booking( $booking_api_details );
 if ( 'true' == $booking_api['BookingPlaced'] ) {
 $return['BookingID'] = $booking_api['BookingID'];
 $return['TotalAmountIncludingTax'] = $booking_api['TotalAmountIncludingTax'];
 $return['BookingPlaced'] = $booking_api['BookingPlaced'];
-// update_field( 'ciirus_api_booking_id', $booking_api['BookingID'], $booking_id );
-// update_field( 'ciirus_total_amount_inc_tax', $booking_api['TotalAmountIncludingTax'], $booking_id );
+update_field( 'ciirus_api_booking_id', $booking_api['BookingID'], $booking_id );
+update_field( 'ciirus_total_amount_inc_tax', $booking_api['TotalAmountIncludingTax'], $booking_id );
 }
 $return['booking_api'] = $booking_api;
-*/
+
 }
 
 $arrival_date = strtotime( $startdate );
@@ -1072,7 +1070,7 @@ if ( $days_left <= $hrv_admin->days_to_notify ) {
 	public function has_search_dates() {
 		ob_start();
 		?>
-            <div class="villa-search-results-wrap searching" id="villaResults">
+            <div class="vsr-container" style="position: relative;">
                 <div id="loading">
                     <div class="loading-flex">
                         <h3>Searching properties <span id="percentStatus"></span></h3>
@@ -1092,7 +1090,11 @@ if ( $days_left <= $hrv_admin->days_to_notify ) {
                         </div>
                     </div>
                 </div>
+                <div class="villa-search-results-wrap searching" id="villaResults">
+
+                </div>
             </div>
+
 
 
 
@@ -1103,24 +1105,22 @@ if ( $days_left <= $hrv_admin->days_to_notify ) {
 				?>
             <script>
             const villaResults = document.getElementById('villaResults');
-            const fx = [];
             const propertyIds = HRV.properties_result_ids;
             const percentStatus = document.getElementById('percentStatus');
             const loading = document.getElementById('loading');
+            const localResults = localStorage.getItem('propertyResults');
+
             async function is_available(id) {
                 const form = new FormData();
                 form.append('action', 'property_available');
                 form.append('nonce', HRV.nonce);
-                form.append('checkin',
-                    '<?php echo $_REQUEST['date_checkin']; ?>'
-                );
-                form.append('checkout',
-                    '<?php echo $_REQUEST['date_checkout']; ?>'
-                );
+                form.append('checkin', '<?php echo $_REQUEST["date_checkin"]; ?>');
+                form.append('checkout', '<?php echo $_REQUEST["date_checkout"]; ?>');
                 form.append('property_id', id);
                 const params = new URLSearchParams(form);
-                let status = 'none';
-                await fetch(HRV.ajax_url, {
+
+                try {
+                    const response = await fetch(HRV.ajax_url, {
                         method: 'POST',
                         credentials: 'same-origin',
                         headers: {
@@ -1128,55 +1128,67 @@ if ( $days_left <= $hrv_admin->days_to_notify ) {
                             'Cache-Control': 'no-cache',
                         },
                         body: params,
-                    })
-                    .then((response) => response.json())
-                    .then((data) => {
-                        if ('available' == data.is_available) {
-                            villaResults.insertAdjacentHTML('beforeend', data.content);
-                            status = 'available';
-                        }
-                    })
-                    .catch((error) => {
-                        console.error(error);
                     });
-                return status;
+
+                    const data = await response.json();
+
+                    if (data.is_available === 'available') {
+                        villaResults.insertAdjacentHTML('beforeend', data.content);
+                        return {
+                            id: id,
+                            status: data.is_available
+                        }
+                    }
+                } catch (error) {
+                    console.error(error);
+                }
+
+                return {
+                    id: id,
+                    status: 'none'
+                };
             }
 
-            if (propertyIds.length) {
-                for (let i = 0; i < propertyIds.length; i++) {
-                    fx.push(is_available(propertyIds[i]));
-                }
-                Promise.all(fx).then((values) => {
-                    values = values.filter(function(element) {
-                        return element !== 'none';
-                    });
-                    console.log(values);
-                    loading.style.display = "none";
-                    villaResults.classList.remove('searching');
-                    if (!values.length) {
-                        document.querySelector('.noresults').style.display = 'flex';
-                        villaResults.style.display = 'none';
-                    }
-                });
+            if (localResults) {
 
-                const forLoop = async _ => {
-                    console.log('Start')
-                    for (let index = 0; index < propertyIds.length; index++) {
-                        const pId = propertyIds[index];
-                        const status = await is_available(pId);
-                        let percent = Math.round((index / propertyIds.length) * 100);
-                        percentStatus.innerText = percent + '%';
-                        console.log(status);
-                    }
+                loading.style.display = 'none';
+                villaResults.classList.remove('searching');
 
-                    console.log('End');
-                    loading.style.display = "none";
-                    villaResults.classList.remove('searching');
-                }
-                //forLoop();
+                villaResults.insertAdjacentHTML('beforeend', localResults);
+
             } else {
-                document.querySelector('.noresults').style.display = 'flex';
-                villaResults.style.display = 'none';
+
+                if (propertyIds.length) {
+                    const fxPromises = propertyIds.map((id) => is_available(id));
+
+                    Promise.all(fxPromises)
+                        .then((values) => {
+                            console.log(values);
+                            const filteredValues = values.filter((element) => element !== 'none');
+                            console.log(filteredValues);
+
+                            loading.style.display = 'none';
+                            villaResults.classList.remove('searching');
+
+                            if (!filteredValues.length) {
+                                document.querySelector('.noresults').style.display = 'flex';
+                                villaResults.style.display = 'none';
+                            }
+
+                            console.log('DONE');
+                            const propertyResults = document.getElementById('villaResults').innerHTML;
+                            localStorage.setItem('propertyResults', propertyResults);
+                        })
+                        .catch((error) => {
+                            console.error(error);
+                        });
+
+
+                } else {
+                    document.querySelector('.noresults').style.display = 'flex';
+                    villaResults.style.display = 'none';
+                }
+
             }
             </script>
             <?php
