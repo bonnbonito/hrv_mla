@@ -1151,10 +1151,11 @@ if ( $days_left <= $hrv_admin->days_to_notify ) {
 
             if (localResults) {
 
-                loading.style.display = 'none';
                 villaResults.classList.remove('searching');
 
                 villaResults.insertAdjacentHTML('beforeend', localResults);
+
+                loading.style.display = 'none';
 
             } else {
 
@@ -1163,8 +1164,7 @@ if ( $days_left <= $hrv_admin->days_to_notify ) {
 
                     Promise.all(fxPromises)
                         .then((values) => {
-                            console.log(values);
-                            const filteredValues = values.filter((element) => element !== 'none');
+                            const filteredValues = values.filter((element) => element.status !== 'none');
                             console.log(filteredValues);
 
                             loading.style.display = 'none';
@@ -1187,6 +1187,7 @@ if ( $days_left <= $hrv_admin->days_to_notify ) {
                 } else {
                     document.querySelector('.noresults').style.display = 'flex';
                     villaResults.style.display = 'none';
+                    loading.style.display = 'none';
                 }
 
             }
