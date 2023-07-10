@@ -49,7 +49,7 @@ class HRV_MLA_Admin {
 	 * @param      string $version    The version of this plugin.
 	 */
 	public function __construct( $plugin_name, $version ) {
-		$this->plugin_name    = $plugin_name;
+		$this->plugin_name     = $plugin_name;
 		$this->version         = $version;
 		$this->client_id       = get_field( 'xero_client_key', 'option' ) ? get_field( 'xero_client_key', 'option' ) : '';
 		$this->client_secret   = get_field( 'xero_secret_key', 'option' ) ? get_field( 'xero_secret_key', 'option' ) : '';
@@ -59,7 +59,7 @@ class HRV_MLA_Admin {
 		$this->ciirus_user     = '74db9a060ce9426';
 		$this->ciirus_password = '4e1276922b63493';
 		$this->days_to_notify  = 36;
-		$this->deposit  	   = get_field( 'stripe_deposit', 'option' ) ? (int)get_field( 'stripe_deposit', 'option' ) : 250;
+		$this->deposit         = get_field( 'stripe_deposit', 'option' ) ? (int) get_field( 'stripe_deposit', 'option' ) : 250;
 	}
 
 	/**
@@ -1011,23 +1011,22 @@ class HRV_MLA_Admin {
 			$checkin_date   = date( 'Y-m-d', strtotime( $checkin ) );
 
 			if ( is_array( $rates ) || is_object( $rates ) ) {
-				for ( $i = 0; $i < $nights; $i++ ) {
-					$chDate = date( 'Y-m-d', strtotime( '+' . $i . ' day', strtotime( $checkin_date ) ) );
+				$chDate = date( 'Y-m-d', strtotime( $checkin_date ) );
 
-					for ( $j = 0; $j < count( $rates ); $j++ ) {
-						$from = date( 'Y-m-d', strtotime( $rates[ $j ]['FromDate'] ) );
-						$to   = date( 'Y-m-d', strtotime( $rates[ $j ]['ToDate'] ) );
+				for ( $j = 0; $j < count( $rates ); $j++ ) {
+					$from = date( 'Y-m-d', strtotime( $rates[ $j ]['FromDate'] ) );
+					$to   = date( 'Y-m-d', strtotime( $rates[ $j ]['ToDate'] ) );
 
-						if ( ( $chDate >= $from ) && ( $chDate <= $to ) ) {
-							$property_rates['rates'][] = array(
-								'date' => $chDate,
-								'rate' => $rates[ $j ]['DailyRate'],
-							);
-							$total_rates               = $total_rates + $rates[ $j ]['DailyRate'];
-						}
+					if ( ( $chDate >= $from ) && ( $chDate <= $to ) ) {
+						$property_rates['rates'][] = array(
+							'date' => $chDate,
+							'rate' => $rates[ $j ]['DailyRate'],
+						);
+						$total_rates               = $total_rates + $rates[ $j ]['DailyRate'];
+						break;
 					}
 				}
-				$property_rates['total_rates'] = $total_rates;
+				$property_rates['total_rates'] = $total_rates * $nights;
 			} else {
 				$property_rates = false;
 			}
@@ -1074,275 +1073,363 @@ class HRV_MLA_Admin {
 		}
 	}
 
-	public function ciirus_get_cleaning_fee( $id, $nights ) {
+	public function ciirus_extra_fees( $price, $id ) {
 		$curl = curl_init();
 
-		curl_setopt_array(
-			$curl,
-			array(
-				CURLOPT_URL            => 'http://api.ciirus.com/XMLAdditionalFunctions15.025.asmx/GetCleaningFee?APIUserName=' . $this->ciirus_user . '&APIPassword=' . $this->ciirus_password . '&PropertyID=' . $id,
-				CURLOPT_RETURNTRANSFER => true,
-				CURLOPT_ENCODING       => '',
-				CURLOPT_MAXREDIRS      => 10,
-				CURLOPT_TIMEOUT        => 30,
-				CURLOPT_HTTP_VERSION   => CURL_HTTP_VERSION_1_1,
-				CURLOPT_CUSTOMREQUEST  => 'GET',
-			)
-		);
-
-		$response = curl_exec( $curl );
-		$err      = curl_error( $curl );
-
-		curl_close( $curl );
-
-		if ( $err ) {
-			return 'cURL Error #:' . $err;
-		} else {
-			libxml_use_internal_errors( true );
-
-			$xml_result = simplexml_load_string( $response );
-
-			if ( $xml_result ) {
-				$json_encode = wp_json_encode( $xml_result );
-				$arr_output  = json_decode( $json_encode, true );
-
-				if ( $arr_output['ChargeCleaningFee'] == 'true' && $arr_output['OnlyChargeCleaningFeeWhenLessThanDays'] > $nights ) {
-					return $arr_output['CleaningFeeAmount'];
-				} else {
-					return 0;
-				}
-			} else {
-				return 0;
-			}
-		}
-	}
-
-	public function ciirus_make_booking( $booking_details ) {
-		$curl = curl_init();
-
-		curl_setopt_array(
-			$curl,
-			array(
-				CURLOPT_URL            => 'https://api.ciirus.com/CiirusXML.15.025.asmx',
-				CURLOPT_RETURNTRANSFER => true,
-				CURLOPT_ENCODING       => '',
-				CURLOPT_MAXREDIRS      => 10,
-				CURLOPT_TIMEOUT        => 0,
-				CURLOPT_FOLLOWLOCATION => true,
-				CURLOPT_HTTP_VERSION   => CURL_HTTP_VERSION_1_1,
-				CURLOPT_CUSTOMREQUEST  => 'POST',
-				CURLOPT_POSTFIELDS     => $booking_details,
-				CURLOPT_HTTPHEADER     => array(
-					'Content-Type: text/xml; charset=utf-8',
-					'SOAPAction: http://xml.ciirus.com/MakeBooking',
-				),
-			)
-		);
-
-		$response = curl_exec( $curl );
-		$err      = curl_error( $curl );
-
-		if ( $err ) {
-			return 'cURL Error #:' . $err;
-		} else {
-			$response    = preg_replace( '/(<\/?)(\w+):([^>]*>)/', '$1$2$3', $response );
-			$xml         = new SimpleXMLElement( $response );
-			$body        = $xml->xpath( '//soapBody ' )[0];
-			$json_encode = wp_json_encode( $body );
-			$arr_output  = json_decode( $json_encode, true );
-			$result      = $arr_output['MakeBookingResponse']['MakeBookingResult'];
-
-			if ( 'true' == $result['BookingPlaced'] ) {
-				return array(
-					'BookingPlaced'           => $result['BookingPlaced'],
-					'BookingID'               => $result['BookingID'],
-					'TotalAmountIncludingTax' => $result['TotalAmountIncludingTax'],
-				);
-			} else {
-				return array(
-					'BookingPlaced' => $result['BookingPlaced'],
-					'ErrorMessage'  => $result['ErrorMessage'],
-				);
-			}
-		}
-	}
-
-	public function ciirus_test_booking() {
-		 $curl = curl_init();
-
-		curl_setopt_array(
-			$curl,
-			array(
-				CURLOPT_URL            => 'http://api.ciirus.com/CiirusXML.15.025.asmx',
-				CURLOPT_RETURNTRANSFER => true,
-				CURLOPT_ENCODING       => '',
-				CURLOPT_MAXREDIRS      => 10,
-				CURLOPT_TIMEOUT        => 0,
-				CURLOPT_FOLLOWLOCATION => true,
-				CURLOPT_HTTP_VERSION   => CURL_HTTP_VERSION_1_1,
-				CURLOPT_CUSTOMREQUEST  => 'POST',
-				CURLOPT_POSTFIELDS     => '<?xml version="1.0" encoding="utf-8"?>
+		curl_setopt_array($curl, array(
+			CURLOPT_URL => 'https://api.ciirus.com/XMLAdditionalFunctions15.025.asmx',
+			CURLOPT_RETURNTRANSFER => true,
+			CURLOPT_ENCODING => '',
+			CURLOPT_MAXREDIRS => 10,
+			CURLOPT_TIMEOUT => 0,
+			CURLOPT_FOLLOWLOCATION => true,
+			CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+			CURLOPT_CUSTOMREQUEST => 'POST',
+			CURLOPT_POSTFIELDS =>'<?xml version="1.0" encoding="utf-8"?>
 <soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema"
     xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
     <soap:Body>
-        <MakeBooking xmlns="http://xml.ciirus.com/">
-            <APIUsername>74db9a060ce9426</APIUsername>
-            <APIPassword>4e1276922b63493</APIPassword>
-            <BD>
-                <ArrivalDate>22 Sep 2024</ArrivalDate>
-                <DepartureDate>30 Sep 2024</DepartureDate>
-                <PropertyID>227504</PropertyID>
-                <GuestName>John</GuestName>
-                <GuestEmailAddress>jcprangue@gmail.com</GuestEmailAddress>
-                <GuestTelephone>1234567</GuestTelephone>
-                <GuestAddress>San Jose</GuestAddress>
-                <GuestList>
-                    <sGuests>
-                        <Name>Dominic Ace</Name>
-                        <Age>-1</Age>
-                    </sGuests>
-                </GuestList>
-            </BD>
-        </MakeBooking>
+        <GetExtras xmlns="http://xml.ciirus.com/">
+            <APIUserName>'.$this->ciirus_user.'</APIUserName>
+            <APIPassword>'.$this->ciirus_password.'</APIPassword>
+            <PropertyID>'.$id.'</PropertyID>
+        </GetExtras>
     </soap:Body>
 </soap:Envelope>',
 CURLOPT_HTTPHEADER => array(
-'Content-Type: text/xml; charset=utf-8',
-'SOAPAction: http://xml.ciirus.com/MakeBooking',
+'SOAPAction: http://xml.ciirus.com/GetExtras',
+'Content-Type: text/xml; charset=utf-8'
 ),
-)
-);
+));
 
-$response = curl_exec( $curl );
-$err = curl_error( $curl );
+$response = curl_exec($curl);
 
-if ( $err ) {
-return 'cURL Error #:' . $err;
-} else {
-$response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
-    $xml = new SimpleXMLElement( $response );
-    $body = $xml->xpath( '//soapBody ' )[0];
-    $json_encode = wp_json_encode( $body );
-    $arr_output = json_decode( $json_encode, true );
-    $result = $arr_output['MakeBookingResponse']['MakeBookingResult'];
+curl_close($curl);
 
-    if ( 'true' == $result['BookingPlaced'] ) {
-    return array(
-    'BookingPlaced' => $result['BookingPlaced'],
-    'BookingID' => $result['BookingID'],
-    'TotalAmountIncludingTax' => $result['TotalAmountIncludingTax'],
-    );
+$response = preg_replace("/(<\ /?)(\w+):([^>]*>)/", "$1$2$3", $response);
+    $response = preg_replace("/xmlns[^=]*=\"[^\"]*\"/", "", $response);
+
+    $xml = simplexml_load_string($response);
+    $json = json_encode($xml);
+    $array = json_decode($json, true);
+
+    $mandatoryItems = [];
+
+    $items = $array['soapBody']['GetExtrasResponse']['GetExtrasResult']['Extras']['PropertyExtras'];
+
+    foreach($items as $item) {
+    if ($item['Mandatory'] == 'true') {
+    $mandatoryItems[] = $item;
+    }
+    }
+
+    $extras = 0;
+
+    foreach($mandatoryItems as $item) {
+    if ( $item['PercentageFee'] === true ) {
+    $extras = $extras + (($item['Percentage'] / 100 ) * $price);
     } else {
-    return array(
-    'BookingPlaced' => $result['BookingPlaced'],
-    'ErrorMessage' => $result['ErrorMessage'],
+    if( $item['FlatFeeAmount'] ) {
+    $extras = $extras + $item['FlatFeeAmount'];
+    }
+
+    }
+    }
+
+    return $extras;
+
+
+    }
+
+    public function ciirus_get_cleaning_fee( $id, $nights ) {
+    $curl = curl_init();
+
+    curl_setopt_array(
+    $curl,
+    array(
+    CURLOPT_URL => 'http://api.ciirus.com/XMLAdditionalFunctions15.025.asmx/GetCleaningFee?APIUserName=' .
+    $this->ciirus_user . '&APIPassword=' . $this->ciirus_password . '&PropertyID=' . $id,
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_ENCODING => '',
+    CURLOPT_MAXREDIRS => 10,
+    CURLOPT_TIMEOUT => 30,
+    CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+    CURLOPT_CUSTOMREQUEST => 'GET',
+    )
     );
+
+    $response = curl_exec( $curl );
+    $err = curl_error( $curl );
+
+    curl_close( $curl );
+
+    if ( $err ) {
+    return 'cURL Error #:' . $err;
+    } else {
+    libxml_use_internal_errors( true );
+
+    $xml_result = simplexml_load_string( $response );
+
+    if ( $xml_result ) {
+    $json_encode = wp_json_encode( $xml_result );
+    $arr_output = json_decode( $json_encode, true );
+
+    if ( $arr_output['ChargeCleaningFee'] == 'true' && $arr_output['OnlyChargeCleaningFeeWhenLessThanDays'] > $nights )
+    {
+    return $arr_output['CleaningFeeAmount'];
+    } else {
+    return 0;
+    }
+    } else {
+    return 0;
     }
     }
     }
 
-    public function get_season_total_price() { }
+    public function ciirus_calculated_booking_price( $id, $checkin, $nights ) {
+    $api_get_price = $this->ciirus_get_property_rates( $id, $checkin, $nights );
+    $cleaning = $this->ciirus_get_cleaning_fee( $id, $nights );
+    $propertyTaxRatesApi = $this->ciirus_get_tax_rates( $id );
+    $tax = $propertyTaxRatesApi['total_rates'];
 
-    public function golf_booking_email_content() {
-    ob_start();
-    ?>
+    $api_price = $api_get_price['total_rates'];
 
-    <!DOCTYPE html
-        PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-    <html xmlns="https://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml"
-        xmlns:o="urn:schemas-microsoft-com:office:office">
+    $api_price_tax = ( $tax / 100 ) * $api_price;
+    $cleaning_tax = ( $tax / 100 ) * $cleaning;
 
-    <head>
-        <title>Golf Agents TeeTime Booking</title>
-        <meta http–equiv="Content-Type" content="text/html; charset=utf-8">
-        <meta http–equiv="X-UA-Compatible" content="IE=edge">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0 ">
-        <meta name="format-detection" content="telephone=no">
-    </head>
+    return $api_price + $cleaning + $api_price_tax + $cleaning_tax;
 
-    <body>
-        <table border="0" width="90%">
-            <tbody>
-                <tr>
-                    <td align="center" colspan="5">&nbsp; </td>
-                </tr>
-                <tr>
-                    <td align="center" colspan="5">
-                        <font color="#215272" size="7" face="verdana">Golf Agents TeeTime Booking</font>
-                    </td>
-                </tr>
-                <tr>
-                    <td colspan="5">&nbsp;</td>
-                </tr>
-                <tr>
-                    <td align="center" colspan="5">
-                        <font face="verdana" color="00,33,66" size="2px"><b>Barrie &amp; Jane Pike, 69 Nant Talwg Way,
-                                Barry, South Glamorgan, CF62 6LZ, Wales, UK.<br>
-                                Tel/Fax 01446 407557 (Intl. +44 1446 407557) Email : <a
-                                    href="mailto:barrie.pike@gmail.com" target="_blank">
-                                    barrie.pike@gmail.com</a> <br>
-                            </b></font>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
-        <table border="0" width="90%">
-            <tbody>
-                <tr>
-                    <td colspan="5">&nbsp; </td>
-                </tr>
-                <tr>
-                    <td colspan="5">
-                        <font size="4">Please make the following reservations and confirm by email.
-                        </font>
-                    </td>
-                </tr>
-                <tr>
-                    <td colspan="5">&nbsp; </td>
-                </tr>
-                <tr>
-                    <td colspan="5"><b>Guest Name : </b>&nbsp; <b>GUEST_EMAIL</b></td>
-                </tr>
-            </tbody>
-        </table>
-        <table border="0" width="90%">
-            <tbody>
-                <tr>
-                    <td colspan="5">
-                        <hr size="1">
-                    </td>
-                </tr>
-                <tr>
-                    <td valign="top" align="center"><b>Date</b></td>
-                    <td valign="top" align="center"><b>Course Name</b></td>
-                    <td valign="top" align="center"><b>Preferred Time </b></td>
-                    <td valign="top" align="center"><b>Holes </b></td>
-                    <td valign="top" align="center"><b>Golfers</b> </td>
-                </tr>
-                <tr>
-                    <td colspan="5">
-                        <hr size="1">
-                    </td>
-                </tr>
-                <!-- START -->
-                GOLF_BOOKING_DETAILS
-                <!-- END -->
+    }
+
+    public function ciirus_make_booking( $booking_details ) {
+    $curl = curl_init();
+
+    curl_setopt_array(
+    $curl,
+    array(
+    CURLOPT_URL => 'https://api.ciirus.com/CiirusXML.15.025.asmx',
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_ENCODING => '',
+    CURLOPT_MAXREDIRS => 10,
+    CURLOPT_TIMEOUT => 0,
+    CURLOPT_FOLLOWLOCATION => true,
+    CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+    CURLOPT_CUSTOMREQUEST => 'POST',
+    CURLOPT_POSTFIELDS => $booking_details,
+    CURLOPT_HTTPHEADER => array(
+    'Content-Type: text/xml; charset=utf-8',
+    'SOAPAction: http://xml.ciirus.com/MakeBooking',
+    ),
+    )
+    );
+
+    $response = curl_exec( $curl );
+    $err = curl_error( $curl );
+
+    if ( $err ) {
+    return 'cURL Error #:' . $err;
+    } else {
+    $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
+        $xml = new SimpleXMLElement( $response );
+        $body = $xml->xpath( '//soapBody ' )[0];
+        $json_encode = wp_json_encode( $body );
+        $arr_output = json_decode( $json_encode, true );
+        $result = $arr_output['MakeBookingResponse']['MakeBookingResult'];
+
+        if ( 'true' == $result['BookingPlaced'] ) {
+        return array(
+        'BookingPlaced' => $result['BookingPlaced'],
+        'BookingID' => $result['BookingID'],
+        'TotalAmountIncludingTax' => $result['TotalAmountIncludingTax'],
+        );
+        } else {
+        return array(
+        'BookingPlaced' => $result['BookingPlaced'],
+        'ErrorMessage' => $result['ErrorMessage'],
+        );
+        }
+        }
+        }
+
+        public function ciirus_test_booking() {
+        $curl = curl_init();
+
+        curl_setopt_array(
+        $curl,
+        array(
+        CURLOPT_URL => 'http://api.ciirus.com/CiirusXML.15.025.asmx',
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_ENCODING => '',
+        CURLOPT_MAXREDIRS => 10,
+        CURLOPT_TIMEOUT => 0,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+        CURLOPT_CUSTOMREQUEST => 'POST',
+        CURLOPT_POSTFIELDS => '
+        <?xml version="1.0" encoding="utf-8"?>
+        <soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+            <soap:Body>
+                <MakeBooking xmlns="http://xml.ciirus.com/">
+                    <APIUsername>74db9a060ce9426</APIUsername>
+                    <APIPassword>4e1276922b63493</APIPassword>
+                    <BD>
+                        <ArrivalDate>22 Sep 2024</ArrivalDate>
+                        <DepartureDate>30 Sep 2024</DepartureDate>
+                        <PropertyID>227504</PropertyID>
+                        <GuestName>John</GuestName>
+                        <GuestEmailAddress>jcprangue@gmail.com</GuestEmailAddress>
+                        <GuestTelephone>1234567</GuestTelephone>
+                        <GuestAddress>San Jose</GuestAddress>
+                        <GuestList>
+                            <sGuests>
+                                <Name>Dominic Ace</Name>
+                                <Age>-1</Age>
+                            </sGuests>
+                        </GuestList>
+                    </BD>
+                </MakeBooking>
+            </soap:Body>
+        </soap:Envelope>',
+        CURLOPT_HTTPHEADER => array(
+        'Content-Type: text/xml; charset=utf-8',
+        'SOAPAction: http://xml.ciirus.com/MakeBooking',
+        ),
+        )
+        );
+
+        $response = curl_exec( $curl );
+        $err = curl_error( $curl );
+
+        if ( $err ) {
+        return 'cURL Error #:' . $err;
+        } else {
+        $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
+            $xml = new SimpleXMLElement( $response );
+            $body = $xml->xpath( '//soapBody ' )[0];
+            $json_encode = wp_json_encode( $body );
+            $arr_output = json_decode( $json_encode, true );
+            $result = $arr_output['MakeBookingResponse']['MakeBookingResult'];
+
+            if ( 'true' == $result['BookingPlaced'] ) {
+            return array(
+            'BookingPlaced' => $result['BookingPlaced'],
+            'BookingID' => $result['BookingID'],
+            'TotalAmountIncludingTax' => $result['TotalAmountIncludingTax'],
+            );
+            } else {
+            return array(
+            'BookingPlaced' => $result['BookingPlaced'],
+            'ErrorMessage' => $result['ErrorMessage'],
+            );
+            }
+            }
+            }
+
+            public function get_season_total_price() { }
+
+            public function golf_booking_email_content() {
+            ob_start();
+            ?>
+
+            <!DOCTYPE html
+                PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+            <html xmlns="https://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml"
+                xmlns:o="urn:schemas-microsoft-com:office:office">
+
+            <head>
+                <title>Golf Agents TeeTime Booking</title>
+                <meta http–equiv="Content-Type" content="text/html; charset=utf-8">
+                <meta http–equiv="X-UA-Compatible" content="IE=edge">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0 ">
+                <meta name="format-detection" content="telephone=no">
+            </head>
+
+            <body>
+                <table border="0" width="90%">
+                    <tbody>
+                        <tr>
+                            <td align="center" colspan="5">&nbsp; </td>
+                        </tr>
+                        <tr>
+                            <td align="center" colspan="5">
+                                <font color="#215272" size="7" face="verdana">Golf Agents TeeTime Booking</font>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td colspan="5">&nbsp;</td>
+                        </tr>
+                        <tr>
+                            <td align="center" colspan="5">
+                                <font face="verdana" color="00,33,66" size="2px"><b>Barrie &amp; Jane Pike, 69 Nant
+                                        Talwg
+                                        Way,
+                                        Barry, South Glamorgan, CF62 6LZ, Wales, UK.<br>
+                                        Tel/Fax 01446 407557 (Intl. +44 1446 407557) Email : <a
+                                            href="mailto:barrie.pike@gmail.com" target="_blank">
+                                            barrie.pike@gmail.com</a> <br>
+                                    </b></font>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <table border="0" width="90%">
+                    <tbody>
+                        <tr>
+                            <td colspan="5">&nbsp; </td>
+                        </tr>
+                        <tr>
+                            <td colspan="5">
+                                <font size="4">Please make the following reservations and confirm by email.
+                                </font>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td colspan="5">&nbsp; </td>
+                        </tr>
+                        <tr>
+                            <td colspan="5"><b>Guest Name : </b>&nbsp; <b>GUEST_EMAIL</b></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <table border="0" width="90%">
+                    <tbody>
+                        <tr>
+                            <td colspan="5">
+                                <hr size="1">
+                            </td>
+                        </tr>
+                        <tr>
+                            <td valign="top" align="center"><b>Date</b></td>
+                            <td valign="top" align="center"><b>Course Name</b></td>
+                            <td valign="top" align="center"><b>Preferred Time </b></td>
+                            <td valign="top" align="center"><b>Holes </b></td>
+                            <td valign="top" align="center"><b>Golfers</b> </td>
+                        </tr>
+                        <tr>
+                            <td colspan="5">
+                                <hr size="1">
+                            </td>
+                        </tr>
+                        <!-- START -->
+                        GOLF_BOOKING_DETAILS
+                        <!-- END -->
 
 
-                <tr>
-                    <td colspan="5">
-                        <hr size="1">
-                    </td>
-                </tr>
-            </tbody>
-        </table>
-    </body>
+                        <tr>
+                            <td colspan="5">
+                                <hr size="1">
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </body>
 
-    </html>
+            </html>
 
 
 
-    <?php
+            <?php
 		return ob_get_clean();
 	}
 
@@ -1532,11 +1619,11 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 
 	public function calculate_total_extra_price( $post_id ) {
 		if ( 'bookings' == get_post_type( $post_id ) ) {
-			
+
 			if ( get_field( 'api_price', $post_id ) ) {
-				$total_all   = 0;
-				$total_ciirus_price_with_comission = get_field('total_ciirus_price_with_comission', $post_id);
-				$extra_costs = get_field( 'extra_cost', $post_id );
+				$total_all                         = 0;
+				$total_ciirus_price_with_comission = get_field( 'total_ciirus_price_with_comission', $post_id );
+				$extra_costs                       = get_field( 'extra_cost', $post_id );
 
 				if ( $extra_costs ) {
 					foreach ( $extra_costs as $cost ) {
@@ -1560,25 +1647,24 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 		}
 	}
 
-	public function add_extras( $post_id ){
+	public function add_extras( $post_id ) {
 		if ( 'bookings' == get_post_type( $post_id ) ) {
 			$rows = array();
-			
-			$property_id = get_field( 'property_post', $post_id )[0];
-			$extra_costs = get_field( 'extra_cost', $property_id );
+
+			$property_id    = get_field( 'property_post', $post_id )[0];
+			$extra_costs    = get_field( 'extra_cost', $property_id );
 			$current_extras = get_field( 'extra_cost', $post_id );
 
-			if ( !$current_extras && $extra_costs ) {
+			if ( ! $current_extras && $extra_costs ) {
 
 				foreach ( $extra_costs as $cost ) {
-					$rows[]        = array(
-						'extra_cost'       => $cost['name'],
+					$rows[] = array(
+						'extra_cost' => $cost['name'],
 					);
 				}
 
 				update_field( 'field_61fbad0ce3c30', $rows, $post_id );
 			}
-			
 		}
 	}
 
@@ -1596,75 +1682,79 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 	public function booking_golf_email_metabox_callback() {
 		$id = $_GET['post'];
 
-		if ( ! isset( $id ) && empty( $id ) ) return;
-		
+		if ( ! isset( $id ) && empty( $id ) ) {
+			return;
+		}
+
 		ob_start();
 		?>
-    <div style="background: #ddd; color: #000; padding: 10px; margin-bottom: 10px;">Please update first before sending
-        an
-        email.</div>
-    <div id="booking_golf_email_status" style="display: none;">
-        <h4 id="statusText">Sending Email...</h4>
-    </div>
-    <div id="booking_golf_email_wrap">
-        <input type="email" id="booking_golf_email" value="orlando.rentals@gmail.com">
-        <button id="booking_email_btn" class="button button-primary button-large" style="margin-top: 5px;">Send Golf
-            Booking
-            Email</button>
-    </div>
-    <script>
-    const booking_golf_email_wrap = document.getElementById('booking_golf_email_wrap');
-    const booking_golf_email_status = document.getElementById('booking_golf_email_status');
-    const booking_email_btn = document.getElementById('booking_email_btn');
-    const booking_golf_email = document.getElementById('booking_golf_email');
-    if (booking_email_btn) {
-        booking_email_btn.addEventListener('click', function(e) {
-            e.preventDefault();
-            if (!booking_golf_email.value) {
-                alert('Please enter an email');
-                return;
-            }
-            booking_golf_email_status.style.display = "block";
-            booking_golf_email_wrap.style.display = "none";
-            const form = new FormData();
-            form.append('action', 'send_golf_booking_email');
-            form.append('nonce', XERO.golfnonce);
-            form.append('post_id', <?php echo $id; ?>);
-            form.append('golf_booking_email', booking_golf_email.value);
-
-            const params = new URLSearchParams(form);
-            const statusText = document.querySelector('#statusText');
-            console.log(params);
-            fetch(XERO.ajax_url, {
-                    method: 'POST',
-                    credentials: 'same-origin',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                        'Cache-Control': 'no-cache',
-                    },
-                    body: params,
-                })
-                .then((response) => response.json())
-                .then((data) => {
-                    if (data) {
-                        console.log(data);
-                        if (2 == data.code) {
-                            alert("Golf Booking empty");
-                            booking_golf_email_status.style.display = "none";
-                            booking_golf_email_wrap.style.display = "block";
-                        }
-                        statusText.innerText = "EMAIL SENT";
+            <div style="background: #ddd; color: #000; padding: 10px; margin-bottom: 10px;">Please update first before
+                sending
+                an
+                email.</div>
+            <div id="booking_golf_email_status" style="display: none;">
+                <h4 id="statusText">Sending Email...</h4>
+            </div>
+            <div id="booking_golf_email_wrap">
+                <input type="email" id="booking_golf_email" value="orlando.rentals@gmail.com">
+                <button id="booking_email_btn" class="button button-primary button-large" style="margin-top: 5px;">Send
+                    Golf
+                    Booking
+                    Email</button>
+            </div>
+            <script>
+            const booking_golf_email_wrap = document.getElementById('booking_golf_email_wrap');
+            const booking_golf_email_status = document.getElementById('booking_golf_email_status');
+            const booking_email_btn = document.getElementById('booking_email_btn');
+            const booking_golf_email = document.getElementById('booking_golf_email');
+            if (booking_email_btn) {
+                booking_email_btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    if (!booking_golf_email.value) {
+                        alert('Please enter an email');
+                        return;
                     }
-                })
-                .catch((error) => {
-                    console.log('EMAIL FAILED');
-                    console.error(error);
-                });
+                    booking_golf_email_status.style.display = "block";
+                    booking_golf_email_wrap.style.display = "none";
+                    const form = new FormData();
+                    form.append('action', 'send_golf_booking_email');
+                    form.append('nonce', XERO.golfnonce);
+                    form.append('post_id', <?php echo $id; ?>);
+                    form.append('golf_booking_email', booking_golf_email.value);
 
-        });
-    }
-    </script>
-    <?php
+                    const params = new URLSearchParams(form);
+                    const statusText = document.querySelector('#statusText');
+                    console.log(params);
+                    fetch(XERO.ajax_url, {
+                            method: 'POST',
+                            credentials: 'same-origin',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded',
+                                'Cache-Control': 'no-cache',
+                            },
+                            body: params,
+                        })
+                        .then((response) => response.json())
+                        .then((data) => {
+                            if (data) {
+                                console.log(data);
+                                if (2 == data.code) {
+                                    alert("Golf Booking empty");
+                                    booking_golf_email_status.style.display = "none";
+                                    booking_golf_email_wrap.style.display = "block";
+                                }
+                                statusText.innerText = "EMAIL SENT";
+                            }
+                        })
+                        .catch((error) => {
+                            console.log('EMAIL FAILED');
+                            console.error(error);
+                        });
+
+                });
+            }
+            </script>
+            <?php
 		echo ob_get_clean();
 	}
 
@@ -1679,12 +1769,11 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 		 $rows = get_field( 'golf_booking', $_POST['post_id'] );
 
 		 if ( ! $rows ) {
-			$status['post'] = $_POST;
-			wp_send_json( $status );
+			 $status['post'] = $_POST;
+			 wp_send_json( $status );
 		 }
 
 		 $golf_booking_email_content = $this->request_golf_email_content();
-		 
 
 		 $golf_bookings = '';
 
@@ -1746,21 +1835,21 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 			if ( 'edit-bookings' === get_current_screen()->id ) {
 				$owners = $this->get_all_owners();
 				?>
-    <form method="GET">
-        <select name="property_owner" id="selectPropertyOwner">
-            <option value="">Choose Property Owner</option>
-            <?php
+            <form method="GET">
+                <select name="property_owner" id="selectPropertyOwner">
+                    <option value="">Choose Property Owner</option>
+                    <?php
 				foreach ( $owners as $owner ) {
 					?>
-            <option value="<?php echo $owner['id']; ?>"
-                <?php echo( isset( $_GET['property_owner'] ) && $owner['id'] == $_GET['property_owner'] && ! empty( $_GET['property_owner'] ) ? 'selected' : '' ); ?>>
-                <?php echo $owner['title']; ?>
-            </option>
-            <?php } ?>
-        </select>
+                    <option value="<?php echo $owner['id']; ?>"
+                        <?php echo( isset( $_GET['property_owner'] ) && $owner['id'] == $_GET['property_owner'] && ! empty( $_GET['property_owner'] ) ? 'selected' : '' ); ?>>
+                        <?php echo $owner['title']; ?>
+                    </option>
+                    <?php } ?>
+                </select>
 
-        <input type="submit" class="button" value="Filter" id="propertyOwnerSubmit">
-        <?php
+                <input type="submit" class="button" value="Filter" id="propertyOwnerSubmit">
+                <?php
 				$linkargs = array();
 				foreach ( $_GET as $label => $value ) :
 					if ( 'property_owner' != $label ) {
@@ -1773,18 +1862,18 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 					'edit.php'
 				);
 				?>
-    </form>
-    <script>
-    const propertyOwnerSubmit = document.getElementById('propertyOwnerSubmit'),
-        selectPropertyOwner = document.getElementById('selectPropertyOwner');
-    propertyOwnerSubmit.addEventListener('click', function(event) {
-        event.preventDefault();
-        window.location.href = "<?php echo $link; ?>&property_owner=" +
-            selectPropertyOwner.value;
-    });
-    </script>
+            </form>
+            <script>
+            const propertyOwnerSubmit = document.getElementById('propertyOwnerSubmit'),
+                selectPropertyOwner = document.getElementById('selectPropertyOwner');
+            propertyOwnerSubmit.addEventListener('click', function(event) {
+                event.preventDefault();
+                window.location.href = "<?php echo $link; ?>&property_owner=" +
+                    selectPropertyOwner.value;
+            });
+            </script>
 
-    <?php
+            <?php
 			}
 		}
 	}

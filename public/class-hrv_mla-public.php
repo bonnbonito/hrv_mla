@@ -115,7 +115,7 @@ class HRV_MLA_Public {
 				'properties_ids'        => $this->get_all_properties(),
 				'properties_beds'       => $this->get_all_beds(),
 				'properties_result_ids' => $this->get_result_properties(),
-				'stripe_deposit'		=> $hrv_admin->deposit,
+				'stripe_deposit'        => $hrv_admin->deposit,
 			)
 		);
 	}
@@ -291,8 +291,8 @@ class HRV_MLA_Public {
         <?php the_content(); ?>
 
         <?php
-						if ( count( $amenities ) > 0 || count( $amenities_icons ) > 0 ) :
-							?>
+				if ( count( $amenities ) > 0 || count( $amenities_icons ) > 0 ) :
+					?>
         <div class="amenities-div">
             <?php echo do_shortcode( '[amenities]' ); ?>
         </div>
@@ -331,6 +331,13 @@ class HRV_MLA_Public {
 		ob_start();
 		$amenities       = get_field( 'amenities_list', $id );
 		$amenities_icons = get_field( 'amenities_icons', $id );
+
+		$datediff = strtotime( $checkout ) - strtotime( $checkin );
+		$nights   = round( $datediff / ( 60 * 60 * 24 ) );
+
+		$price         = $this->hrv_get_property_rates( $id, $checkin, $checkout );
+		$cleaning_fees = $hrv_admin->ciirus_get_cleaning_fee( get_field( 'ciirus_id', $id ), $nights );
+        
 		?>
 <div class="property-result-wrap">
     <div class="img-wrap-property">
@@ -343,27 +350,60 @@ class HRV_MLA_Public {
         </h3>
 
         <?php
-				echo apply_filters( 'the_content', get_the_content( null, false, $id ));
-				?>
+				echo apply_filters( 'the_content', get_the_content( null, false, $id ) );
+		?>
 
         <?php
-				if ( $amenities || $amenities_icons ) :
-					?>
+		if ( $amenities || $amenities_icons ) :
+			?>
         <div class="amenities-div">
             <?php echo do_shortcode( '[amenities id="' . $id . '"]' ); ?>
         </div>
         <?php endif; ?>
 
+        <pre>
+						Cleaning = <?php print_r( $cleaning_fees ); ?>
+
+		</pre>
+
+        <pre>
+			<?php
+			$api_get_price = $hrv_admin->ciirus_get_property_rates( get_field( 'ciirus_id', $id ), $checkin, $nights );
+			?>
+			Property Price = <?php print_r( $api_get_price ); ?>
+
+		</pre>
+
+        <pre>
+            <?php
+            $extras = $hrv_admin->ciirus_extra_fees($api_get_price, get_field( 'ciirus_id', $id ) );
+            ?>
+            Extras = <?php print_r( $extras ); ?>
+        </pre>
+
+        <pre>
+			<?php
+			$taxes = $hrv_admin->ciirus_get_tax_rates( get_field( 'ciirus_id', $id ) );
+			?>
+Taxes = <?php print_r( $taxes['total_rates'] ); ?><br>
+Total Tax rate = <?php echo $api_get_price['total_rates']; ?> * <?php echo $taxes['total_rates']; ?> = <?php echo ( $taxes['total_rates'] / 100 ) * $api_get_price['total_rates']; ?>
+		</pre>
+
 
 
         <?php
-				$price = $this->hrv_get_property_rates( $id, $checkin, $checkout );
-				if ( $price && $price > 0 ) {
-					?>
+
+		if ( $price && $price > 0 ) {
+			?>
         <div class="property-results-price">
             Price: <strong>&dollar;<?php echo $price; ?></strong>
         </div>
         <?php } ?>
+
+
+        <h1>
+            <?php echo $hrv_admin->ciirus_calculated_booking_price( get_field( 'ciirus_id', $id ), $checkin, $nights ); ?>
+        </h1>
 
 
 
@@ -371,7 +411,7 @@ class HRV_MLA_Public {
             <?php
 					$datediff = strtotime( $checkout ) - strtotime( $checkin );
 					$nights   = round( $datediff / ( 60 * 60 * 24 ) );
-					?>
+			?>
             <div style="display: flex; grid-gap: 20px; width: 100%; margin: auto;">
                 <?php if ( $datediff ) : ?>
                 <a href="<?php echo get_the_permalink( $id ); ?>?id=<?php echo $id; ?>&date_checkin=<?php echo $checkin; ?>&date_checkout=<?php echo $checkout; ?>&nights=<?php echo $nights; ?>"
@@ -414,7 +454,7 @@ class HRV_MLA_Public {
 			$total_rates  = $currentprice * $nights;
 		}
 
-		return round( $total_rates, 1 );
+		return round( $total_rates );
 	}
 
 	/**
@@ -424,7 +464,7 @@ class HRV_MLA_Public {
 		if ( ! wp_verify_nonce( $_POST['nonce'], 'hrv-nonce' ) ) {
 			wp_send_json( 'Nonce Error' );
 		}
-		$hrv_admin = new HRV_MLA_Admin( $this->plugin_name, $this->version );
+		$hrv_admin              = new HRV_MLA_Admin( $this->plugin_name, $this->version );
 		$secret                 = get_field( 'testing', 'option' ) ? get_field( 'test_secret_key', 'option' ) : get_field( 'live_secret_key', 'option' );
 		$stripe                 = new \Stripe\StripeClient( $secret );
 		$startdate              = date( 'Y-m-d', strtotime( $_POST['startdate'] ) );
@@ -566,7 +606,7 @@ class HRV_MLA_Public {
 				}
 
 				update_field( 'field_61fbad0ce3c30', $rows, $booking_id );
-				
+
 				if ( $api_price == 1 ) {
 					$booking_api_details = '<?xml version="1.0" encoding="utf-8"?>
 <soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema"
@@ -613,7 +653,7 @@ $days_left = floor( $diff / ( 60 * 60 * 24 ) );
 // $request_payment_email_content = $hrv_admin->to_customer_email_hrv_content_body();
 
 /**
-* Other Addons Owner
+Other Addons Owner
 */
 $extra_owner_total = 0;
 $other_addons_owner = '';
@@ -641,33 +681,57 @@ if ( $days_left <= $hrv_admin->days_to_notify ) {
     $request_payment_email_content = str_replace( 'INVOICE_DATE', date( 'd/M/Y' ), $request_payment_email_content );
     $directions_acf = get_field( 'directions_from_airport', $property );
     if ( $api_price == 1 ) {
-    $request_payment_email_content = str_replace( '[BOOKING_DETAILS]', $hrv_admin->booking_details_content_api(),
-    $request_payment_email_content );
+    $request_payment_email_content = str_replace(
+    '[BOOKING_DETAILS]',
+    $hrv_admin->booking_details_content_api(),
+    $request_payment_email_content
+    );
     $request_payment_email_content = str_replace( 'TOTAL_ROOM_RATE', $total_room_rate, $request_payment_email_content );
     } else {
-    $request_payment_email_content = str_replace( '[BOOKING_DETAILS]', $hrv_admin->booking_details_content(),
-    $request_payment_email_content );
+    $request_payment_email_content = str_replace(
+    '[BOOKING_DETAILS]',
+    $hrv_admin->booking_details_content(),
+    $request_payment_email_content
+    );
     }
     $request_payment_email_content = str_replace( 'NO_ADULTS', $adults, $request_payment_email_content );
     $request_payment_email_content = str_replace( 'NO_NIGHTS', $nights, $request_payment_email_content );
     $request_payment_email_content = str_replace( 'NO_CHILDREN', $children, $request_payment_email_content );
-    $request_payment_email_content = str_replace( '[GUEST_NAME]', $firstname . ' ' . $surname,
-    $request_payment_email_content );
-    $request_payment_email_content = str_replace( 'DEPARTURE_DATE', date( 'd/M/Y', strtotime( $enddate ) ),
-    $request_payment_email_content );
-    $request_payment_email_content = str_replace( 'ARRIVAL_DATE', date( 'd/M/Y', strtotime( $startdate ) ),
-    $request_payment_email_content );
-    $request_payment_email_content = str_replace( 'PROPERTY_NAME', get_the_title( $property ),
-    $request_payment_email_content );
+    $request_payment_email_content = str_replace(
+    '[GUEST_NAME]',
+    $firstname . ' ' . $surname,
+    $request_payment_email_content
+    );
+    $request_payment_email_content = str_replace(
+    'DEPARTURE_DATE',
+    date( 'd/M/Y', strtotime( $enddate ) ),
+    $request_payment_email_content
+    );
+    $request_payment_email_content = str_replace(
+    'ARRIVAL_DATE',
+    date( 'd/M/Y', strtotime( $startdate ) ),
+    $request_payment_email_content
+    );
+    $request_payment_email_content = str_replace(
+    'PROPERTY_NAME',
+    get_the_title( $property ),
+    $request_payment_email_content
+    );
     $request_payment_email_content = str_replace( 'TOTAL_PRICE', $total_price, $request_payment_email_content );
     $request_payment_email_content = str_replace( 'RENT_PRICE', $bookingprice, $request_payment_email_content );
     $request_payment_email_content = str_replace( 'HOME_RENTAL_PRICE', $rental_price, $request_payment_email_content );
     $request_payment_email_content = str_replace( 'TOTAL_DEPOSIT', $deposit_price, $request_payment_email_content );
-    $request_payment_email_content = str_replace( 'TOTAL_BALANCE', $total_price - $deposit_price,
-    $request_payment_email_content );
+    $request_payment_email_content = str_replace(
+    'TOTAL_BALANCE',
+    $total_price - $deposit_price,
+    $request_payment_email_content
+    );
     $request_payment_email_content = str_replace( 'OTHER_ADDONS', $other_addons, $request_payment_email_content );
-    $request_payment_email_content = str_replace( 'DIRECTIONS_FROM_AIRPORT', $directions_acf,
-    $request_payment_email_content );
+    $request_payment_email_content = str_replace(
+    'DIRECTIONS_FROM_AIRPORT',
+    $directions_acf,
+    $request_payment_email_content
+    );
     $request_payment_email_content = str_replace( 'DUE_DATE', $due_date, $request_payment_email_content );
     $hrv_admin->send_hrv_email( $email, 'Request for payment', $request_payment_email_content );
     update_post_meta( $booking_id, 'payment_email_sent', 'yes' );
@@ -683,43 +747,70 @@ if ( $days_left <= $hrv_admin->days_to_notify ) {
     $admin_email_subject = str_replace( '[OWNER_NAME]', $owner_name, $admin_email_subject );
     $get_to_admin_email_content = $hrv_admin->get_to_admin_email_content();
     if ( $api_price == 1 ) {
-    $get_to_admin_email_content = str_replace( '[BOOKING_DETAILS]', $hrv_admin->booking_admin_details_content_api(),
-    $get_to_admin_email_content );
+    $get_to_admin_email_content = str_replace(
+    '[BOOKING_DETAILS]',
+    $hrv_admin->booking_admin_details_content_api(),
+    $get_to_admin_email_content
+    );
     $get_to_admin_email_content = str_replace( 'TOTAL_ROOM_RATE', $total_room_rate, $get_to_admin_email_content );
     $get_to_admin_email_content = str_replace( '[PROFIT]', $api_profit, $get_to_admin_email_content );
     } else {
-    $get_to_admin_email_content = str_replace( '[BOOKING_DETAILS]', $hrv_admin->booking_admin_details_content(),
-    $get_to_admin_email_content );
+    $get_to_admin_email_content = str_replace(
+    '[BOOKING_DETAILS]',
+    $hrv_admin->booking_admin_details_content(),
+    $get_to_admin_email_content
+    );
     }
     $get_to_admin_email_content = str_replace( 'BOOKING_ID', 'HRV-' . $booking_id, $get_to_admin_email_content );
     $get_to_admin_email_content = str_replace( 'NO_ADULTS', $adults, $get_to_admin_email_content );
     $get_to_admin_email_content = str_replace( 'NO_NIGHTS', $nights, $get_to_admin_email_content );
     $get_to_admin_email_content = str_replace( 'NO_CHILDREN', $children, $get_to_admin_email_content );
-    $get_to_admin_email_content = str_replace( '[GUEST_NAME]', $firstname . ' ' . $surname, $get_to_admin_email_content
+    $get_to_admin_email_content = str_replace(
+    '[GUEST_NAME]',
+    $firstname . ' ' . $surname,
+    $get_to_admin_email_content
     );
-    $get_to_admin_email_content = str_replace( 'DEPARTURE_DATE', date( 'd/M/Y', strtotime( $enddate ) ),
-    $get_to_admin_email_content );
-    $get_to_admin_email_content = str_replace( 'ARRIVAL_DATE', date( 'd/M/Y', strtotime( $startdate ) ),
-    $get_to_admin_email_content );
-    $get_to_admin_email_content = str_replace( 'PROPERTY_NAME', get_the_title( $property ), $get_to_admin_email_content
+    $get_to_admin_email_content = str_replace(
+    'DEPARTURE_DATE',
+    date( 'd/M/Y', strtotime( $enddate ) ),
+    $get_to_admin_email_content
+    );
+    $get_to_admin_email_content = str_replace(
+    'ARRIVAL_DATE',
+    date( 'd/M/Y', strtotime( $startdate ) ),
+    $get_to_admin_email_content
+    );
+    $get_to_admin_email_content = str_replace(
+    'PROPERTY_NAME',
+    get_the_title( $property ),
+    $get_to_admin_email_content
     );
     $get_to_admin_email_content = str_replace( 'TOTAL_PRICE', $total_price, $get_to_admin_email_content );
     $get_to_admin_email_content = str_replace( 'TOTAL_OWNER_PRICE', $owner_total_price, $get_to_admin_email_content );
     $get_to_admin_email_content = str_replace( 'RENT_PRICE', $bookingprice, $get_to_admin_email_content );
     $get_to_admin_email_content = str_replace( 'HOME_RENTAL_PRICE', $rental_price, $get_to_admin_email_content );
-    $get_to_admin_email_content = str_replace( 'OWNER_RENTAL_PRICE', $bookingprice * $nights,
-    $get_to_admin_email_content );
+    $get_to_admin_email_content = str_replace(
+    'OWNER_RENTAL_PRICE',
+    $bookingprice * $nights,
+    $get_to_admin_email_content
+    );
     $get_to_admin_email_content = str_replace( 'INVOICE_DATE', date( 'd/M/Y' ), $get_to_admin_email_content );
     $get_to_admin_email_content = str_replace( 'TOTAL_DEPOSIT', $deposit_price, $get_to_admin_email_content );
-    $get_to_admin_email_content = str_replace( 'TOTAL_BALANCE', $total_price - $deposit_price,
-    $get_to_admin_email_content );
+    $get_to_admin_email_content = str_replace(
+    'TOTAL_BALANCE',
+    $total_price - $deposit_price,
+    $get_to_admin_email_content
+    );
     $get_to_admin_email_content = str_replace( 'OTHER_ADDONS', $other_addons, $get_to_admin_email_content );
     $get_to_admin_email_content = str_replace( 'OWNER_ADDONS', $other_addons_owner, $get_to_admin_email_content );
     $get_to_admin_email_content = str_replace( 'OWNER_ADDONS', $other_addons_owner, $get_to_admin_email_content );
     $get_to_admin_email_content = str_replace( '[PROFIT]', $profit, $get_to_admin_email_content );
     $get_to_admin_email_content = str_replace( 'DUE_DATE', $due_date, $get_to_admin_email_content );
 
-    $hrv_admin->send_hrv_email( get_field( 'admin_email', 'option' ), $admin_email_subject, $get_to_admin_email_content
+    $hrv_admin->send_hrv_email(
+    get_field( 'admin_email', 'option' ),
+    $admin_email_subject,
+    $get_to_admin_email_content
     );
 
     /**
@@ -732,7 +823,10 @@ if ( $days_left <= $hrv_admin->days_to_notify ) {
     $customer_email_subject = str_replace( '[GUEST_NAME]', $firstname . ' ' . $surname, $customer_email_subject );
     $email_to_customer = $hrv_admin->get_to_customer_email_content();
     if ( $api_price == 1 ) {
-    $email_to_customer = str_replace( '[BOOKING_DETAILS]', $hrv_admin->booking_details_content_api(), $email_to_customer
+    $email_to_customer = str_replace(
+    '[BOOKING_DETAILS]',
+    $hrv_admin->booking_details_content_api(),
+    $email_to_customer
     );
     $email_to_customer = str_replace( 'TOTAL_ROOM_RATE', $total_room_rate, $email_to_customer );
     } else {
@@ -762,7 +856,10 @@ if ( $days_left <= $hrv_admin->days_to_notify ) {
     */
     $email_to_owner = $hrv_admin->get_to_owner_email_content();
     if ( $api_price == 1 ) {
-    $email_to_owner = str_replace( '[OWNER_DETAILS]', $hrv_admin->booking_owner_details_content_api(), $email_to_owner
+    $email_to_owner = str_replace(
+    '[OWNER_DETAILS]',
+    $hrv_admin->booking_owner_details_content_api(),
+    $email_to_owner
     );
     } else {
     $email_to_owner = str_replace( '[OWNER_DETAILS]', $hrv_admin->booking_owner_details_content(), $email_to_owner );
@@ -894,7 +991,7 @@ if ( $days_left <= $hrv_admin->days_to_notify ) {
             include_once 'partials/check-availability.php' ; $content=ob_get_clean(); return $content; } );
             add_shortcode( 'search_booking_form' , function () { ob_start(); include_once 'partials/searchform.php' ;
             $content=ob_get_clean(); return $content; } ); add_shortcode( 'amenities' , array( $this, 'amenities_output'
-            ) ); } public function amenities_output( $atts ) { $atts=shortcode_atts( array( 'id'=> get_the_ID(),
+            , ) ); } public function amenities_output( $atts ) { $atts=shortcode_atts( array( 'id'=> get_the_ID(),
             ),
             $atts,
             'amenities'
@@ -983,14 +1080,14 @@ if ( $days_left <= $hrv_admin->days_to_notify ) {
                 <?php endforeach; ?>
             </ul>
             <?php
+				endif;
 			endif;
-			endif;
-		return ob_get_clean();
-	}
+			return ob_get_clean();
+			}
 
-	public function has_no_search_dates() {
-		 ob_start();
-		?>
+			public function has_no_search_dates() {
+				 ob_start();
+				?>
 
             <div class="villa-search-results-wrap searching" id="villaResults">
                 <div id="loading">
@@ -1014,10 +1111,10 @@ if ( $days_left <= $hrv_admin->days_to_notify ) {
                 </div>
             </div>
             <?php
-		add_action(
-			'wp_footer',
-			function () {
-				?>
+					add_action(
+						'wp_footer',
+						function () {
+							?>
             <script>
             const villaResults = document.getElementById('villaResults');
             const fx = [];
@@ -1060,16 +1157,16 @@ if ( $days_left <= $hrv_admin->days_to_notify ) {
                 });
             </script>
             <?php
-			},
-			99
-		);
-		return ob_get_clean();
-	}
+						},
+						99
+					);
+				return ob_get_clean();
+			}
 
 
-	public function has_search_dates() {
-		ob_start();
-		?>
+			public function has_search_dates() {
+				ob_start();
+				?>
             <div class="vsr-container" style="position: relative;">
                 <div id="loading">
                     <div class="loading-flex">
@@ -1099,23 +1196,24 @@ if ( $days_left <= $hrv_admin->days_to_notify ) {
 
 
             <?php
-		add_action(
-			'wp_footer',
-			function () {
-				?>
+					add_action(
+						'wp_footer',
+						function () {
+							?>
             <script>
             const villaResults = document.getElementById('villaResults');
             const propertyIds = HRV.properties_result_ids;
             const percentStatus = document.getElementById('percentStatus');
             const loading = document.getElementById('loading');
             const localResults = localStorage.getItem('propertyResults');
+            const localResultsUrl = localStorage.getItem('propertyResultsUrl');
 
             async function is_available(id) {
                 const form = new FormData();
                 form.append('action', 'property_available');
                 form.append('nonce', HRV.nonce);
-                form.append('checkin', '<?php echo $_REQUEST["date_checkin"]; ?>');
-                form.append('checkout', '<?php echo $_REQUEST["date_checkout"]; ?>');
+                form.append('checkin', '<?php echo $_REQUEST['date_checkin']; ?>');
+                form.append('checkout', '<?php echo $_REQUEST['date_checkout']; ?>');
                 form.append('property_id', id);
                 const params = new URLSearchParams(form);
 
@@ -1149,7 +1247,7 @@ if ( $days_left <= $hrv_admin->days_to_notify ) {
                 };
             }
 
-            if (localResults) {
+            if (localResults && localResultsUrl === window.location.search) {
 
                 villaResults.classList.remove('searching');
 
@@ -1178,6 +1276,7 @@ if ( $days_left <= $hrv_admin->days_to_notify ) {
                             console.log('DONE');
                             const propertyResults = document.getElementById('villaResults').innerHTML;
                             localStorage.setItem('propertyResults', propertyResults);
+                            localStorage.setItem('propertyResultsUrl', window.location.search);
                         })
                         .catch((error) => {
                             console.error(error);
@@ -1193,31 +1292,31 @@ if ( $days_left <= $hrv_admin->days_to_notify ) {
             }
             </script>
             <?php
-			},
-			99
-		);
-		return ob_get_clean();
-	}
-
-
-	public function search_results() {
-		add_shortcode(
-			'search_results',
-			function () {
-				if ( isset( $_REQUEST['date_checkin'] ) && ! empty( $_REQUEST['date_checkin'] ) && isset( $_REQUEST['date_checkout'] ) && ! empty( $_REQUEST['date_checkout'] ) ) {
-					$return = $this->has_search_dates();
-				} else {
-					$return = $this->has_no_search_dates();
-				}
-
-				return $return;
+						},
+						99
+					);
+				return ob_get_clean();
 			}
-		);
-	}
 
-	public function contact_date_picker() {
-		if ( is_page( 'contact-us' ) ) {
-			?>
+
+			public function search_results() {
+				add_shortcode(
+					'search_results',
+					function () {
+						if ( isset( $_REQUEST['date_checkin'] ) && ! empty( $_REQUEST['date_checkin'] ) && isset( $_REQUEST['date_checkout'] ) && ! empty( $_REQUEST['date_checkout'] ) ) {
+							$return = $this->has_search_dates();
+						} else {
+							$return = $this->has_no_search_dates();
+						}
+
+						return $return;
+					}
+				);
+			}
+
+			public function contact_date_picker() {
+				if ( is_page( 'contact-us' ) ) {
+					?>
             <script>
             document.addEventListener('DOMContentLoaded', function() {
                 const addBtn = document.querySelectorAll('.wpcf7-field-group-add');
@@ -1243,64 +1342,64 @@ if ( $days_left <= $hrv_admin->days_to_notify ) {
             });
             </script>
             <?php
-		}
-	}
-
-
-
-	public function search_result_ids() {
-		$checkin      = $_POST['date_checkin'];
-		$bedrooms     = $_POST['bedrooms'];
-		$checkout     = $_POST['date_checkout'];
-		$checkinDate  = date( 'Y-m-d', strtotime( $checkin ) );
-		$datediff     = strtotime( $checkout ) - strtotime( $checkin );
-		$nights       = round( $datediff / ( 60 * 60 * 24 ) );
-		$hrv_admin    = new HRV_MLA_Admin( 'hrv_mla', '1.0.0' );
-		$hrv_public   = new HRV_MLA_Public( 'hrv_mla', '1.0.0' );
-		$property_ids = array();
-		$args         = array(
-			'post_type'   => 'properties',
-			'numberposts' => -1,
-			'meta_key'    => 'bedrooms',
-			'meta_value'  => $bedrooms,
-		);
-
-		$query = new WP_Query( $args );
-		if ( $query->have_posts() ) :
-			while ( $query->have_posts() ) :
-				$query->the_post();
-				$id = get_field( 'ciirus_id' );
-				if ( isset( $_POST['date_checkin'] ) ) {
-					if ( $hrv_admin->ciirus_is_property_available( $id, $checkin, $checkout ) === 'available' ) {
-						$property_ids[] = get_the_ID();
-					}
 				}
-			endwhile;
-			wp_reset_postdata();
-		endif;
-		return $property_ids;
-	}
+			}
 
-	public function mailchimp_test() {
-		$MailChimp = new MailChimp( $this->get_mailchimp_api() );
-		$result    = $MailChimp->get( 'lists' );
-		echo '<pre>';
-		print_r( $result['lists'][0]['id'] );
-		echo '</pre>';
-		$list_id = '2061e80bec';
-		$result  = $MailChimp->post(
-			"lists/$list_id/members",
-			array(
-				'email_address' => 'nyhynipa@vomoto.com',
-				'merge_fields'  => array(
-					'FNAME' => 'THIS',
-					'LNAME' => 'TEST',
-				),
-				'status'        => 'subscribed',
-			)
-		);
-		print_r( $result['status'] );
-	}
+
+
+			public function search_result_ids() {
+				$checkin      = $_POST['date_checkin'];
+				$bedrooms     = $_POST['bedrooms'];
+				$checkout     = $_POST['date_checkout'];
+				$checkinDate  = date( 'Y-m-d', strtotime( $checkin ) );
+				$datediff     = strtotime( $checkout ) - strtotime( $checkin );
+				$nights       = round( $datediff / ( 60 * 60 * 24 ) );
+				$hrv_admin    = new HRV_MLA_Admin( 'hrv_mla', '1.0.0' );
+				$hrv_public   = new HRV_MLA_Public( 'hrv_mla', '1.0.0' );
+				$property_ids = array();
+				$args         = array(
+					'post_type'   => 'properties',
+					'numberposts' => -1,
+					'meta_key'    => 'bedrooms',
+					'meta_value'  => $bedrooms,
+				);
+
+				$query = new WP_Query( $args );
+				if ( $query->have_posts() ) :
+					while ( $query->have_posts() ) :
+						$query->the_post();
+						$id = get_field( 'ciirus_id' );
+						if ( isset( $_POST['date_checkin'] ) ) {
+							if ( $hrv_admin->ciirus_is_property_available( $id, $checkin, $checkout ) === 'available' ) {
+								$property_ids[] = get_the_ID();
+							}
+						}
+						endwhile;
+					wp_reset_postdata();
+					endif;
+				return $property_ids;
+			}
+
+			public function mailchimp_test() {
+				$MailChimp = new MailChimp( $this->get_mailchimp_api() );
+				$result    = $MailChimp->get( 'lists' );
+				echo '<pre>';
+				print_r( $result['lists'][0]['id'] );
+				echo '</pre>';
+				$list_id = '2061e80bec';
+				$result  = $MailChimp->post(
+					"lists/$list_id/members",
+					array(
+						'email_address' => 'nyhynipa@vomoto.com',
+						'merge_fields'  => array(
+							'FNAME' => 'THIS',
+							'LNAME' => 'TEST',
+						),
+						'status'        => 'subscribed',
+					)
+				);
+				print_r( $result['status'] );
+			}
 
 }
 
