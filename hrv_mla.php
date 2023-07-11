@@ -35,7 +35,7 @@ if ( ! defined( 'WPINC' ) ) {
  * Start at version 20.0 and use SemVer - https://semver.org
  * Rename this for your plugin and update it as you release new versions.
  */
-define( 'HRV_MLA_VERSION', '2.2.26' );
+define( 'HRV_MLA_VERSION', '2.2.300' );
 
 /**
  * The code that runs during plugin activation.
@@ -93,5 +93,5 @@ function run_hrv_mla() {
 	$plugin->run();
 
 }
-
-add_action('acf/init', 'run_hrv_mla');
+run_hrv_mla();
+// add_action('acf/init', 'run_hrv_mla');

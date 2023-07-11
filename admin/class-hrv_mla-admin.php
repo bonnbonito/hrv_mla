@@ -1073,7 +1073,7 @@ class HRV_MLA_Admin {
 		}
 	}
 
-	public function ciirus_extra_fees( $price, $id ) {
+	public function ciirus_extra_fees( $id ) {
 		$curl = curl_init();
 
 		curl_setopt_array($curl, array(
@@ -1119,25 +1119,29 @@ $response = preg_replace("/(<\ /?)(\w+):([^>]*>)/", "$1$2$3", $response);
 
     foreach($items as $item) {
     if ($item['Mandatory'] == 'true') {
-    $mandatoryItems[] = $item;
+    if ($item['PercentageFee'] == 'true') {
+    $mandatoryItems[] = [
+    'type' => 'percentage',
+    'value' => $item['Percentage']
+    ];
+    }
+    if ($item['FlatFee'] == 'true') {
+    $mandatoryItems[] = [
+    'type' => 'flat',
+    'value' => $item['FlatFeeAmount']
+    ];
+    }
+
+    if ($item['DailyFee'] == 'true') {
+    $mandatoryItems[] = [
+    'type' => 'daily',
+    'value' => $item['DailyFeeAmount']
+    ];
+    }
     }
     }
 
-    $extras = 0;
-
-    foreach($mandatoryItems as $item) {
-    if ( $item['PercentageFee'] === true ) {
-    $extras = $extras + (($item['Percentage'] / 100 ) * $price);
-    } else {
-    if( $item['FlatFeeAmount'] ) {
-    $extras = $extras + $item['FlatFeeAmount'];
-    }
-
-    }
-    }
-
-    return $extras;
-
+    return $mandatoryItems;
 
     }
 
@@ -1186,18 +1190,39 @@ $response = preg_replace("/(<\ /?)(\w+):([^>]*>)/", "$1$2$3", $response);
     }
     }
 
+
     public function ciirus_calculated_booking_price( $id, $checkin, $nights ) {
     $api_get_price = $this->ciirus_get_property_rates( $id, $checkin, $nights );
     $cleaning = $this->ciirus_get_cleaning_fee( $id, $nights );
     $propertyTaxRatesApi = $this->ciirus_get_tax_rates( $id );
+    $get_extras = show_extras( $id );
     $tax = $propertyTaxRatesApi['total_rates'];
 
     $api_price = $api_get_price['total_rates'];
 
     $api_price_tax = ( $tax / 100 ) * $api_price;
     $cleaning_tax = ( $tax / 100 ) * $cleaning;
+    $extras = 0;
 
-    return $api_price + $cleaning + $api_price_tax + $cleaning_tax;
+    foreach( $get_extras as $e ) {
+    if ( $e['type'] === 'percentage' ) {
+    $extras = $extras + ($api_get_price * ($e['value']/100));
+    } else {
+    $extras = $extras + $e['value'];
+    }
+
+    }
+
+    $price = array(
+    'booking_price' => $api_price,
+    'cleaning_price' => $cleaning,
+    'tax_price' => $api_price_tax,
+    'cleaning_tax' => $cleaning_tax,
+    'extras' => $extras,
+    'total' => $api_price + $cleaning + $api_price_tax + $cleaning_tax + $extras
+    );
+
+    return $price;
 
     }
 

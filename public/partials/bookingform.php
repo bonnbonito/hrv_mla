@@ -314,15 +314,12 @@ function previous_page() {
 }
 
 if ( get_field( 'api_price', $_GET['id'] ) ) {
-	$api_get_price       = $hrv_admin->ciirus_get_property_rates( get_field( 'ciirus_id', $_GET['id'] ), $_GET['date_checkin'], $_GET['nights'] );
-	$cleaning_fees       = $hrv_admin->ciirus_get_cleaning_fee( get_field( 'ciirus_id', $_GET['id'] ), $_GET['nights'] );
-	$propertyTaxRatesApi = $hrv_admin->ciirus_get_tax_rates( get_field( 'ciirus_id', $_GET['id'] ) );
-	$propertyTaxRates    = $propertyTaxRatesApi['total_rates'];
-	$api_total_rate      = $api_get_price['total_rates'];
-	$bookingprice        = round( $api_total_rate + percentage_tax_price( $api_total_rate, $propertyTaxRates ) + $cleaning_fees, 2 );
-	$profit              = round( $bookingprice * .18, 2 );
-	$total_price         = round( $bookingprice, 1 );
-	$total_room_rate     = $total_price;
+	$getbookingprice = $hrv_admin->ciirus_calculated_booking_price( get_field( 'ciirus_id', $_GET['id'] ), $_GET['date_checkin'], $_GET['nights'] );
+	$bookingprice    = round( $getbookingprice['total'], 2 );
+	$profit          = round( $bookingprice * .18, 2 );
+	$total_price     = $bookingprice;
+
+	$total_room_rate = $total_price;
 	/* compute discount price */
 	$deposit_compute = $total_price * .10;
 	$deposit_price   = $deposit_compute > $hrv_admin->deposit ? $hrv_admin->deposit : $deposit_compute;
@@ -432,8 +429,8 @@ span.price-highlight {
                 <div class="custom-book-form-row-1" style="display: none;">
                     <div class="arrival-wrapper">
                         <?php
-					$datetime = new DateTime( 'tomorrow' );
-					?>
+						$datetime = new DateTime( 'tomorrow' );
+						?>
                         <p class="custom-form"><label for="arrival">Arrival Date*</label></p>
                         <p class="custom-form-input-box"><input id="arrival-date" type="hidden" name="arrival"
                                 value="<?php echo $date_checkin; ?>" readonly /></p>
@@ -521,10 +518,10 @@ span.price-highlight {
                     <input type="hidden" name="apiPrice" id="apiPrice"
                         value="<?php echo ( get_field( 'api_price', $_GET['id'] ) ? 1 : 0 ); ?>">
                     <?php
-				$property_owner_id = get_field( 'property_owner', $_GET['id'] );
-				$owner_email       = get_field( 'owner_email', $property_owner_id[0] );
-				$owner_name        = get_the_title( $property_owner_id[0] );
-				?>
+					$property_owner_id = get_field( 'property_owner', $_GET['id'] );
+					$owner_email       = get_field( 'owner_email', $property_owner_id[0] );
+					$owner_name        = get_the_title( $property_owner_id[0] );
+					?>
                     <input type="hidden" name="ownerEmail" id="ownerEmail" value="<?php echo $owner_email; ?>">
                     <input type="hidden" name="owner_id" id="ownerID" value="<?php echo $property_owner_id[0]; ?>">
                     <input type="hidden" name="owner_name" id="ownerName" value="<?php echo $owner_name; ?>">
@@ -541,21 +538,21 @@ span.price-highlight {
                 <div class="extra-cost-input">
                     <?php
 					$extraCost = 0;
-				if ( have_rows( 'extra_cost', $_GET['id'] ) ) :
+					if ( have_rows( 'extra_cost', $_GET['id'] ) ) :
 
-					// Loop through rows.
-					while ( have_rows( 'extra_cost', $_GET['id'] ) ) :
-						the_row();
+						// Loop through rows.
+						while ( have_rows( 'extra_cost', $_GET['id'] ) ) :
+							the_row();
 
-						// Load sub field value.
-						$name        = get_sub_field( 'name' );
-						$price_field = get_sub_field( 'price' );
-						$percentage  = get_sub_field( 'owner_percentage' ) ? get_sub_field( 'owner_percentage' ) : get_field( 'default_additional_costs_property_owner_percentage', 'option' );
-						$price       = $price_field + ( $price_field * $percentage / 100 );
-						$price_total = round( $price * $_GET['nights'], 2 );
-						$extraCost   = $extraCost + $price_total;
-						// Do something...
-						?>
+							// Load sub field value.
+							$name        = get_sub_field( 'name' );
+							$price_field = get_sub_field( 'price' );
+							$percentage  = get_sub_field( 'owner_percentage' ) ? get_sub_field( 'owner_percentage' ) : get_field( 'default_additional_costs_property_owner_percentage', 'option' );
+							$price       = $price_field + ( $price_field * $percentage / 100 );
+							$price_total = round( $price * $_GET['nights'], 2 );
+							$extraCost   = $extraCost + $price_total;
+							// Do something...
+							?>
                     <p class="extra-cost-checkbox">
                         <input type="checkbox" name="extra-cost[]" value="<?php echo $price_total; ?>"
                             data-name="<?php echo $name; ?>" data-percentage="<?php echo $percentage; ?>"
@@ -564,10 +561,10 @@ span.price-highlight {
                     </p>
                     <?php
 
-						// End loop.
+							// End loop.
 						endwhile;
 
-					// No value.
+						// No value.
 					else :
 						// Do something...
 					endif;
@@ -631,7 +628,7 @@ span.price-highlight {
 
         <div class="total-price-wrap" style="text-align: right;">
             <h3>Total: $<span id="pricetotalcompute"><?php echo number_format( $total_price ); ?></span></h3>
-            <h4>Deposit: $<span id="depositpricecompute"><?php echo number_format ( $deposit_price ); ?></span></h4>
+            <h4>Deposit: $<span id="depositpricecompute"><?php echo number_format( $deposit_price ); ?></span></h4>
         </div>
 
         <div class="buttons">

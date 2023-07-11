@@ -331,13 +331,12 @@ class HRV_MLA_Public {
 		ob_start();
 		$amenities       = get_field( 'amenities_list', $id );
 		$amenities_icons = get_field( 'amenities_icons', $id );
-
+        $ciirus_id = get_field( 'ciirus_id', $id );
 		$datediff = strtotime( $checkout ) - strtotime( $checkin );
 		$nights   = round( $datediff / ( 60 * 60 * 24 ) );
 
-		$price         = $this->hrv_get_property_rates( $id, $checkin, $checkout );
+		$price         = $hrv_admin->ciirus_calculated_booking_price( get_field( 'ciirus_id', $id ), $checkin, $nights );
 		$cleaning_fees = $hrv_admin->ciirus_get_cleaning_fee( get_field( 'ciirus_id', $id ), $nights );
-        
 		?>
 <div class="property-result-wrap">
     <div class="img-wrap-property">
@@ -361,49 +360,18 @@ class HRV_MLA_Public {
         </div>
         <?php endif; ?>
 
-        <pre>
-						Cleaning = <?php print_r( $cleaning_fees ); ?>
-
-		</pre>
-
-        <pre>
-			<?php
-			$api_get_price = $hrv_admin->ciirus_get_property_rates( get_field( 'ciirus_id', $id ), $checkin, $nights );
-			?>
-			Property Price = <?php print_r( $api_get_price ); ?>
-
-		</pre>
-
-        <pre>
-            <?php
-            $extras = $hrv_admin->ciirus_extra_fees($api_get_price, get_field( 'ciirus_id', $id ) );
-            ?>
-            Extras = <?php print_r( $extras ); ?>
-        </pre>
-
-        <pre>
-			<?php
-			$taxes = $hrv_admin->ciirus_get_tax_rates( get_field( 'ciirus_id', $id ) );
-			?>
-Taxes = <?php print_r( $taxes['total_rates'] ); ?><br>
-Total Tax rate = <?php echo $api_get_price['total_rates']; ?> * <?php echo $taxes['total_rates']; ?> = <?php echo ( $taxes['total_rates'] / 100 ) * $api_get_price['total_rates']; ?>
-		</pre>
-
-
-
         <?php
 
-		if ( $price && $price > 0 ) {
+
+		if ( $price && $price['total'] > 0 ) {
+            print_r( $price );
 			?>
         <div class="property-results-price">
-            Price: <strong>&dollar;<?php echo $price; ?></strong>
+            Price: <strong>&dollar;<?php echo round($price['total'], 2); ?></strong>
         </div>
         <?php } ?>
 
 
-        <h1>
-            <?php echo $hrv_admin->ciirus_calculated_booking_price( get_field( 'ciirus_id', $id ), $checkin, $nights ); ?>
-        </h1>
 
 
 
@@ -514,7 +482,7 @@ Total Tax rate = <?php echo $api_get_price['total_rates']; ?> * <?php echo $taxe
 
 		$payment_intents = $stripe->paymentIntents->create(
 			array(
-				'amount'               => round( $deposit_price, 2, '.', '' ) * 100,
+				'amount'               => round( $deposit_price, 2 ) * 100,
 				'currency'             => 'gbp',
 				'payment_method_types' => array( 'card' ),
 				'description'          => $nights . ' nights booking of ' . get_the_title( $property ),
