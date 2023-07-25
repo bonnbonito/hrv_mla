@@ -187,9 +187,9 @@ form.newserachform .form-field-submit {
 <form id="searchVillaForm" action="<?php bloginfo( 'url' ); ?>/villa-list-result" method="GET" autocomplete="off"
     class="newserachform">
     <?php
-	$show = false;
-if ( $show ) {
-	?>
+	$show = true;
+	if ( $show ) {
+		?>
     <div class="form-field form-field-select">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512">
             <path
@@ -198,17 +198,17 @@ if ( $show ) {
         <select class="form-select" name="resort" id="resort" required>
             <option value=""></option>
             <?php
-		$resorts = get_terms(
-			array(
-				'taxonomy'   => 'resort',
-				'hide_empty' => true,
-			)
-		);
-		?>
+			$resorts = get_terms(
+				array(
+					'taxonomy'   => 'resort',
+					'hide_empty' => true,
+				)
+			);
+			?>
             <?php foreach ( $resorts as $resort ) { ?>
 
-            <option value="<?php echo $resort->term_id; ?>"
-                <?php echo ( isset( $_REQUEST['resort'] ) && $resort->term_id == $_REQUEST['resort'] ? ' selected' : '' ); ?>>
+            <option value="<?php echo $resort->slug; ?>"
+                <?php echo ( isset( $_REQUEST['resort'] ) && $resort->slug == $_REQUEST['resort'] ? ' selected' : '' ); ?>>
                 <?php echo $resort->name; ?></option>
 
             <?php } ?>

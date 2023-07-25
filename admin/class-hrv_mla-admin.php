@@ -983,7 +983,7 @@ class HRV_MLA_Admin {
 		curl_setopt_array(
 			$curl,
 			array(
-				CURLOPT_URL            => 'http://xml.ciirus.com/CiirusXML.12.017.asmx/GetPropertyRates?APIUserName=' . $this->ciirus_user . '&APIPassword=' . $this->ciirus_password . '&PropertyID=' . $id,
+				CURLOPT_URL            => 'http://api.ciirus.com/CiirusXML.15.025.asmx/GetPropertyRates?APIUserName=' . $this->ciirus_user . '&APIPassword=' . $this->ciirus_password . '&PropertyID=' . $id,
 				CURLOPT_RETURNTRANSFER => true,
 				CURLOPT_ENCODING       => '',
 				CURLOPT_MAXREDIRS      => 10,
@@ -1076,67 +1076,70 @@ class HRV_MLA_Admin {
 	public function ciirus_extra_fees( $id ) {
 		$curl = curl_init();
 
-		curl_setopt_array($curl, array(
-			CURLOPT_URL => 'https://api.ciirus.com/XMLAdditionalFunctions15.025.asmx',
-			CURLOPT_RETURNTRANSFER => true,
-			CURLOPT_ENCODING => '',
-			CURLOPT_MAXREDIRS => 10,
-			CURLOPT_TIMEOUT => 0,
-			CURLOPT_FOLLOWLOCATION => true,
-			CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-			CURLOPT_CUSTOMREQUEST => 'POST',
-			CURLOPT_POSTFIELDS =>'<?xml version="1.0" encoding="utf-8"?>
+		curl_setopt_array(
+			$curl,
+			array(
+				CURLOPT_URL            => 'https://api.ciirus.com/XMLAdditionalFunctions15.025.asmx',
+				CURLOPT_RETURNTRANSFER => true,
+				CURLOPT_ENCODING       => '',
+				CURLOPT_MAXREDIRS      => 10,
+				CURLOPT_TIMEOUT        => 0,
+				CURLOPT_FOLLOWLOCATION => true,
+				CURLOPT_HTTP_VERSION   => CURL_HTTP_VERSION_1_1,
+				CURLOPT_CUSTOMREQUEST  => 'POST',
+				CURLOPT_POSTFIELDS     => '<?xml version="1.0" encoding="utf-8"?>
 <soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema"
     xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
     <soap:Body>
         <GetExtras xmlns="http://xml.ciirus.com/">
-            <APIUserName>'.$this->ciirus_user.'</APIUserName>
-            <APIPassword>'.$this->ciirus_password.'</APIPassword>
-            <PropertyID>'.$id.'</PropertyID>
+            <APIUserName>' . $this->ciirus_user . '</APIUserName>
+            <APIPassword>' . $this->ciirus_password . '</APIPassword>
+            <PropertyID>' . $id . '</PropertyID>
         </GetExtras>
     </soap:Body>
 </soap:Envelope>',
 CURLOPT_HTTPHEADER => array(
 'SOAPAction: http://xml.ciirus.com/GetExtras',
-'Content-Type: text/xml; charset=utf-8'
+'Content-Type: text/xml; charset=utf-8',
 ),
-));
+)
+);
 
-$response = curl_exec($curl);
+$response = curl_exec( $curl );
 
-curl_close($curl);
+curl_close( $curl );
 
-$response = preg_replace("/(<\ /?)(\w+):([^>]*>)/", "$1$2$3", $response);
-    $response = preg_replace("/xmlns[^=]*=\"[^\"]*\"/", "", $response);
+$response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
+    $response = preg_replace( '/xmlns[^=]*="[^"]*"/', '', $response );
 
-    $xml = simplexml_load_string($response);
-    $json = json_encode($xml);
-    $array = json_decode($json, true);
+    $xml = simplexml_load_string( $response );
+    $json = json_encode( $xml );
+    $array = json_decode( $json, true );
 
-    $mandatoryItems = [];
+    $mandatoryItems = array();
 
     $items = $array['soapBody']['GetExtrasResponse']['GetExtrasResult']['Extras']['PropertyExtras'];
 
-    foreach($items as $item) {
-    if ($item['Mandatory'] == 'true') {
-    if ($item['PercentageFee'] == 'true') {
-    $mandatoryItems[] = [
+    foreach ( $items as $item ) {
+    if ( $item['Mandatory'] == 'true' ) {
+    if ( $item['PercentageFee'] == 'true' ) {
+    $mandatoryItems[] = array(
     'type' => 'percentage',
-    'value' => $item['Percentage']
-    ];
+    'value' => $item['Percentage'],
+    );
     }
-    if ($item['FlatFee'] == 'true') {
-    $mandatoryItems[] = [
+    if ( $item['FlatFee'] == 'true' ) {
+    $mandatoryItems[] = array(
     'type' => 'flat',
-    'value' => $item['FlatFeeAmount']
-    ];
+    'value' => $item['FlatFeeAmount'],
+    );
     }
 
-    if ($item['DailyFee'] == 'true') {
-    $mandatoryItems[] = [
+    if ( $item['DailyFee'] == 'true' ) {
+    $mandatoryItems[] = array(
     'type' => 'daily',
-    'value' => $item['DailyFeeAmount']
-    ];
+    'value' => $item['DailyFeeAmount'],
+    );
     }
     }
     }
@@ -1204,13 +1207,12 @@ $response = preg_replace("/(<\ /?)(\w+):([^>]*>)/", "$1$2$3", $response);
     $cleaning_tax = ( $tax / 100 ) * $cleaning;
     $extras = 0;
 
-    foreach( $get_extras as $e ) {
+    foreach ( $get_extras as $e ) {
     if ( $e['type'] === 'percentage' ) {
-    $extras = $extras + ($api_get_price * ($e['value']/100));
+    $extras = $extras + ( $api_price * ( $e['value'] / 100 ) );
     } else {
     $extras = $extras + $e['value'];
     }
-
     }
 
     $price = array(
@@ -1219,7 +1221,7 @@ $response = preg_replace("/(<\ /?)(\w+):([^>]*>)/", "$1$2$3", $response);
     'tax_price' => $api_price_tax,
     'cleaning_tax' => $cleaning_tax,
     'extras' => $extras,
-    'total' => $api_price + $cleaning + $api_price_tax + $cleaning_tax + $extras
+    'total' => $api_price + $cleaning + $api_price_tax + $cleaning_tax + $extras,
     );
 
     return $price;
@@ -1254,7 +1256,7 @@ $response = preg_replace("/(<\ /?)(\w+):([^>]*>)/", "$1$2$3", $response);
     if ( $err ) {
     return 'cURL Error #:' . $err;
     } else {
-    $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
+    //$response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
         $xml = new SimpleXMLElement( $response );
         $body = $xml->xpath( '//soapBody ' )[0];
         $json_encode = wp_json_encode( $body );
@@ -1455,7 +1457,7 @@ $response = preg_replace("/(<\ /?)(\w+):([^>]*>)/", "$1$2$3", $response);
 
 
             <?php
-		return ob_get_clean();
+			return ob_get_clean();
 	}
 
 
@@ -1780,7 +1782,7 @@ $response = preg_replace("/(<\ /?)(\w+):([^>]*>)/", "$1$2$3", $response);
             }
             </script>
             <?php
-		echo ob_get_clean();
+			echo ob_get_clean();
 	}
 
 	public function send_golf_booking_email() {
@@ -1864,8 +1866,8 @@ $response = preg_replace("/(<\ /?)(\w+):([^>]*>)/", "$1$2$3", $response);
                 <select name="property_owner" id="selectPropertyOwner">
                     <option value="">Choose Property Owner</option>
                     <?php
-				foreach ( $owners as $owner ) {
-					?>
+					foreach ( $owners as $owner ) {
+						?>
                     <option value="<?php echo $owner['id']; ?>"
                         <?php echo( isset( $_GET['property_owner'] ) && $owner['id'] == $_GET['property_owner'] && ! empty( $_GET['property_owner'] ) ? 'selected' : '' ); ?>>
                         <?php echo $owner['title']; ?>

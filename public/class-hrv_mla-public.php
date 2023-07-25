@@ -144,23 +144,47 @@ class HRV_MLA_Public {
 	 * Get all properties results ID's
 	 */
 	public function get_result_properties() {
-		$query = new WP_Query(
-			array(
-				'post_type'      => 'properties',
-				'posts_per_page' => -1,
-				'meta_key'       => 'bedrooms',
-				'meta_value'     => isset( $_GET['bedrooms'] ) ? $_GET['bedrooms'] : null,
-			)
-		);
-		$ids   = array();
+        $args = array(
+            'post_type'      => 'properties',
+            'posts_per_page' => -1,
+            'meta_key'       => 'bedrooms',
+            'meta_value'     => isset( $_GET['bedrooms'] ) ? $_GET['bedrooms'] : null,
+            'tax_query'      => array(
+                array(
+                    'taxonomy'         => 'resort', // taxonomy slug
+                    'terms'            => array( $_GET['resort'] ), // term ids
+                    'field'            => 'slug', // Also supports: slug, name, term_taxonomy_id
+                    'operator'         => 'IN', // Also supports: AND, NOT IN, EXISTS, NOT EXISTS
+                )
+            )
+        );
 
-		while ( $query->have_posts() ) :
-			$query->the_post();
-			$ids[] = get_the_ID();
-		endwhile;
-		wp_reset_postdata();
-		return $ids;
-	}
+        // if ( isset( $_GET['resort'] ) ) {
+        //     $args['tax_query'] = array(
+        //         array(
+        //             'taxonomy'         => 'resort', // taxonomy slug
+        //             'terms'            => array( $_GET['resort'] ), // term ids
+        //             'field'            => 'term_id', // Also supports: slug, name, term_taxonomy_id
+        //             'operator'         => 'IN', // Also supports: AND, NOT IN, EXISTS, NOT EXISTS
+        //             'include_children' => true,
+        //         ),
+        //     );
+        // }
+
+        $query = new WP_Query( $args );
+
+        $ids = array();
+
+        while ( $query->have_posts() ) {
+            $query->the_post();
+            $ids[] = get_the_ID();
+        }
+
+        wp_reset_postdata();
+
+        return $ids;
+    }
+
 
 	/**
 	 * Get all properties ID's
@@ -257,6 +281,10 @@ class HRV_MLA_Public {
 			wp_send_json( 'Nonce Error' );
 		}
 		$bedrooms = isset( $_POST['bedrooms'] ) && ! empty( $_POST['bedrooms'] ) ? $_POST['bedrooms'] : null;
+       
+        $resort = isset( $_POST['resort'] ) && ! empty( $_POST['resort'] ) ? $_POST['resort'] : null;
+
+
 		$args     = array(
 			'post_type'      => 'properties',
 			'numberposts'    => -1,
@@ -267,6 +295,17 @@ class HRV_MLA_Public {
 			$args['meta_key']   = 'bedrooms';
 			$args['meta_value'] = $bedrooms;
 		}
+        
+        if ( $resort ) {
+            $args['tax_query'] = array(
+                array(
+                    'taxonomy'         => 'resort', // taxonomy slug
+                    'terms'            => array( $resort ), // term ids
+                    'field'            => 'slug', // Also supports: slug, name, term_taxonomy_id
+                    'operator'         => 'IN', // Also supports: AND, NOT IN, EXISTS, NOT EXISTS
+                )
+            );
+        }
 
 		$query = new WP_Query( $args );
 
@@ -337,6 +376,7 @@ class HRV_MLA_Public {
 
 		$price         = $hrv_admin->ciirus_calculated_booking_price( get_field( 'ciirus_id', $id ), $checkin, $nights );
 		$cleaning_fees = $hrv_admin->ciirus_get_cleaning_fee( get_field( 'ciirus_id', $id ), $nights );
+       
 		?>
 <div class="property-result-wrap">
     <div class="img-wrap-property">
@@ -576,6 +616,7 @@ class HRV_MLA_Public {
 				update_field( 'field_61fbad0ce3c30', $rows, $booking_id );
 
 				if ( $api_price == 1 ) {
+                    $admin_email = get_option( 'admin_email' );
 					$booking_api_details = '<?xml version="1.0" encoding="utf-8"?>
 <soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema"
     xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
@@ -588,7 +629,7 @@ class HRV_MLA_Public {
                 <DepartureDate>' . date( 'd M Y', strtotime( $_POST['enddate'] ) ) . '</DepartureDate>
                 <PropertyID>' . get_field( 'ciirus_id', $property ) . '</PropertyID>
                 <GuestName>' . $firstname . ' ' . $surname . '</GuestName>
-                <GuestEmailAddress>' . $email . '</GuestEmailAddress>
+                <GuestEmailAddress>' . $admin_email . '</GuestEmailAddress>
                 <GuestTelephone>' . $phone . '</GuestTelephone>
                 <GuestAddress>' . $address1 . '</GuestAddress>
                 <GuestList>
@@ -621,7 +662,7 @@ $days_left = floor( $diff / ( 60 * 60 * 24 ) );
 // $request_payment_email_content = $hrv_admin->to_customer_email_hrv_content_body();
 
 /**
-Other Addons Owner
+* Other Addons Owner
 */
 $extra_owner_total = 0;
 $other_addons_owner = '';
@@ -1097,6 +1138,9 @@ if ( $days_left <= $hrv_admin->days_to_notify ) {
                 'bedrooms', <?php echo $_REQUEST['bedrooms']; ?>
             );
             <?php endif; ?>
+            <?php if (isset($_REQUEST['resort']) && !empty($_REQUEST['resort'])) :  ?>
+            form.append('resort', '<?php echo $_REQUEST['resort']; ?>');
+            <?php endif; ?>
             const params = new URLSearchParams(form);
 
             fetch(HRV.ajax_url, {
@@ -1182,6 +1226,9 @@ if ( $days_left <= $hrv_admin->days_to_notify ) {
                 form.append('nonce', HRV.nonce);
                 form.append('checkin', '<?php echo $_REQUEST['date_checkin']; ?>');
                 form.append('checkout', '<?php echo $_REQUEST['date_checkout']; ?>');
+                <?php if (isset($_REQUEST['resort']) && !empty($_REQUEST['resort'])) :  ?>
+                form.append('resort', '<?php echo $_REQUEST['resort']; ?>');
+                <?php endif; ?>
                 form.append('property_id', id);
                 const params = new URLSearchParams(form);
 
