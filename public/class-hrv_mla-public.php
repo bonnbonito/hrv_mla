@@ -149,27 +149,19 @@ class HRV_MLA_Public {
             'posts_per_page' => -1,
             'meta_key'       => 'bedrooms',
             'meta_value'     => isset( $_GET['bedrooms'] ) ? $_GET['bedrooms'] : null,
-            'tax_query'      => array(
+        );
+
+        if ( isset( $_GET['resort'] ) && $_GET['resort'] != 'all' ) {
+            $args['tax_query'] = array(
                 array(
                     'taxonomy'         => 'resort', // taxonomy slug
                     'terms'            => array( $_GET['resort'] ), // term ids
-                    'field'            => 'slug', // Also supports: slug, name, term_taxonomy_id
+                    'field'            => 'term_id', // Also supports: slug, name, term_taxonomy_id
                     'operator'         => 'IN', // Also supports: AND, NOT IN, EXISTS, NOT EXISTS
-                )
-            )
-        );
-
-        // if ( isset( $_GET['resort'] ) ) {
-        //     $args['tax_query'] = array(
-        //         array(
-        //             'taxonomy'         => 'resort', // taxonomy slug
-        //             'terms'            => array( $_GET['resort'] ), // term ids
-        //             'field'            => 'term_id', // Also supports: slug, name, term_taxonomy_id
-        //             'operator'         => 'IN', // Also supports: AND, NOT IN, EXISTS, NOT EXISTS
-        //             'include_children' => true,
-        //         ),
-        //     );
-        // }
+                    'include_children' => true,
+                ),
+            );
+        }
 
         $query = new WP_Query( $args );
 
