@@ -65,6 +65,9 @@ directory take precedence. For example, `/assets/screenshot-1.png` would win ove
 
 == Changelog ==
 
+= 2.2.302 =
+* whole number
+
 = 2.2.301 =
 * Add resort to search and remove guest email in booking
 
