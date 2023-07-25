@@ -197,7 +197,9 @@ form.newserachform .form-field-submit {
         </svg>
         <select class="form-select" name="resort" id="resort" required>
             <option value=""></option>
-            <option value="all">All Resorts</option>
+            <option value="all"
+                <?php echo ( isset( $_REQUEST['resort'] ) && 'all' == $_REQUEST['resort'] ? ' selected' : '' ); ?>>All
+                Resorts</option>
             <?php
 			$resorts = get_terms(
 				array(

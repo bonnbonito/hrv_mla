@@ -288,7 +288,7 @@ class HRV_MLA_Public {
 			$args['meta_value'] = $bedrooms;
 		}
         
-        if ( $resort ) {
+        if ( $resort && $resort !== 'all' ) {
             $args['tax_query'] = array(
                 array(
                     'taxonomy'         => 'resort', // taxonomy slug
