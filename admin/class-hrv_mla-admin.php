@@ -1026,7 +1026,7 @@ class HRV_MLA_Admin {
 						break;
 					}
 				}
-				$property_rates['total_rates'] = $total_rates * $nights;
+				$property_rates['total_rates'] = round( $total_rates * $nights, 0);
 			} else {
 				$property_rates = false;
 			}
@@ -1183,7 +1183,7 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 
     if ( $arr_output['ChargeCleaningFee'] == 'true' && $arr_output['OnlyChargeCleaningFeeWhenLessThanDays'] > $nights )
     {
-    return $arr_output['CleaningFeeAmount'];
+    return round( $arr_output['CleaningFeeAmount'], 0 );
     } else {
     return 0;
     }
@@ -1215,13 +1215,20 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
     }
     }
 
+    $booking_price = round( $api_price, 0);
+    $cleaning_price = round( $cleaning, 0);
+    $tax_price = round( $api_price_tax, 0);
+    $cleaning_tax_price = round( $cleaning_tax, 0);
+    $extras_price = round( $extras, 0);
+    $total_price = $booking_price + $cleaning_price + $tax_price + $cleaning_tax_price + $extras_price;
+
     $price = array(
-    'booking_price' => $api_price,
-    'cleaning_price' => $cleaning,
-    'tax_price' => $api_price_tax,
-    'cleaning_tax' => $cleaning_tax,
-    'extras' => $extras,
-    'total' => $api_price + $cleaning + $api_price_tax + $cleaning_tax + $extras,
+    'booking_price' => $booking_price,
+    'cleaning_price' => $cleaning_price,
+    'tax_price' => $tax_price,
+    'cleaning_tax' => $cleaning_tax_price,
+    'extras' => $extras_price,
+    'total' => $total_price,
     );
 
     return $price;
