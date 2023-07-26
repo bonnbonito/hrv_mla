@@ -34,6 +34,18 @@ form.newserachform select {
     padding-left: 4em;
 }
 
+select#resort {
+    padding: 2.35em 2em 2.35em 4em;
+}
+
+@media (max-width: 1024px) {
+
+    select#resort,
+    form#searchVillaForm .form-field:nth-child(3) {
+        border-bottom: 1px solid #ddd;
+    }
+}
+
 form.newserachform input {
     padding: 2.35em 2em 2.35em 4em;
 }

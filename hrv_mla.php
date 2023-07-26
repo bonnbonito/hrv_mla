@@ -16,7 +16,7 @@
  * Plugin Name:       HRV - MLA Plugin
  * Plugin URI:        https://www.mlawebdesigns.co.uk
  * Description:       Plugin for HRV Website
- * Version:           2.2.303
+ * Version:           2.2.304
  * Author:            Bonn Joel Elimanco
  * Author URI:        https://www.linkedin.com/in/bonn-joel-elimanco-56a43a20
  * License:           GPL-2.0+
@@ -35,7 +35,7 @@ if ( ! defined( 'WPINC' ) ) {
  * Start at version 20.0 and use SemVer - https://semver.org
  * Rename this for your plugin and update it as you release new versions.
  */
-define( 'HRV_MLA_VERSION', '2.2.303' );
+define( 'HRV_MLA_VERSION', '2.2.304' );
 
 /**
  * The code that runs during plugin activation.

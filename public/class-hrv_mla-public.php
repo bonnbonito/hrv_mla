@@ -151,14 +151,13 @@ class HRV_MLA_Public {
             'meta_value'     => isset( $_GET['bedrooms'] ) ? $_GET['bedrooms'] : null,
         );
 
-        if ( isset( $_GET['resort'] ) && $_GET['resort'] != 'all' ) {
+        if ( isset( $_GET['resort'] ) && !empty( $_GET['resort'] ) && $_GET['resort'] != 'all' ) {
             $args['tax_query'] = array(
                 array(
-                    'taxonomy'         => 'resort', // taxonomy slug
-                    'terms'            => array( $_GET['resort'] ), // term ids
-                    'field'            => 'term_id', // Also supports: slug, name, term_taxonomy_id
-                    'operator'         => 'IN', // Also supports: AND, NOT IN, EXISTS, NOT EXISTS
-                    'include_children' => true,
+                    'taxonomy'         => 'resort',
+                    'terms'            => array( $_GET['resort'] ),
+                    'field'            => 'slug',
+                    'operator'         => 'IN',
                 ),
             );
         }
@@ -291,10 +290,10 @@ class HRV_MLA_Public {
         if ( $resort && $resort !== 'all' ) {
             $args['tax_query'] = array(
                 array(
-                    'taxonomy'         => 'resort', // taxonomy slug
-                    'terms'            => array( $resort ), // term ids
-                    'field'            => 'slug', // Also supports: slug, name, term_taxonomy_id
-                    'operator'         => 'IN', // Also supports: AND, NOT IN, EXISTS, NOT EXISTS
+                    'taxonomy'         => 'resort', 
+                    'terms'            => array( $resort ), 
+                    'field'            => 'slug',
+                    'operator'         => 'IN', 
                 )
             );
         }
@@ -366,8 +365,8 @@ class HRV_MLA_Public {
 		$datediff = strtotime( $checkout ) - strtotime( $checkin );
 		$nights   = round( $datediff / ( 60 * 60 * 24 ) );
 
-		$price         = $hrv_admin->ciirus_calculated_booking_price( get_field( 'ciirus_id', $id ), $checkin, $nights );
-		$cleaning_fees = $hrv_admin->ciirus_get_cleaning_fee( get_field( 'ciirus_id', $id ), $nights );
+		$price         = $hrv_admin->ciirus_calculated_booking_price( $ciirus_id, $checkin, $nights );
+		$cleaning_fees = $hrv_admin->ciirus_get_cleaning_fee( $ciirus_id, $nights );
        
 		?>
 <div class="property-result-wrap">
@@ -1130,9 +1129,6 @@ if ( $days_left <= $hrv_admin->days_to_notify ) {
                 'bedrooms', <?php echo $_REQUEST['bedrooms']; ?>
             );
             <?php endif; ?>
-            <?php if (isset($_REQUEST['resort']) && !empty($_REQUEST['resort'])) :  ?>
-            form.append('resort', '<?php echo $_REQUEST['resort']; ?>');
-            <?php endif; ?>
             const params = new URLSearchParams(form);
 
             fetch(HRV.ajax_url, {
@@ -1218,13 +1214,11 @@ if ( $days_left <= $hrv_admin->days_to_notify ) {
                 form.append('nonce', HRV.nonce);
                 form.append('checkin', '<?php echo $_REQUEST['date_checkin']; ?>');
                 form.append('checkout', '<?php echo $_REQUEST['date_checkout']; ?>');
-                <?php if (isset($_REQUEST['resort']) && !empty($_REQUEST['resort'])) :  ?>
-                form.append('resort', '<?php echo $_REQUEST['resort']; ?>');
-                <?php endif; ?>
                 form.append('property_id', id);
                 const params = new URLSearchParams(form);
 
                 try {
+                    console.log('starting...');
                     const response = await fetch(HRV.ajax_url, {
                         method: 'POST',
                         credentials: 'same-origin',
@@ -1236,6 +1230,8 @@ if ( $days_left <= $hrv_admin->days_to_notify ) {
                     });
 
                     const data = await response.json();
+
+                    console.log(data);
 
                     if (data.is_available === 'available') {
                         villaResults.insertAdjacentHTML('beforeend', data.content);

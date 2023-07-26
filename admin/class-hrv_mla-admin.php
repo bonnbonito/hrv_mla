@@ -1198,10 +1198,11 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
     $api_get_price = $this->ciirus_get_property_rates( $id, $checkin, $nights );
     $cleaning = $this->ciirus_get_cleaning_fee( $id, $nights );
     $propertyTaxRatesApi = $this->ciirus_get_tax_rates( $id );
-    $get_extras = show_extras( $id );
-    $tax = $propertyTaxRatesApi['total_rates'];
+    $get_extras_function = show_extras( $id );
+    $get_extras = $get_extras_function ? $get_extras_function : array();
+    $tax = $propertyTaxRatesApi['total_rates'] ? $propertyTaxRatesApi['total_rates'] : 0;
 
-    $api_price = $api_get_price['total_rates'];
+    $api_price = $api_get_price['total_rates'] ? $api_get_price['total_rates'] : 0;
 
     $api_price_tax = ( $tax / 100 ) * $api_price;
     $cleaning_tax = ( $tax / 100 ) * $cleaning;
