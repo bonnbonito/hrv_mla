@@ -1026,7 +1026,7 @@ class HRV_MLA_Admin {
 						break;
 					}
 				}
-				$property_rates['total_rates'] = round( $total_rates * $nights, 0);
+				$property_rates['total_rates'] = round( $total_rates * $nights, 0 );
 			} else {
 				$property_rates = false;
 			}
@@ -1195,6 +1195,10 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 
 
     public function ciirus_calculated_booking_price( $id, $checkin, $nights ) {
+    $additional = get_field( 'additional_pricing', 'option' );
+    $commssion_percent = $additional['commission_percent'] ? $additional['commission_percent'] : false;
+    $minimum_price = $additional['minimum_price'];
+
     $api_get_price = $this->ciirus_get_property_rates( $id, $checkin, $nights );
     $cleaning = $this->ciirus_get_cleaning_fee( $id, $nights );
     $propertyTaxRatesApi = $this->ciirus_get_tax_rates( $id );
@@ -1216,11 +1220,11 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
     }
     }
 
-    $booking_price = round( $api_price, 0);
-    $cleaning_price = round( $cleaning, 0);
-    $tax_price = round( $api_price_tax, 0);
-    $cleaning_tax_price = round( $cleaning_tax, 0);
-    $extras_price = round( $extras, 0);
+    $booking_price = round( $api_price, 0 );
+    $cleaning_price = round( $cleaning, 0 );
+    $tax_price = round( $api_price_tax, 0 );
+    $cleaning_tax_price = round( $cleaning_tax, 0 );
+    $extras_price = round( $extras, 0 );
     $total_price = $booking_price + $cleaning_price + $tax_price + $cleaning_tax_price + $extras_price;
 
     $price = array(
@@ -1231,6 +1235,13 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
     'extras' => $extras_price,
     'total' => $total_price,
     );
+
+    if ( $total_price > $minimum_price ) {
+    $additional_price = round( $commssion_percent / 100, 0 ) * $total_price;
+    $total_price = $total_price + $additional_price;
+    $price['additional'] = $additional_price;
+    $price['total'] = $total_price;
+    }
 
     return $price;
 
@@ -1264,7 +1275,7 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
     if ( $err ) {
     return 'cURL Error #:' . $err;
     } else {
-    //$response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
+    // $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
         $xml = new SimpleXMLElement( $response );
         $body = $xml->xpath( '//soapBody ' )[0];
         $json_encode = wp_json_encode( $body );
