@@ -214,6 +214,10 @@ function stripeBooking(token) {
     form.append('apiProfit', document.querySelector('#apiProfit').value);
     form.append('roomPrice', document.querySelector('#roomPrice').value);
     form.append('totalExtra', document.querySelector('#totalExtra').value);
+    form.append('cleaningFees', document.querySelector('#cleaningFees').value);
+    form.append('additional', document.querySelector('#additional').value);
+    form.append('taxRate', document.querySelector('#taxRate').value);
+    form.append('extras', document.querySelector('#extras').value);
 
     let extraCostName = [];
     let extraCostPrice = [];
@@ -315,6 +319,9 @@ function previous_page() {
 
 if ( get_field( 'api_price', $_GET['id'] ) ) {
 	$getbookingprice = $hrv_admin->ciirus_calculated_booking_price( get_field( 'ciirus_id', $_GET['id'] ), $_GET['date_checkin'], $_GET['nights'] );
+
+    print_r( $getbookingprice );
+
 	$bookingprice    = round( $getbookingprice['total'], 2 );
 	$profit          = round( $bookingprice * .18, 2 );
 	$total_price     = $bookingprice;
@@ -504,8 +511,8 @@ span.price-highlight {
                     <input type="hidden" name="bookingprice" id="bookingprice" value="<?php echo $bookingprice; ?>">
                     <input type="hidden" name="ownerbookingpercent" id="ownerbookingpercent"
                         value="<?php echo $ownerbookingpercent; ?>">
-                    <input type="hidden" name="cleaningfees" id="cleaningfees" value="<?php echo $cleaning_fees; ?>">
-                    <input type="hidden" name="taxrate" id="taxrate" value="<?php echo $propertyTaxRates; ?>">
+
+
                     <input type="hidden" name="roomPrice" id="roomPrice" value="<?php echo $bookingprice; ?>">
                     <input type="hidden" name="totalPrice" id="totalPrice" value="<?php echo $total_price; ?>">
                     <input type="hidden" name="apiProfit" id="apiProfit" value="<?php echo $profit; ?>">
@@ -525,6 +532,26 @@ span.price-highlight {
                     <input type="hidden" name="ownerEmail" id="ownerEmail" value="<?php echo $owner_email; ?>">
                     <input type="hidden" name="owner_id" id="ownerID" value="<?php echo $property_owner_id[0]; ?>">
                     <input type="hidden" name="owner_name" id="ownerName" value="<?php echo $owner_name; ?>">
+
+                    <?php if ( isset( $getbookingprice['tax_price'] ) ) : ?>
+                    <input type="hidden" name="taxrate" id="taxRate"
+                        value="<?php echo $getbookingprice['tax_price']; ?>">
+                    <?php endif; ?>
+                    <?php if ( isset( $getbookingprice['cleaning_price'] ) ) : ?>
+                    <input type="hidden" name="cleaningfees" id="cleaningFees"
+                        value="<?php echo $getbookingprice['cleaning_price']; ?>">
+                    <?php endif; ?>
+                    <?php if ( isset( $getbookingprice['cleaning_tax'] ) ) : ?>
+                    <input type="hidden" name="cleaning_tax" id="cleaningTax"
+                        value="<?php echo $getbookingprice['cleaning_tax']; ?>">
+                    <?php endif; ?>
+                    <?php if ( isset( $getbookingprice['extras'] ) ) : ?>
+                    <input type="hidden" name="extras" id="extras" value="<?php echo $getbookingprice['extras']; ?>">
+                    <?php endif; ?>
+                    <?php if ( isset( $getbookingprice['additional'] ) ) : ?>
+                    <input type="hidden" name="additional" id="additional"
+                        value="<?php echo $getbookingprice['additional']; ?>">
+                    <?php endif; ?>
                 </div>
 
 
@@ -658,12 +685,14 @@ span.price-highlight {
     const totalPrice = document.querySelector('#totalPrice');
     const ownerPrice = document.querySelector('#ownerPrice');
     const totalRoomRate = document.querySelector('#totalRoomRate');
-    const taxrate = document.querySelector('#taxrate');
-    const cleaningfees = document.querySelector('#cleaningfees');
+    const taxrate = document.querySelector('#taxRate');
+    const cleaningfees = document.querySelector('#cleaningFees');
     let extracosts = document.querySelectorAll('input[name="extra-cost[]"]');
     const depositPrice = document.querySelector('#depositPrice');
     const dueDate = document.querySelector('#dueDate');
     const apiProfit = document.getElementById('apiProfit');
+    const extras = document.getElementById('extras');
+    const additional = document.getElementById('additional');
     const totalExtra = document.getElementById('totalExtra');
     Date.prototype.addDays = function(days) {
         const date = new Date(this.valueOf())

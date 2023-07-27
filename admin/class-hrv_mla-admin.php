@@ -1237,7 +1237,9 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
     );
 
     if ( $total_price > $minimum_price ) {
-    $additional_price = round( $commssion_percent / 100, 0 ) * $total_price;
+    $additional_price = ($commssion_percent / 100) * $total_price;
+    $additional_price = round( $additional_price, 0 );
+    $price['old_total'] = $total_price;
     $total_price = $total_price + $additional_price;
     $price['additional'] = $additional_price;
     $price['total'] = $total_price;

@@ -501,6 +501,10 @@ class HRV_MLA_Public {
 		$api_price              = $_POST['apiPrice'] == 1 ? 1 : 0;
 		$api_profit             = $_POST['apiProfit'];
 		$total_extra            = $_POST['totalExtra'];
+        $cleaning_fees          = isset( $_POST['cleaningFees' ] ) ? $_POST['cleaningFees'] : 0;
+        $tax_rate               = isset( $_POST['taxRate' ] ) ? $_POST['taxRate'] : 0;
+        $additional             = isset( $_POST['additional' ] ) ? $_POST['additional'] : 0;
+        $extras_pricing             = isset( $_POST['extras' ] ) ? $_POST['extras'] : 0;
 
 		// $charge = $stripe->charges->create(
 		// array(
@@ -571,6 +575,10 @@ class HRV_MLA_Public {
 				update_field( 'booking_property_owner', $owner_id, $booking_id );
 				update_field( 'api_price', $api_price, $booking_id );
 				update_field( 'payment_status', 'deposit', $booking_id );
+                update_field( 'cleaning_pricing', $cleaning_fees, $booking_id );
+                update_field( 'additional_pricing', $additional, $booking_id );
+                update_field( 'tax_rate', $tax_rate, $booking_id );
+                update_field( 'extras_pricing', $extras_pricing, $booking_id );
 				update_post_meta( $booking_id, 'payment_email_sent', 'no' );
 
 				if ( $api_profit ) {
