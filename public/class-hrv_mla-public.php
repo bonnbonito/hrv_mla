@@ -395,7 +395,7 @@ class HRV_MLA_Public {
 
 
 		if ( $price && $price['total'] > 0 ) {
-            print_r( $price );
+            //print_r( $price );
 			?>
         <div class="property-results-price">
             Price: <strong>&dollar;<?php echo round($price['total'], 2); ?></strong>
@@ -501,10 +501,10 @@ class HRV_MLA_Public {
 		$api_price              = $_POST['apiPrice'] == 1 ? 1 : 0;
 		$api_profit             = $_POST['apiProfit'];
 		$total_extra            = $_POST['totalExtra'];
-        $cleaning_fees          = isset( $_POST['cleaningFees' ] ) ? $_POST['cleaningFees'] : 0;
-        $tax_rate               = isset( $_POST['taxRate' ] ) ? $_POST['taxRate'] : 0;
-        $additional             = isset( $_POST['additional' ] ) ? $_POST['additional'] : 0;
-        $extras_pricing             = isset( $_POST['extras' ] ) ? $_POST['extras'] : 0;
+        $cleaning_fees          = isset( $_POST['cleaningFees'] ) ? $_POST['cleaningFees'] : 0;
+        $tax_rate               = isset( $_POST['taxRate'] ) ? $_POST['taxRate'] : 0;
+        $additional             = isset( $_POST['additional'] ) ? $_POST['additional'] : 0;
+        $extras_pricing         = isset( $_POST['extras'] ) ? $_POST['extras'] : 0;
 
 		// $charge = $stripe->charges->create(
 		// array(
@@ -518,7 +518,7 @@ class HRV_MLA_Public {
 		$payment_intents = $stripe->paymentIntents->create(
 			array(
 				'amount'               => round( $deposit_price, 2 ) * 100,
-				'currency'             => 'gbp',
+				'currency'             => 'usd',
 				'payment_method_types' => array( 'card' ),
 				'description'          => $nights . ' nights booking of ' . get_the_title( $property ),
 				'capture_method'       => 'manual',
@@ -577,6 +577,7 @@ class HRV_MLA_Public {
 				update_field( 'payment_status', 'deposit', $booking_id );
                 update_field( 'cleaning_pricing', $cleaning_fees, $booking_id );
                 update_field( 'additional_pricing', $additional, $booking_id );
+                update_field( 'pricing_additional', $additional, $booking_id );
                 update_field( 'tax_rate', $tax_rate, $booking_id );
                 update_field( 'extras_pricing', $extras_pricing, $booking_id );
 				update_post_meta( $booking_id, 'payment_email_sent', 'no' );
@@ -614,7 +615,7 @@ class HRV_MLA_Public {
 
 				update_field( 'field_61fbad0ce3c30', $rows, $booking_id );
 
-				if ( $api_price == 1 ) {
+				if ( $api_price == 1 && apply_filters('live_booking', true ) ) {
                     $admin_email = get_option( 'admin_email' );
 					$booking_api_details = '<?xml version="1.0" encoding="utf-8"?>
 <soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema"

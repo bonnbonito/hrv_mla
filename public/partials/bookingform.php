@@ -320,7 +320,7 @@ function previous_page() {
 if ( get_field( 'api_price', $_GET['id'] ) ) {
 	$getbookingprice = $hrv_admin->ciirus_calculated_booking_price( get_field( 'ciirus_id', $_GET['id'] ), $_GET['date_checkin'], $_GET['nights'] );
 
-    print_r( $getbookingprice );
+    //print_r( $getbookingprice );
 
 	$bookingprice    = round( $getbookingprice['total'], 2 );
 	$profit          = round( $bookingprice * .18, 2 );

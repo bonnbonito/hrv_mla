@@ -65,6 +65,9 @@ directory take precedence. For example, `/assets/screenshot-1.png` would win ove
 
 == Changelog ==
 
+= 2.2.400 =
+* Removed debugging and change gbp to usd
+
 = 2.2.304 =
 * fix search 
 
