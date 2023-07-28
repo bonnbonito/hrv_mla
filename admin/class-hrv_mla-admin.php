@@ -1196,57 +1196,90 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 
     public function ciirus_calculated_booking_price( $id, $checkin, $nights ) {
     $additional = get_field( 'additional_pricing', 'option' );
-    $commssion_percent = $additional['commission_percent'] ? $additional['commission_percent'] : false;
+    $commission_percent = $this->getPercentage($additional, 'commission_percent');
+    $default_commission_percent = $this->getPercentage($additional, 'default_commission_percent');
     $minimum_price = $additional['minimum_price'];
 
-    $api_get_price = $this->ciirus_get_property_rates( $id, $checkin, $nights );
+    $api_price = $this->getPropertyRates( $id, $checkin, $nights );
     $cleaning = $this->ciirus_get_cleaning_fee( $id, $nights );
+    $tax = $this->getTaxRates( $id );
+    $extras = $this->getExtras( $id, $api_price );
+
+    $tax_price = $this->calculateTax($api_price, $tax);
+    $cleaning_tax_price = $this->calculateTax($cleaning, $tax);
+
+    $price = $this->calculatePrices($api_price, $cleaning, $tax_price, $cleaning_tax_price, $extras);
+
+    $total_price = $price['total'];
+
+    if ( $total_price > $minimum_price ) {
+    $commission_percent = $commission_percent;
+    } else {
+    $commission_percent = $default_commission_percent;
+    }
+
+    $additional_price = $this->calculateCommission($total_price, $commission_percent);
+    $total_price = $total_price + $additional_price;
+
+    $price['old_total'] = $price['total'];
+    $price['additional'] = $additional_price;
+    $price['total'] = $total_price;
+
+    return $price;
+    }
+
+    private function getPercentage($additional, $key) {
+    return $additional[$key] ? $additional[$key] : 0;
+    }
+
+    private function getPropertyRates( $id, $checkin, $nights ) {
+    $api_get_price = $this->ciirus_get_property_rates( $id, $checkin, $nights );
+    return $api_get_price['total_rates'] ? $api_get_price['total_rates'] : 0;
+    }
+
+    private function getTaxRates( $id ) {
     $propertyTaxRatesApi = $this->ciirus_get_tax_rates( $id );
+    return $propertyTaxRatesApi['total_rates'] ? $propertyTaxRatesApi['total_rates'] : 0;
+    }
+
+    private function getExtras( $id, $api_price ) {
     $get_extras_function = show_extras( $id );
     $get_extras = $get_extras_function ? $get_extras_function : array();
-    $tax = $propertyTaxRatesApi['total_rates'] ? $propertyTaxRatesApi['total_rates'] : 0;
-
-    $api_price = $api_get_price['total_rates'] ? $api_get_price['total_rates'] : 0;
-
-    $api_price_tax = ( $tax / 100 ) * $api_price;
-    $cleaning_tax = ( $tax / 100 ) * $cleaning;
     $extras = 0;
 
     foreach ( $get_extras as $e ) {
     if ( $e['type'] === 'percentage' ) {
-    $extras = $extras + ( $api_price * ( $e['value'] / 100 ) );
+    $extras += $api_price * ( $e['value'] / 100 );
     } else {
-    $extras = $extras + $e['value'];
+    $extras += $e['value'];
     }
     }
 
+    return round($extras, 0);
+    }
+
+    private function calculateTax($price, $tax) {
+    return round(( $tax / 100 ) * $price, 0);
+    }
+
+    private function calculatePrices($api_price, $cleaning, $tax_price, $cleaning_tax_price, $extras) {
     $booking_price = round( $api_price, 0 );
     $cleaning_price = round( $cleaning, 0 );
-    $tax_price = round( $api_price_tax, 0 );
-    $cleaning_tax_price = round( $cleaning_tax, 0 );
-    $extras_price = round( $extras, 0 );
-    $total_price = $booking_price + $cleaning_price + $tax_price + $cleaning_tax_price + $extras_price;
+    $total_price = $booking_price + $cleaning_price + $tax_price + $cleaning_tax_price + $extras;
 
-    $price = array(
+    return array(
     'booking_price' => $booking_price,
     'cleaning_price' => $cleaning_price,
     'tax_price' => $tax_price,
     'cleaning_tax' => $cleaning_tax_price,
-    'extras' => $extras_price,
+    'extras' => $extras,
     'total' => $total_price,
     );
-
-    if ( $total_price > $minimum_price ) {
-    $additional_price = ($commssion_percent / 100) * $total_price;
-    $additional_price = round( $additional_price, 0 );
-    $price['old_total'] = $total_price;
-    $total_price = $total_price + $additional_price;
-    $price['additional'] = $additional_price;
-    $price['total'] = $total_price;
     }
 
-    return $price;
-
+    private function calculateCommission($total_price, $commission_percent) {
+    $additional_price = ($commission_percent / 100) * $total_price;
+    return round( $additional_price, 0 );
     }
 
     public function ciirus_make_booking( $booking_details ) {

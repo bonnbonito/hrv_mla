@@ -288,7 +288,7 @@ $hrv_admin  = new HRV_MLA_Admin( 'hrv_mla', HRV_MLA_VERSION );
 $price_cat_ID        = wp_get_post_terms( $_GET['id'], 'price_categories' );
 $currentprice        = round( $hrv_public->compute_price( $price_cat_ID[0]->term_id, $_GET['date_checkin'] ), 1 );
 $total_room_rate     = $currentprice ? $currentprice * $_GET['nights'] : 0;
-$ownerbookingpercent = get_field( 'property_owner_booking_percentage', $_GET['id'] ) ? get_field( 'property_owner_booking_percentage', $_GET['id'] ) : get_field( 'default_property_owner_booking_percentage', 'option' );
+$ownerbookingpercent = get_field( 'property_owner_booking_percentage', $_GET['id'] ) ? get_field( 'property_owner_booking_percentage', $_GET['id'] ) : get_field( 'additional_pricing', 'option' )['default_property_owner_booking_percentage'];
 $owner_price         = 0;
 $bookingprice        = round( $currentprice, 1 );
 
@@ -322,8 +322,8 @@ if ( get_field( 'api_price', $_GET['id'] ) ) {
 
     //print_r( $getbookingprice );
 
-	$bookingprice    = round( $getbookingprice['total'], 2 );
-	$profit          = round( $bookingprice * .18, 2 );
+	$bookingprice    = round( $getbookingprice['total'] );
+	$profit          = round( $getbookingprice['additional'] );
 	$total_price     = $bookingprice;
 
 	$total_room_rate = $total_price;
@@ -574,7 +574,7 @@ span.price-highlight {
 							// Load sub field value.
 							$name        = get_sub_field( 'name' );
 							$price_field = get_sub_field( 'price' );
-							$percentage  = get_sub_field( 'owner_percentage' ) ? get_sub_field( 'owner_percentage' ) : get_field( 'default_additional_costs_property_owner_percentage', 'option' );
+							$percentage  = get_sub_field( 'owner_percentage' ) ? get_sub_field( 'owner_percentage' ) : get_field( 'additional_pricing', 'option' )['default_additional_costs_property_owner_percentage'];
 							$price       = $price_field + ( $price_field * $percentage / 100 );
 							$price_total = round( $price * $_GET['nights'], 2 );
 							$extraCost   = $extraCost + $price_total;
