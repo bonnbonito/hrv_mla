@@ -1196,8 +1196,8 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 
     public function ciirus_calculated_booking_price( $id, $checkin, $nights ) {
     $additional = get_field( 'additional_pricing', 'option' );
-    $commission_percent = $this->getPercentage($additional, 'commission_percent');
-    $default_commission_percent = $this->getPercentage($additional, 'default_commission_percent');
+    $commission_percent = $this->getPercentage( $additional, 'commission_percent' );
+    $default_commission_percent = $this->getPercentage( $additional, 'default_commission_percent' );
     $minimum_price = $additional['minimum_price'];
 
     $api_price = $this->getPropertyRates( $id, $checkin, $nights );
@@ -1205,10 +1205,10 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
     $tax = $this->getTaxRates( $id );
     $extras = $this->getExtras( $id, $api_price );
 
-    $tax_price = $this->calculateTax($api_price, $tax);
-    $cleaning_tax_price = $this->calculateTax($cleaning, $tax);
+    $tax_price = $this->calculateTax( $api_price, $tax );
+    $cleaning_tax_price = $this->calculateTax( $cleaning, $tax );
 
-    $price = $this->calculatePrices($api_price, $cleaning, $tax_price, $cleaning_tax_price, $extras);
+    $price = $this->calculatePrices( $api_price, $cleaning, $tax_price, $cleaning_tax_price, $extras );
 
     $total_price = $price['total'];
 
@@ -1218,7 +1218,7 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
     $commission_percent = $default_commission_percent;
     }
 
-    $additional_price = $this->calculateCommission($total_price, $commission_percent);
+    $additional_price = $this->calculateCommission( $total_price, $commission_percent );
     $total_price = $total_price + $additional_price;
 
     $price['old_total'] = $price['total'];
@@ -1228,8 +1228,8 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
     return $price;
     }
 
-    private function getPercentage($additional, $key) {
-    return $additional[$key] ? $additional[$key] : 0;
+    private function getPercentage( $additional, $key ) {
+    return $additional[ $key ] ? $additional[ $key ] : 0;
     }
 
     private function getPropertyRates( $id, $checkin, $nights ) {
@@ -1255,14 +1255,14 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
     }
     }
 
-    return round($extras, 0);
+    return round( $extras, 0 );
     }
 
-    private function calculateTax($price, $tax) {
-    return round(( $tax / 100 ) * $price, 0);
+    private function calculateTax( $price, $tax ) {
+    return round( ( $tax / 100 ) * $price, 0 );
     }
 
-    private function calculatePrices($api_price, $cleaning, $tax_price, $cleaning_tax_price, $extras) {
+    private function calculatePrices( $api_price, $cleaning, $tax_price, $cleaning_tax_price, $extras ) {
     $booking_price = round( $api_price, 0 );
     $cleaning_price = round( $cleaning, 0 );
     $total_price = $booking_price + $cleaning_price + $tax_price + $cleaning_tax_price + $extras;
@@ -1277,8 +1277,8 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
     );
     }
 
-    private function calculateCommission($total_price, $commission_percent) {
-    $additional_price = ($commission_percent / 100) * $total_price;
+    private function calculateCommission( $total_price, $commission_percent ) {
+    $additional_price = ( $commission_percent / 100 ) * $total_price;
     return round( $additional_price, 0 );
     }
 
@@ -1546,6 +1546,12 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 		}
 	}
 
+	public function capture_deposit_stripe() {
+		if ( ! wp_next_scheduled( 'capture_deposit_stripe' ) ) {
+			wp_schedule_event( time(), 'daily', 'capture_deposit_stripe' );
+		}
+	}
+
 	public function send_ask_payment_email_function() {
 		$query = new WP_Query(
 			array(
@@ -1608,6 +1614,43 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 		wp_reset_post_data();
 	}
 
+	public function capture_deposit_stripe_function() {
+		$three_days_ago = date('Y-m-d', strtotime('-3 days'));
+		$query = new WP_Query(
+			array(
+				'post_type'      => 'bookings',
+				'posts_per_page' => -1,
+				'date_query'     => array(
+					array(
+						'before' => $three_days_ago,
+						'inclusive' => true, // Include posts from the specified date
+					),
+				),
+			)
+		);
+
+		while ( $query->have_posts() ) :
+			$query->the_posts();
+
+			if ( get_field('stripe_payment_intent') && ! get_field('stripe_payment_captured') ) {
+				$secret = get_field( 'testing', 'option' ) ? get_field( 'test_secret_key', 'option' ) : get_field( 'live_secret_key', 'option' );
+				$stripe = new \Stripe\StripeClient( $secret );
+				
+				
+				$capture = $stripe->paymentIntents->capture(get_field('stripe_payment_intent'), array());
+				
+				print_r( $capture );
+				
+				if ( $capture->status === 'succeeded' ) {
+					update_field( 'stripe_charge_id', $capture->latest_charge, get_the_ID() );
+					update_field('stripe_payment_captured', 1, get_the_ID());
+				}
+			}
+
+		endwhile;
+		wp_reset_postdata();
+	}
+
 	public function send_ask_review_email_function() {
 		$query = new WP_Query(
 			array(
@@ -1666,7 +1709,7 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 			}
 
 		endwhile;
-		wp_reset_post_data();
+		wp_reset_postdata();
 	}
 
 
