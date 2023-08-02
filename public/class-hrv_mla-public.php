@@ -569,7 +569,7 @@ class HRV_MLA_Public {
 				update_field( 'property_link', $property_link, $booking_id );
 				update_field( 'property_owner_percentage', $ownerbookingpercent, $booking_id );
 				update_field( 'property_post', array( $property ), $booking_id );
-				update_field( 'stripe_charge_id', $payment_intents->id, $booking_id );
+				update_field( 'stripe_payment_intent', $payment_intents->id, $booking_id );
 				update_field( 'booking_season_price', $bookingprice, $booking_id );
 				update_field( 'booking_property_owner', $owner_id, $booking_id );
 				update_field( 'booking_property_owner', $owner_id, $booking_id );
