@@ -65,7 +65,7 @@ directory take precedence. For example, `/assets/screenshot-1.png` would win ove
 
 == Changelog ==
 
-= 2.2.400 =
+= 2.2.402 =
 * Stripe to manual charge
 
 = 2.2.400 =

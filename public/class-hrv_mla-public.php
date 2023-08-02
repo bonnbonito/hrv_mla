@@ -521,7 +521,7 @@ class HRV_MLA_Public {
 				'currency'             => 'usd',
 				'payment_method_types' => array( 'card' ),
 				'description'          => $nights . ' nights booking of ' . get_the_title( $property ),
-				'capture_method'       => 'automatic',
+				'capture_method'       => 'manual',
 				'payment_method'       => $_POST['token'],
 				'confirm'              => true,
 			)
