@@ -1615,14 +1615,14 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 	}
 
 	public function capture_deposit_stripe_function() {
-		$three_days_ago = date('Y-m-d', strtotime('-3 days'));
+		$days_ago = date('Y-m-d', strtotime('-4 days'));
 		$query = new WP_Query(
 			array(
 				'post_type'      => 'bookings',
 				'posts_per_page' => -1,
 				'date_query'     => array(
 					array(
-						'before' => $three_days_ago,
+						'before' => $days_ago,
 						'inclusive' => true, // Include posts from the specified date
 					),
 				),
