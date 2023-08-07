@@ -534,6 +534,7 @@ class HRV_MLA_Public {
 				'post_type'   => 'bookings',
 				'post_title'  => $firstname . ' ' . $surname . ' - (' . $startdate . ' - ' . $enddate . ')',
 				'post_status' => 'publish',
+                'post_date' => date("Ymd"),
 			);
 			$booking_id        = wp_insert_post( $args );
 			$return['booking'] = $booking_id;
@@ -571,7 +572,6 @@ class HRV_MLA_Public {
 				update_field( 'property_post', array( $property ), $booking_id );
 				update_field( 'stripe_payment_intent', $payment_intents->id, $booking_id );
 				update_field( 'booking_season_price', $bookingprice, $booking_id );
-				update_field( 'booking_property_owner', $owner_id, $booking_id );
 				update_field( 'booking_property_owner', $owner_id, $booking_id );
 				update_field( 'api_price', $api_price, $booking_id );
 				update_field( 'payment_status', 'deposit', $booking_id );

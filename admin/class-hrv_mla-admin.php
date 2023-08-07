@@ -1932,24 +1932,29 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 	}
 
 	public function get_all_owners() {
-		$args         = array(
+		$args = array(
 			'post_type'      => 'owner',
 			'post_status'    => 'publish',
 			'posts_per_page' => -1,
 			'order'          => 'ASC',
 			'orderby'        => 'title',
 		);
-		$owners       = array();
-		$owners_query = new WP_Query( $args );
 
-		while ( $owners_query->have_posts() ) :
-			$owners_query->the_post();
+		$owners_posts = get_posts($args);
+		$owners = array();
+
+		foreach ($owners_posts as $post) {
+			setup_postdata($post);
 			$owners[] = array(
-				'id'    => get_the_ID(),
-				'title' => get_the_title(),
+				'id'    => $post->ID,
+				'title' => $post->post_title,
 			);
-		endwhile;
-		wp_reset_postdata();
+
+			wp_reset_postdata();
+		}
+
+		// Now $owners array contains the required information
+
 
 		return $owners;
 	}
@@ -2004,7 +2009,7 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 
 	public function owner_radio_values( $field ) {
 		$owners = $this->get_all_owners();
-
+		
 		foreach ( $owners as $owner ) {
 			$field['choices'][ $owner['id'] ] = $owner['title'];
 		}
