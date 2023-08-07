@@ -534,7 +534,6 @@ class HRV_MLA_Public {
 				'post_type'   => 'bookings',
 				'post_title'  => $firstname . ' ' . $surname . ' - (' . $startdate . ' - ' . $enddate . ')',
 				'post_status' => 'publish',
-                'post_date' => date("Ymd"),
 			);
 			$booking_id        = wp_insert_post( $args );
 			$return['booking'] = $booking_id;

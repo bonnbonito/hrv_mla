@@ -163,9 +163,10 @@ class HRV_MLA {
 		$this->loader->add_action( 'pre_get_posts', $plugin_admin, 'booking_column_sort' );
 		$this->loader->add_action( 'admin_init', $plugin_admin, 'send_ask_payment_email_schedule' );
 		$this->loader->add_action( 'admin_init', $plugin_admin, 'send_ask_review_schedule' );
+		$this->loader->add_action( 'admin_init', $plugin_admin, 'capture_deposit_stripe_schedule' );
 		$this->loader->add_action( 'send_ask_payment_email_hook', $plugin_admin, 'send_ask_payment_email_function' );
 		$this->loader->add_action( 'send_ask_review_hook', $plugin_admin, 'send_ask_review_email_function' );
-		$this->loader->add_action( 'capture_deposit_stripe', $plugin_admin, 'capture_deposit_stripe_function' );
+		$this->loader->add_action( 'capture_deposit_stripe_hook', $plugin_admin, 'capture_deposit_stripe_function' );
 		$this->loader->add_action( 'acf/save_post', $plugin_admin, 'add_extras' );
 		$this->loader->add_action( 'acf/save_post', $plugin_admin, 'calculate_total_price' );
 		$this->loader->add_action( 'acf/save_post', $plugin_admin, 'calculate_total_extra_price' );

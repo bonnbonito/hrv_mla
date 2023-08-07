@@ -1546,9 +1546,9 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 		}
 	}
 
-	public function capture_deposit_stripe() {
-		if ( ! wp_next_scheduled( 'capture_deposit_stripe' ) ) {
-			wp_schedule_event( time(), 'daily', 'capture_deposit_stripe' );
+	public function capture_deposit_stripe_schedule() {
+		if ( ! wp_next_scheduled( 'capture_deposit_stripe_hook' ) ) {
+			wp_schedule_event( time(), 'daily', 'capture_deposit_stripe_hook' );
 		}
 	}
 

@@ -66,6 +66,9 @@ directory take precedence. For example, `/assets/screenshot-1.png` would win ove
 == Changelog ==
 
 = 2.2.407 =
+* Add capture cron
+
+= 2.2.407 =
 * Fix Capture bug
 
 = 2.2.405 =
