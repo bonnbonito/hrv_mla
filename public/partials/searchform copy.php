@@ -207,39 +207,29 @@ form.newserachform .form-field-submit {
             <path
                 d="M215.7 499.2C267 435 384 279.4 384 192C384 86 298 0 192 0S0 86 0 192c0 87.4 117 243 168.3 307.2c12.3 15.3 35.1 15.3 47.4 0zM192 256c-35.3 0-64-28.7-64-64s28.7-64 64-64s64 28.7 64 64s-28.7 64-64 64z" />
         </svg>
-
-        <?php
+        <select class="form-select brl-10" name="resort" id="resort" required>
+            <option value=""></option>
+            <option value="all"
+                <?php echo ( isset( $_REQUEST['resort'] ) && 'all' == $_REQUEST['resort'] ? ' selected' : '' ); ?>>All
+                Resorts</option>
+            <?php
 			$resorts = get_terms(
 				array(
 					'taxonomy'   => 'resort',
 					'hide_empty' => true,
 				)
 			);
-		function get_resort() {
-			$get_resort = '';
-			if ( isset( $_REQUEST['resort'] ) && ! empty( $_REQUEST['resort'] ) && 'all' !== $_REQUEST['resort'] ) {
-				$term       = get_term_by( 'slug', $_REQUEST['resort'], 'resort' );
-				$get_resort = $term->name;
-			} elseif ( 'all' === $_REQUEST['resort'] ) {
-				$get_resort = 'All Resorts';
-			}
-			echo $get_resort;
-		}
-		?>
+			?>
+            <?php foreach ( $resorts as $resort ) { ?>
 
-        <div class="div-select-wrap <?php echo ( isset( $_REQUEST['resort'] ) ? 'focus has-value' : '' ); ?>">
-            <input type="text" id="resorts" value="<?php get_resort(); ?>" required>
-            <input type="hidden" name="resort" id="resortsHidden"
-                value="<?php echo ( isset( $_REQUEST['resort'] ) ? $_REQUEST['resort'] : '' ); ?>">
-            <div class="div-select" id="resortsSelect">
-                <div data-resort="all" data-name="All Resorts">All Resorts</div>
-                <?php foreach ( $resorts as $resort ) { ?>
-                <div data-resort="<?php echo $resort->slug; ?>" data-name="<?php echo $resort->name; ?>">
-                    <?php echo $resort->name; ?></div>
-                <?php } ?>
-            </div>
-        </div>
-        <label for="resort">Bedrooms</label>
+            <option value="<?php echo $resort->slug; ?>"
+                <?php echo ( isset( $_REQUEST['resort'] ) && $resort->slug == $_REQUEST['resort'] ? ' selected' : '' ); ?>>
+                <?php echo $resort->name; ?></option>
+
+            <?php } ?>
+
+        </select>
+        <label for="bedrooms">Resort</label>
     </div>
     <?php } ?>
     <div class="form-field">
@@ -276,7 +266,7 @@ form.newserachform .form-field-submit {
                 required>
             <input type="hidden" name="bedrooms" id="bedroomshidden"
                 value="<?php echo ( isset( $_REQUEST['bedrooms'] ) ? $_REQUEST['bedrooms'] : '' ); ?>">
-            <div id="bedroomsSelect" class="div-select">
+            <div class="div-select">
                 <?php for ( $i = 3; $i < 10; $i++ ) { ?>
                 <div data-room="<?php echo $i; ?>"><?php echo $i; ?> Bedrooms</div>
                 <?php } ?>
@@ -299,11 +289,8 @@ const date_checkin = document.getElementById('check-in');
 const date_checkout = document.getElementById('check-out');
 const nights = document.getElementById('nights');
 const bedrooms = document.getElementById('bedrooms');
-const resorts = document.getElementById('resorts');
 const bedroomshidden = document.getElementById('bedroomshidden');
-const resortsHidden = document.getElementById('resortsHidden');
-const bedroomsSelect = document.querySelectorAll('#bedroomsSelect > div');
-const resortsSelect = document.querySelectorAll('#resortsSelect > div');
+const bedroomsSelect = document.querySelectorAll('.div-select > div');
 const searchVillaForm = document.getElementById('searchVillaForm');
 
 searchVillaForm.addEventListener('submit', e => {
@@ -312,18 +299,10 @@ searchVillaForm.addEventListener('submit', e => {
     searchVillaForm.submit();
 });
 
-resorts.addEventListener('focusin', (event) => {
-    resorts.parentElement.classList.add('focus');
-    resorts.parentElement.classList.remove('has-value');
-});
 
 bedrooms.addEventListener('focusin', (event) => {
     bedrooms.parentElement.classList.add('focus');
     bedrooms.parentElement.classList.remove('has-value');
-});
-
-resorts.addEventListener('input', (event) => {
-    return;
 });
 
 
@@ -331,23 +310,9 @@ bedrooms.addEventListener('input', (event) => {
     return;
 });
 
-resorts.onkeypress = function() {
-    return false;
-};
-
 bedrooms.onkeypress = function() {
     return false;
 };
-
-resortsSelect.forEach((resort) => {
-    resort.addEventListener('click', (event) => {
-        let val = resort.dataset.resort;
-        let name = resort.dataset.name;
-        resorts.parentElement.classList.add('has-value');
-        resorts.value = name;
-        resortsHidden.value = val;
-    });
-});
 
 bedroomsSelect.forEach((bedroom) => {
     bedroom.addEventListener('click', (event) => {

@@ -367,5 +367,3 @@ class ReportHistoryModel implements ModelInterface, ArrayAccess
         );
     }
 }
-
-

@@ -1561,7 +1561,7 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 		);
 
 		while ( $query->have_posts() ) :
-			$query->the_posts();
+			$query->the_post();
 
 			$arrival_date  = strtotime( get_field( 'arrival_date' ) );
 			$today         = time();
@@ -1616,21 +1616,25 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 
 	public function capture_deposit_stripe_function() {
 		$days_ago = date('Y-m-d', strtotime('-4 days'));
+		$year = date('Y', strtotime($days_ago));
+		$month = date('m', strtotime($days_ago));
+		$day = date('d', strtotime($days_ago));
 		$query = new WP_Query(
 			array(
 				'post_type'      => 'bookings',
 				'posts_per_page' => -1,
 				'date_query'     => array(
 					array(
-						'before' => $days_ago,
-						'inclusive' => true, // Include posts from the specified date
+						'year' => $year,
+						'month' => $month,
+						'day'	=> $day,
 					),
 				),
 			)
 		);
 
 		while ( $query->have_posts() ) :
-			$query->the_posts();
+			$query->the_post();
 
 			if ( get_field('stripe_payment_intent') && ! get_field('stripe_payment_captured') ) {
 				$secret = get_field( 'testing', 'option' ) ? get_field( 'test_secret_key', 'option' ) : get_field( 'live_secret_key', 'option' );
@@ -1638,8 +1642,6 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 				
 				
 				$capture = $stripe->paymentIntents->capture(get_field('stripe_payment_intent'), array());
-				
-				print_r( $capture );
 				
 				if ( $capture->status === 'succeeded' ) {
 					update_field( 'stripe_charge_id', $capture->latest_charge, get_the_ID() );
@@ -1660,7 +1662,7 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 		);
 
 		while ( $query->have_posts() ) :
-			$query->the_posts();
+			$query->the_post();
 
 			$arrival_date  = strtotime( get_field( 'arrival_date' ) );
 			$today         = time();
