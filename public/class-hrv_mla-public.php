@@ -268,42 +268,68 @@ class HRV_MLA_Public {
 	}
 
 	public function get_all_property_details() {
-		if ( ! wp_verify_nonce( $_POST['nonce'], 'hrv-nonce' ) ) {
-			wp_send_json( 'Nonce Error' );
-		}
-		$bedrooms = isset( $_POST['bedrooms'] ) && ! empty( $_POST['bedrooms'] ) ? $_POST['bedrooms'] : null;
-       
-        $resort = isset( $_POST['resort'] ) && ! empty( $_POST['resort'] ) ? $_POST['resort'] : null;
+    if (!wp_verify_nonce($_POST['nonce'], 'hrv-nonce')) {
+        wp_send_json('Nonce Error');
+    }
 
+    $bedrooms = $this->sanitize_input($_POST, 'bedrooms');
+    $resort = $this->sanitize_input($_POST, 'resort');
+    $found_posts = 0;
+    $content = '';
+    
+    $args = array(
+        'post_type' => 'properties',
+        'numberposts' => -1,
+        'posts_per_page' => -1,
+    );
 
-		$args     = array(
-			'post_type'      => 'properties',
-			'numberposts'    => -1,
-			'posts_per_page' => -1,
-		);
+    if ($resort && $resort !== 'all') {
+        $args['tax_query'] = array(
+            array(
+                'taxonomy' => 'resort',
+                'terms' => array($resort),
+                'field' => 'slug',
+                'operator' => 'IN',
+            )
+        );
+    }
 
-		if ( $bedrooms ) {
-			$args['meta_key']   = 'bedrooms';
-			$args['meta_value'] = $bedrooms;
-		}
-        
-        if ( $resort && $resort !== 'all' ) {
-            $args['tax_query'] = array(
-                array(
-                    'taxonomy'         => 'resort', 
-                    'terms'            => array( $resort ), 
-                    'field'            => 'slug',
-                    'operator'         => 'IN', 
-                )
-            );
+    if ($bedrooms === '3 and 4' || $bedrooms === '6+') {
+        $range = ($bedrooms === '3 and 4') ? range(3, 4) : range(6, 9);
+        foreach ($range as $i) {
+            $result = $this->get_results_content(array_merge($args, array(
+                'meta_key' => 'bedrooms',
+                'meta_value' => $i,
+            )));
+            $content .= $result['content'];
+            $found_posts += $result['found_posts'];
         }
+    } else {
+        $result = $this->get_results_content(array_merge($args, array(
+            'meta_key' => 'bedrooms',
+            'meta_value' => $bedrooms,
+        )));
+        $content .= $result['content'];
+        $found_posts += $result['found_posts'];
+    }
 
-		$query = new WP_Query( $args );
+    wp_send_json(array(
+        'content' => $content,
+        'bedrooms' => $bedrooms,
+        'numberOfPosts' => $found_posts,
+        'posts' => $_POST,
+    ));
+}
 
-		$status = array();
-		ob_start();
+    public function sanitize_input($data, $key) {
+        return isset($data[$key]) && !empty($data[$key]) ? sanitize_text_field($data[$key]) : null;
+    }
 
-		if ( $query->have_posts() ) :
+
+    public function get_results_content( $args ) {
+        ob_start();
+        $query = new WP_Query( $args );
+        if ( $query->have_posts() ) :
 			while ( $query->have_posts() ) :
 				$query->the_post();
 				$amenities       = get_field( 'amenities_list' );
@@ -321,8 +347,8 @@ class HRV_MLA_Public {
         <?php the_content(); ?>
 
         <?php
-				if ( count( $amenities ) > 0 || count( $amenities_icons ) > 0 ) :
-					?>
+                            if ( count( $amenities ) > 0 || count( $amenities_icons ) > 0 ) :
+                                ?>
         <div class="amenities-div">
             <?php echo do_shortcode( '[amenities]' ); ?>
         </div>
@@ -337,13 +363,18 @@ class HRV_MLA_Public {
     </div>
 </div>
 <?php
-			endwhile;
-			$status['content'] = ob_get_clean();
-		endif;
-		$status['bedrooms']      = $_POST['bedrooms'];
-		$status['numberOfPosts'] = $query->found_posts;
-		wp_send_json( $status );
-	}
+            endwhile;
+            wp_reset_postdata();         
+        endif;
+
+        $content = ob_get_clean();
+        $found_posts = $query->found_posts;
+
+        return array(
+            'content' => $content,
+            'found_posts' => $found_posts
+        );
+    }
 
 	/**
 	 * Property Available
@@ -614,7 +645,7 @@ class HRV_MLA_Public {
 
 				update_field( 'field_61fbad0ce3c30', $rows, $booking_id );
 
-				if ( $api_price == 1 && apply_filters('live_booking', true ) ) {
+				if ( $api_price == 1 && ( ! get_field( 'testing', 'option' ) ) ) {
                     $admin_email = get_option( 'admin_email' );
 					$booking_api_details = '<?xml version="1.0" encoding="utf-8"?>
 <soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema"
@@ -1134,10 +1165,11 @@ if ( $days_left <= $hrv_admin->days_to_notify ) {
             form.append('nonce', HRV.nonce);
             <?php if ( isset( $_REQUEST['bedrooms'] ) ) : ?>
             form.append(
-                'bedrooms', <?php echo $_REQUEST['bedrooms']; ?>
+                'bedrooms', '<?php echo $_REQUEST['bedrooms']; ?>'
             );
             <?php endif; ?>
             const params = new URLSearchParams(form);
+            console.log('<?php echo $_REQUEST['bedrooms']; ?>');
 
             fetch(HRV.ajax_url, {
                     method: 'POST',
