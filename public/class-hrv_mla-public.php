@@ -1336,7 +1336,7 @@ if ( $days_left <= $hrv_admin->days_to_notify ) {
                         totalFilteredValues += filteredValues.length;
                         console.log(filteredValues);
 
-                        if (filteredValues.length < 5) {
+                        if (!filteredValues.length) {
                             searchingText.innerText = "No results...";
                             setTimeout(() => {
                                 // Recursively call the function with incremented 'beds'
