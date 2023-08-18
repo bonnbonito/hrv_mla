@@ -144,37 +144,50 @@ class HRV_MLA_Public {
 	 * Get all properties results ID's
 	 */
 	public function get_result_properties() {
-        $args = array(
-            'post_type'      => 'properties',
-            'posts_per_page' => -1,
-            'meta_key'       => 'bedrooms',
-            'meta_value'     => isset( $_GET['bedrooms'] ) ? $_GET['bedrooms'] : null,
-        );
-
-        if ( isset( $_GET['resort'] ) && !empty( $_GET['resort'] ) && $_GET['resort'] != 'all' ) {
-            $args['tax_query'] = array(
-                array(
-                    'taxonomy'         => 'resort',
-                    'terms'            => array( $_GET['resort'] ),
-                    'field'            => 'slug',
-                    'operator'         => 'IN',
-                ),
-            );
-        }
-
-        $query = new WP_Query( $args );
+        $bedrooms = isset($_GET['bedrooms']) ? intval($_GET['bedrooms']) : null;
 
         $ids = array();
+        $found_results = false;
+        
+        while (!$found_results && $bedrooms < 9) {
+            $args = array(
+                'post_type'      => 'properties',
+                'posts_per_page' => -1,
+                'meta_key'       => 'bedrooms',
+                'meta_value'     => $bedrooms,
+            );
 
-        while ( $query->have_posts() ) {
-            $query->the_post();
-            $ids[] = get_the_ID();
+            if (isset($_GET['resort']) && !empty($_GET['resort']) && $_GET['resort'] != 'all') {
+                $args['tax_query'] = array(
+                    array(
+                        'taxonomy'         => 'resort',
+                        'terms'            => array($_GET['resort']),
+                        'field'            => 'slug',
+                        'operator'         => 'IN',
+                    ),
+                );
+            }
+
+            $query = new WP_Query($args);
+            
+            if ($query->have_posts()) {
+                $found_results = true;
+                while ($query->have_posts()) {
+                    $query->the_post();
+                    $ids[] = get_the_ID();
+                }
+            }
+            
+            wp_reset_postdata();
+
+            if (!$found_results) {
+                $bedrooms++;
+            }
         }
-
-        wp_reset_postdata();
 
         return $ids;
     }
+
 
 
 	/**
@@ -256,6 +269,7 @@ class HRV_MLA_Public {
 		$propertyTaxRatesApi    = $hrv_admin->ciirus_get_tax_rates( $id );
 		$propertyTaxRates       = $propertyTaxRatesApi['total_rates'];
 		$api_total_rate         = $api_get_price['total_rates'];
+        $price                  = $hrv_admin->ciirus_calculated_booking_price( $id, $checkin, $nights );
 		$bookingprice           = round( $api_total_rate + $this->percentage_tax_price( $api_total_rate, $propertyTaxRates ) + $cleaning_fees, 2 );
 		$results['status']      = $hrv_admin->ciirus_is_property_available( $id, $checkin, $checkout );
 		$results['nights']      = $nights;
@@ -263,7 +277,7 @@ class HRV_MLA_Public {
 		$results['checkout']    = $checkout;
 		$results['property_id'] = $property_id;
 		$results['ciirus_id']   = $id;
-		$results['price']       = $bookingprice;
+		$results['price']       = round($price['total'], 2);
 		wp_send_json( $results );
 	}
 

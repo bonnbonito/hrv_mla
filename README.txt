@@ -65,6 +65,9 @@ directory take precedence. For example, `/assets/screenshot-1.png` would win ove
 
 == Changelog ==
 
+= 2.2.411 =
+* Recursive bedroom
+
 = 2.2.410 =
 * Multiple bedrooms query
 

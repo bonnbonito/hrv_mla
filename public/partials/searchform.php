@@ -217,11 +217,14 @@ form.newserachform .form-field-submit {
 			);
 		function get_resort() {
 			$get_resort = '';
-			if ( isset( $_REQUEST['resort'] ) && ! empty( $_REQUEST['resort'] ) && 'all' !== $_REQUEST['resort'] ) {
-				$term       = get_term_by( 'slug', $_REQUEST['resort'], 'resort' );
-				$get_resort = $term->name;
-			} elseif ( 'all' === $_REQUEST['resort'] ) {
-				$get_resort = 'All Resorts';
+			if ( isset( $_REQUEST['resort'] ) && ! empty( $_REQUEST['resort'] ) ) {
+
+				if ( 'all' !== $_REQUEST['resort'] ) {
+					$term       = get_term_by( 'slug', $_REQUEST['resort'], 'resort' );
+					$get_resort = $term->name;
+				} else {
+					$get_resort = 'All Resorts';
+				}
 			}
 			echo $get_resort;
 		}
@@ -239,7 +242,7 @@ form.newserachform .form-field-submit {
                 <?php } ?>
             </div>
         </div>
-        <label for="resort">Bedrooms</label>
+        <label for="resort">Resort</label>
     </div>
     <?php } ?>
     <div class="form-field">
