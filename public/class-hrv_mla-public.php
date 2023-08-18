@@ -147,9 +147,8 @@ class HRV_MLA_Public {
         $bedrooms = isset($_GET['bedrooms']) ? intval($_GET['bedrooms']) : null;
 
         $ids = array();
-        $found_results = false;
         
-        while (!$found_results && $bedrooms < 9) {
+        while ($bedrooms < 9) {
             $args = array(
                 'post_type'      => 'properties',
                 'posts_per_page' => -1,
@@ -171,18 +170,15 @@ class HRV_MLA_Public {
             $query = new WP_Query($args);
             
             if ($query->have_posts()) {
-                $found_results = true;
                 while ($query->have_posts()) {
                     $query->the_post();
-                    $ids[] = get_the_ID();
+                    $ids[$bedrooms][] = get_the_ID();
                 }
             }
             
             wp_reset_postdata();
 
-            if (!$found_results) {
-                $bedrooms++;
-            }
+            $bedrooms++;
         }
 
         return $ids;
@@ -1145,7 +1141,7 @@ if ( $days_left <= $hrv_admin->days_to_notify ) {
             <div class="villa-search-results-wrap searching" id="villaResults">
                 <div id="loading">
                     <div class="loading-flex">
-                        <h3>Searching properties <span id="percentStatus"></span></h3>
+                        <h3 id="searchingText">Searching properties <span id="percentStatus"></span></h3>
                         <div class="lds-spinner">
                             <div></div>
                             <div></div>
@@ -1224,7 +1220,7 @@ if ( $days_left <= $hrv_admin->days_to_notify ) {
             <div class="vsr-container" style="position: relative;">
                 <div id="loading">
                     <div class="loading-flex">
-                        <h3>Searching properties <span id="percentStatus"></span></h3>
+                        <h3 id="searchingText">Searching properties <span id="percentStatus"></span></h3>
                         <div class="lds-spinner">
                             <div></div>
                             <div></div>
@@ -1256,11 +1252,13 @@ if ( $days_left <= $hrv_admin->days_to_notify ) {
 							?>
             <script>
             const villaResults = document.getElementById('villaResults');
-            const propertyIds = HRV.properties_result_ids;
+            const propertyIds = HRV.properties_result_ids[<?php echo $_REQUEST['bedrooms']; ?>];
             const percentStatus = document.getElementById('percentStatus');
             const loading = document.getElementById('loading');
             const localResults = localStorage.getItem('propertyResults');
             const localResultsUrl = localStorage.getItem('propertyResultsUrl');
+            const beds = <?php echo $_REQUEST['bedrooms']; ?>;
+            const searchingText = document.getElementById('searchingText');
 
             async function is_available(id) {
                 const form = new FormData();
@@ -1315,29 +1313,8 @@ if ( $days_left <= $hrv_admin->days_to_notify ) {
             } else {
 
                 if (propertyIds.length) {
-                    const fxPromises = propertyIds.map((id) => is_available(id));
 
-                    Promise.all(fxPromises)
-                        .then((values) => {
-                            const filteredValues = values.filter((element) => element.status !== 'none');
-                            console.log(filteredValues);
-
-                            loading.style.display = 'none';
-                            villaResults.classList.remove('searching');
-
-                            if (!filteredValues.length) {
-                                document.querySelector('.noresults').style.display = 'flex';
-                                villaResults.style.display = 'none';
-                            }
-
-                            console.log('DONE');
-                            const propertyResults = document.getElementById('villaResults').innerHTML;
-                            localStorage.setItem('propertyResults', propertyResults);
-                            localStorage.setItem('propertyResultsUrl', window.location.search);
-                        })
-                        .catch((error) => {
-                            console.error(error);
-                        });
+                    filterPromise(beds);
 
 
                 } else {
@@ -1346,6 +1323,43 @@ if ( $days_left <= $hrv_admin->days_to_notify ) {
                     loading.style.display = 'none';
                 }
 
+            }
+
+            function filterPromise(beds, totalFilteredValues = 0) {
+                const ids = HRV.properties_result_ids[beds];
+                const fxPromises = ids.map((id) => is_available(id));
+                searchingText.innerText = "Searching properties with " + beds + " beds";
+
+                Promise.all(fxPromises)
+                    .then((values) => {
+                        const filteredValues = values.filter((element) => element.status !== 'none');
+                        totalFilteredValues += filteredValues.length;
+                        console.log(filteredValues);
+
+                        if (filteredValues.length < 5) {
+                            searchingText.innerText = "No results...";
+                            setTimeout(() => {
+                                // Recursively call the function with incremented 'beds'
+                                filterPromise(beds + 1, totalFilteredValues);
+                            }, 1000);
+
+
+                        } else {
+                            // The recursive search is done, so apply the code here
+                            loading.style.display = 'none';
+                            villaResults.classList.remove('searching');
+                            console.log('DONE');
+                            const propertyResults = document.getElementById('villaResults').innerHTML;
+                            localStorage.setItem('propertyResults', propertyResults);
+                            localStorage.setItem('propertyResultsUrl', window.location.search);
+
+                            // Log the total filtered values length
+                            console.log('Total Filtered Values Length:', totalFilteredValues);
+                        }
+                    })
+                    .catch((error) => {
+                        console.error(error);
+                    });
             }
             </script>
             <?php
