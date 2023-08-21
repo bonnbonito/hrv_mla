@@ -394,7 +394,8 @@ class HRV_MLA_Public {
 			wp_send_json( 'Nonce Error' );
 		}
 		$status                 = array();
-		$hrv_admin              = new HRV_MLA_Admin( 'hrv_mla', '1.0.0' );
+		$hrv_admin              = new HRV_MLA_Admin( 'hrv_mla', HRV_MLA_VERSION );
+        $hrv_public             = new HRV_MLA_Public( 'hrv_mla', HRV_MLA_VERSION );
 		$checkin                = date( 'd M Y', strtotime( $_REQUEST['checkin'] ) );
 		$checkout               = date( 'd M Y', strtotime( $_REQUEST['checkout'] ) );
 		$id                     = $_REQUEST['property_id'];
@@ -406,8 +407,24 @@ class HRV_MLA_Public {
 		$datediff = strtotime( $checkout ) - strtotime( $checkin );
 		$nights   = round( $datediff / ( 60 * 60 * 24 ) );
 
-		$price         = $hrv_admin->ciirus_calculated_booking_price( $ciirus_id, $checkin, $nights );
-		$cleaning_fees = $hrv_admin->ciirus_get_cleaning_fee( $ciirus_id, $nights );
+        if ( get_field('api_price', $id) ) {
+            $price         = $hrv_admin->ciirus_calculated_booking_price( $ciirus_id, $checkin, $nights );
+		    $cleaning_fees = $hrv_admin->ciirus_get_cleaning_fee( $ciirus_id, $nights );
+        } else {
+            $price_cat_ID        = wp_get_post_terms( $id, 'price_categories' );
+            $currentprice        = round( $hrv_public->compute_price( $price_cat_ID[0]->term_id, $checkin ), 1 );
+            $total_room_rate     = $currentprice ? $currentprice * $nights : 0;
+            $ownerbookingpercent = get_field( 'property_owner_booking_percentage', $id ) ? get_field( 'property_owner_booking_percentage', $id ) : get_field( 'additional_pricing', 'option' )['default_property_owner_booking_percentage'];
+            $owner_price         = 0;
+            $bookingprice        = round( $currentprice, 1 );
+
+            if ( $ownerbookingpercent ) {
+                $owner_price = ( $ownerbookingpercent / 100 ) * $total_room_rate;
+            }
+            $price['total'] = round( $total_room_rate + $owner_price );
+        }
+
+		
        
 		?>
 <div class="property-result-wrap">
@@ -439,7 +456,7 @@ class HRV_MLA_Public {
             //print_r( $price );
 			?>
         <div class="property-results-price">
-            Price: <strong>&dollar;<?php echo round($price['total'], 2); ?></strong>
+            Price: <strong>&dollar;<?php echo round($price['total']); ?></strong>
         </div>
         <?php } ?>
 

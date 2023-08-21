@@ -285,9 +285,19 @@ function stripeBooking(token) {
 $hrv_public = new HRV_MLA_Public( 'hrv_mla', HRV_MLA_VERSION );
 $hrv_admin  = new HRV_MLA_Admin( 'hrv_mla', HRV_MLA_VERSION );
 
-$price_cat_ID        = wp_get_post_terms( $_GET['id'], 'price_categories' );
-$currentprice        = round( $hrv_public->compute_price( $price_cat_ID[0]->term_id, $_GET['date_checkin'] ), 1 );
-$total_room_rate     = $currentprice ? $currentprice * $_GET['nights'] : 0;
+$ciirus_id    = isset( $_GET['id'] ) && ! empty( $_GET['id'] ) ? $ciirus_id : '';
+$price_cat_ID = wp_get_post_terms( $_GET['id'], 'price_categories' );
+
+$date_checkin  = isset( $_GET['date_checkin'] ) ? $_GET['date_checkin'] : date( 'd M Y' );
+$date_checkout = isset( $_GET['date_checkout'] ) ? $_GET['date_checkout'] : date( 'd M Y' );
+$due_date_get  = new DateTime( $date_checkin );
+$due_date_get->sub( new DateInterval( 'P30D' ) );
+$due_date = $due_date_get->format( 'd M Y' );
+
+$currentprice = round( $hrv_public->compute_price( $price_cat_ID[0]->term_id, $_GET['date_checkin'] ), 1 );
+
+$total_room_rate = $currentprice ? $currentprice * $_GET['nights'] : 0;
+
 $ownerbookingpercent = get_field( 'property_owner_booking_percentage', $_GET['id'] ) ? get_field( 'property_owner_booking_percentage', $_GET['id'] ) : get_field( 'additional_pricing', 'option' )['default_property_owner_booking_percentage'];
 $owner_price         = 0;
 $bookingprice        = round( $currentprice, 1 );
@@ -295,13 +305,12 @@ $bookingprice        = round( $currentprice, 1 );
 if ( $ownerbookingpercent ) {
 	$owner_price = ( $ownerbookingpercent / 100 ) * $total_room_rate;
 }
-$total_price = round( $total_room_rate + $owner_price, 1 );
+$total_price = round( $total_room_rate + $owner_price );
 /* compute discount price */
 $deposit_compute  = $total_price * .10;
 $deposit_price    = $deposit_compute > $hrv_admin->deposit ? $hrv_admin->deposit : $deposit_compute;
 $cleaning_fees    = 0;
 $propertyTaxRates = 0;
-
 
 function percentage_tax_price( $price, $percent ) {
 	return ( $percent / 100 ) * $price;
@@ -318,9 +327,8 @@ function previous_page() {
 }
 
 if ( get_field( 'api_price', $_GET['id'] ) ) {
-	$getbookingprice = $hrv_admin->ciirus_calculated_booking_price( get_field( 'ciirus_id', $_GET['id'] ), $_GET['date_checkin'], $_GET['nights'] );
 
-	// print_r( $getbookingprice );
+	$getbookingprice = $hrv_admin->ciirus_calculated_booking_price( $ciirus_id, $_GET['date_checkin'], $_GET['nights'] );
 
 	$bookingprice = round( $getbookingprice['total'] );
 	$profit       = round( $getbookingprice['additional'] );
@@ -332,11 +340,7 @@ if ( get_field( 'api_price', $_GET['id'] ) ) {
 	$deposit_price   = $deposit_compute > $hrv_admin->deposit ? $hrv_admin->deposit : $deposit_compute;
 }
 
-$date_checkin  = isset( $_GET['date_checkin'] ) ? $_GET['date_checkin'] : date( 'd M Y' );
-$date_checkout = isset( $_GET['date_checkout'] ) ? $_GET['date_checkout'] : date( 'd M Y' );
-$due_date_get  = new DateTime( $date_checkin );
-$due_date_get->sub( new DateInterval( 'P30D' ) );
-$due_date = $due_date_get->format( 'd M Y' );
+
 ?>
 <style>
 .booking-property-summary {
@@ -428,8 +432,7 @@ span.price-highlight {
 		<input type="hidden" id="id" name="id" value="<?php echo $_GET['id']; ?>">
 		<input type="hidden" id="booking_name" name="booking_name" value="<?php echo get_the_title( $_GET['id'] ); ?>">
 		<input type="hidden" id="auth" name="auth" value="<?php echo time(); ?>">
-		<input type="hidden" id="ciirus_id" name="ciirus_id"
-			value="<?php echo get_field( 'ciirus_id', $_GET['id'] ); ?>">
+		<input type="hidden" id="ciirus_id" name="ciirus_id" value="<?php echo $ciirus_id; ?>">
 		<div class="form-container">
 			<h1 class="custom-form-header">BOOKING FORM</h1>
 			<div class="custom-form-booking-input-wrapper">
