@@ -285,7 +285,7 @@ function stripeBooking(token) {
 $hrv_public = new HRV_MLA_Public( 'hrv_mla', HRV_MLA_VERSION );
 $hrv_admin  = new HRV_MLA_Admin( 'hrv_mla', HRV_MLA_VERSION );
 
-$ciirus_id    = isset( $_GET['id'] ) && ! empty( $_GET['id'] ) ? $ciirus_id : '';
+$ciirus_id    = isset( $_GET['id'] ) && ! empty( $_GET['id'] ) ? get_field( 'ciirus_id', $_GET['id'] ) : '';
 $price_cat_ID = wp_get_post_terms( $_GET['id'], 'price_categories' );
 
 $date_checkin  = isset( $_GET['date_checkin'] ) ? $_GET['date_checkin'] : date( 'd M Y' );
