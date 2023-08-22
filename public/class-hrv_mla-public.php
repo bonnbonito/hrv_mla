@@ -144,45 +144,45 @@ class HRV_MLA_Public {
 	 * Get all properties results ID's
 	 */
 	public function get_result_properties() {
-        $bedrooms = isset($_GET['bedrooms']) ? intval($_GET['bedrooms']) : null;
+		$bedrooms = isset( $_GET['bedrooms'] ) ? intval( $_GET['bedrooms'] ) : null;
 
-        $ids = array();
-        
-        while ($bedrooms < 9) {
-            $args = array(
-                'post_type'      => 'properties',
-                'posts_per_page' => -1,
-                'meta_key'       => 'bedrooms',
-                'meta_value'     => $bedrooms,
-            );
+		$ids = array();
 
-            if (isset($_GET['resort']) && !empty($_GET['resort']) && $_GET['resort'] != 'all') {
-                $args['tax_query'] = array(
-                    array(
-                        'taxonomy'         => 'resort',
-                        'terms'            => array($_GET['resort']),
-                        'field'            => 'slug',
-                        'operator'         => 'IN',
-                    ),
-                );
-            }
+		while ( $bedrooms < 9 ) {
+			$args = array(
+				'post_type'      => 'properties',
+				'posts_per_page' => -1,
+				'meta_key'       => 'bedrooms',
+				'meta_value'     => $bedrooms,
+			);
 
-            $query = new WP_Query($args);
-            
-            if ($query->have_posts()) {
-                while ($query->have_posts()) {
-                    $query->the_post();
-                    $ids[$bedrooms][] = get_the_ID();
-                }
-            }
-            
-            wp_reset_postdata();
+			if ( isset( $_GET['resort'] ) && ! empty( $_GET['resort'] ) && $_GET['resort'] != 'all' ) {
+				$args['tax_query'] = array(
+					array(
+						'taxonomy' => 'resort',
+						'terms'    => array( $_GET['resort'] ),
+						'field'    => 'slug',
+						'operator' => 'IN',
+					),
+				);
+			}
 
-            $bedrooms++;
-        }
+			$query = new WP_Query( $args );
 
-        return $ids;
-    }
+			if ( $query->have_posts() ) {
+				while ( $query->have_posts() ) {
+					$query->the_post();
+					$ids[ $bedrooms ][] = get_the_ID();
+				}
+			}
+
+			wp_reset_postdata();
+
+			$bedrooms++;
+		}
+
+		return $ids;
+	}
 
 
 
@@ -265,7 +265,7 @@ class HRV_MLA_Public {
 		$propertyTaxRatesApi    = $hrv_admin->ciirus_get_tax_rates( $id );
 		$propertyTaxRates       = $propertyTaxRatesApi['total_rates'];
 		$api_total_rate         = $api_get_price['total_rates'];
-        $price                  = $hrv_admin->ciirus_calculated_booking_price( $id, $checkin, $nights );
+		$price                  = $hrv_admin->ciirus_calculated_booking_price( $id, $checkin, $nights );
 		$bookingprice           = round( $api_total_rate + $this->percentage_tax_price( $api_total_rate, $propertyTaxRates ) + $cleaning_fees, 2 );
 		$results['status']      = $hrv_admin->ciirus_is_property_available( $id, $checkin, $checkout );
 		$results['nights']      = $nights;
@@ -273,73 +273,85 @@ class HRV_MLA_Public {
 		$results['checkout']    = $checkout;
 		$results['property_id'] = $property_id;
 		$results['ciirus_id']   = $id;
-		$results['price']       = round($price['total'], 2);
+		$results['price']       = round( $price['total'], 2 );
 		wp_send_json( $results );
 	}
 
 	public function get_all_property_details() {
-    if (!wp_verify_nonce($_POST['nonce'], 'hrv-nonce')) {
-        wp_send_json('Nonce Error');
-    }
+		if ( ! wp_verify_nonce( $_POST['nonce'], 'hrv-nonce' ) ) {
+			wp_send_json( 'Nonce Error' );
+		}
 
-    $bedrooms = $this->sanitize_input($_POST, 'bedrooms');
-    $resort = $this->sanitize_input($_POST, 'resort');
-    $found_posts = 0;
-    $content = '';
-    
-    $args = array(
-        'post_type' => 'properties',
-        'numberposts' => -1,
-        'posts_per_page' => -1,
-    );
+		$bedrooms    = $this->sanitize_input( $_POST, 'bedrooms' );
+		$resort      = $this->sanitize_input( $_POST, 'resort' );
+		$found_posts = 0;
+		$content     = '';
 
-    if ($resort && $resort !== 'all') {
-        $args['tax_query'] = array(
-            array(
-                'taxonomy' => 'resort',
-                'terms' => array($resort),
-                'field' => 'slug',
-                'operator' => 'IN',
-            )
-        );
-    }
+		$args = array(
+			'post_type'      => 'properties',
+			'numberposts'    => -1,
+			'posts_per_page' => -1,
+		);
 
-    if ($bedrooms === '3 and 4' || $bedrooms === '6+') {
-        $range = ($bedrooms === '3 and 4') ? range(3, 4) : range(6, 9);
-        foreach ($range as $i) {
-            $result = $this->get_results_content(array_merge($args, array(
-                'meta_key' => 'bedrooms',
-                'meta_value' => $i,
-            )));
-            $content .= $result['content'];
-            $found_posts += $result['found_posts'];
-        }
-    } else {
-        $result = $this->get_results_content(array_merge($args, array(
-            'meta_key' => 'bedrooms',
-            'meta_value' => $bedrooms,
-        )));
-        $content .= $result['content'];
-        $found_posts += $result['found_posts'];
-    }
+		if ( $resort && $resort !== 'all' ) {
+			$args['tax_query'] = array(
+				array(
+					'taxonomy' => 'resort',
+					'terms'    => array( $resort ),
+					'field'    => 'slug',
+					'operator' => 'IN',
+				),
+			);
+		}
 
-    wp_send_json(array(
-        'content' => $content,
-        'bedrooms' => $bedrooms,
-        'numberOfPosts' => $found_posts,
-        'posts' => $_POST,
-    ));
-}
+		if ( $bedrooms === '3 and 4' || $bedrooms === '6+' ) {
+			$range = ( $bedrooms === '3 and 4' ) ? range( 3, 4 ) : range( 6, 9 );
+			foreach ( $range as $i ) {
+				$result       = $this->get_results_content(
+					array_merge(
+						$args,
+						array(
+							'meta_key'   => 'bedrooms',
+							'meta_value' => $i,
+						)
+					)
+				);
+				$content     .= $result['content'];
+				$found_posts += $result['found_posts'];
+			}
+		} else {
+			$result       = $this->get_results_content(
+				array_merge(
+					$args,
+					array(
+						'meta_key'   => 'bedrooms',
+						'meta_value' => $bedrooms,
+					)
+				)
+			);
+			$content     .= $result['content'];
+			$found_posts += $result['found_posts'];
+		}
 
-    public function sanitize_input($data, $key) {
-        return isset($data[$key]) && !empty($data[$key]) ? sanitize_text_field($data[$key]) : null;
-    }
+		wp_send_json(
+			array(
+				'content'       => $content,
+				'bedrooms'      => $bedrooms,
+				'numberOfPosts' => $found_posts,
+				'posts'         => $_POST,
+			)
+		);
+	}
+
+	public function sanitize_input( $data, $key ) {
+		return isset( $data[ $key ] ) && ! empty( $data[ $key ] ) ? sanitize_text_field( $data[ $key ] ) : null;
+	}
 
 
-    public function get_results_content( $args ) {
-        ob_start();
-        $query = new WP_Query( $args );
-        if ( $query->have_posts() ) :
+	public function get_results_content( $args ) {
+		ob_start();
+		$query = new WP_Query( $args );
+		if ( $query->have_posts() ) :
 			while ( $query->have_posts() ) :
 				$query->the_post();
 				$amenities       = get_field( 'amenities_list' );
@@ -357,8 +369,8 @@ class HRV_MLA_Public {
         <?php the_content(); ?>
 
         <?php
-                            if ( count( $amenities ) > 0 || count( $amenities_icons ) > 0 ) :
-                                ?>
+				if ( count( $amenities ) > 0 || count( $amenities_icons ) > 0 ) :
+					?>
         <div class="amenities-div">
             <?php echo do_shortcode( '[amenities]' ); ?>
         </div>
@@ -373,18 +385,18 @@ class HRV_MLA_Public {
     </div>
 </div>
 <?php
-            endwhile;
-            wp_reset_postdata();         
-        endif;
+			endwhile;
+			wp_reset_postdata();
+		endif;
 
-        $content = ob_get_clean();
-        $found_posts = $query->found_posts;
+		$content     = ob_get_clean();
+		$found_posts = $query->found_posts;
 
-        return array(
-            'content' => $content,
-            'found_posts' => $found_posts
-        );
-    }
+		return array(
+			'content'     => $content,
+			'found_posts' => $found_posts,
+		);
+	}
 
 	/**
 	 * Property Available
@@ -395,7 +407,7 @@ class HRV_MLA_Public {
 		}
 		$status                 = array();
 		$hrv_admin              = new HRV_MLA_Admin( 'hrv_mla', HRV_MLA_VERSION );
-        $hrv_public             = new HRV_MLA_Public( 'hrv_mla', HRV_MLA_VERSION );
+		$hrv_public             = new HRV_MLA_Public( 'hrv_mla', HRV_MLA_VERSION );
 		$checkin                = date( 'd M Y', strtotime( $_REQUEST['checkin'] ) );
 		$checkout               = date( 'd M Y', strtotime( $_REQUEST['checkout'] ) );
 		$id                     = $_REQUEST['property_id'];
@@ -403,29 +415,27 @@ class HRV_MLA_Public {
 		ob_start();
 		$amenities       = get_field( 'amenities_list', $id );
 		$amenities_icons = get_field( 'amenities_icons', $id );
-        $ciirus_id = get_field( 'ciirus_id', $id );
-		$datediff = strtotime( $checkout ) - strtotime( $checkin );
-		$nights   = round( $datediff / ( 60 * 60 * 24 ) );
+		$ciirus_id       = get_field( 'ciirus_id', $id );
+		$datediff        = strtotime( $checkout ) - strtotime( $checkin );
+		$nights          = round( $datediff / ( 60 * 60 * 24 ) );
 
-        if ( get_field('api_price', $id) ) {
-            $price         = $hrv_admin->ciirus_calculated_booking_price( $ciirus_id, $checkin, $nights );
-		    $cleaning_fees = $hrv_admin->ciirus_get_cleaning_fee( $ciirus_id, $nights );
-        } else {
-            $price_cat_ID        = wp_get_post_terms( $id, 'price_categories' );
-            $currentprice        = round( $hrv_public->compute_price( $price_cat_ID[0]->term_id, $checkin ), 1 );
-            $total_room_rate     = $currentprice ? $currentprice * $nights : 0;
-            $ownerbookingpercent = get_field( 'property_owner_booking_percentage', $id ) ? get_field( 'property_owner_booking_percentage', $id ) : get_field( 'additional_pricing', 'option' )['default_property_owner_booking_percentage'];
-            $owner_price         = 0;
-            $bookingprice        = round( $currentprice, 1 );
+		if ( get_field( 'api_price', $id ) ) {
+			$price         = $hrv_admin->ciirus_calculated_booking_price( $ciirus_id, $checkin, $nights );
+			$cleaning_fees = $hrv_admin->ciirus_get_cleaning_fee( $ciirus_id, $nights );
+		} else {
+			$price_cat_ID        = wp_get_post_terms( $id, 'price_categories' );
+			$currentprice        = round( $hrv_public->compute_price( $price_cat_ID[0]->term_id, $checkin ), 1 );
+			$total_room_rate     = $currentprice ? $currentprice * $nights : 0;
+			$ownerbookingpercent = get_field( 'property_owner_booking_percentage', $id ) ? get_field( 'property_owner_booking_percentage', $id ) : get_field( 'additional_pricing', 'option' )['default_property_owner_booking_percentage'];
+			$owner_price         = 0;
+			$bookingprice        = round( $currentprice, 1 );
 
-            if ( $ownerbookingpercent ) {
-                $owner_price = ( $ownerbookingpercent / 100 ) * $total_room_rate;
-            }
-            $price['total'] = round( $total_room_rate + $owner_price );
-        }
+			if ( $ownerbookingpercent ) {
+				$owner_price = ( $ownerbookingpercent / 100 ) * $total_room_rate;
+			}
+			$price['total'] = round( $total_room_rate + $owner_price );
+		}
 
-		
-       
 		?>
 <div class="property-result-wrap">
     <div class="img-wrap-property">
@@ -451,12 +461,11 @@ class HRV_MLA_Public {
 
         <?php
 
-
 		if ( $price && $price['total'] > 0 ) {
-            //print_r( $price );
+			// print_r( $price );
 			?>
         <div class="property-results-price">
-            Price: <strong>&dollar;<?php echo round($price['total']); ?></strong>
+            Price: <strong>&dollar;<?php echo round( $price['total'] ); ?></strong>
         </div>
         <?php } ?>
 
@@ -559,10 +568,10 @@ class HRV_MLA_Public {
 		$api_price              = $_POST['apiPrice'] == 1 ? 1 : 0;
 		$api_profit             = $_POST['apiProfit'];
 		$total_extra            = $_POST['totalExtra'];
-        $cleaning_fees          = isset( $_POST['cleaningFees'] ) ? $_POST['cleaningFees'] : 0;
-        $tax_rate               = isset( $_POST['taxRate'] ) ? $_POST['taxRate'] : 0;
-        $additional             = isset( $_POST['additional'] ) ? $_POST['additional'] : 0;
-        $extras_pricing         = isset( $_POST['extras'] ) ? $_POST['extras'] : 0;
+		$cleaning_fees          = isset( $_POST['cleaningFees'] ) ? $_POST['cleaningFees'] : 0;
+		$tax_rate               = isset( $_POST['taxRate'] ) ? $_POST['taxRate'] : 0;
+		$additional             = isset( $_POST['additional'] ) ? $_POST['additional'] : 0;
+		$extras_pricing         = isset( $_POST['extras'] ) ? $_POST['extras'] : 0;
 
 		// $charge = $stripe->charges->create(
 		// array(
@@ -632,11 +641,11 @@ class HRV_MLA_Public {
 				update_field( 'booking_property_owner', $owner_id, $booking_id );
 				update_field( 'api_price', $api_price, $booking_id );
 				update_field( 'payment_status', 'deposit', $booking_id );
-                update_field( 'cleaning_pricing', $cleaning_fees, $booking_id );
-                update_field( 'additional_pricing', $additional, $booking_id );
-                update_field( 'pricing_additional', $additional, $booking_id );
-                update_field( 'tax_rate', $tax_rate, $booking_id );
-                update_field( 'extras_pricing', $extras_pricing, $booking_id );
+				update_field( 'cleaning_pricing', $cleaning_fees, $booking_id );
+				update_field( 'additional_pricing', $additional, $booking_id );
+				update_field( 'pricing_additional', $additional, $booking_id );
+				update_field( 'tax_rate', $tax_rate, $booking_id );
+				update_field( 'extras_pricing', $extras_pricing, $booking_id );
 				update_post_meta( $booking_id, 'payment_email_sent', 'no' );
 
 				if ( $api_profit ) {
@@ -673,7 +682,7 @@ class HRV_MLA_Public {
 				update_field( 'field_61fbad0ce3c30', $rows, $booking_id );
 
 				if ( $api_price == 1 && ( ! get_field( 'testing', 'option' ) ) ) {
-                    $admin_email = get_option( 'admin_email' );
+					$admin_email         = get_option( 'admin_email' );
 					$booking_api_details = '<?xml version="1.0" encoding="utf-8"?>
 <soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema"
     xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
@@ -719,26 +728,40 @@ $days_left = floor( $diff / ( 60 * 60 * 24 ) );
 // $request_payment_email_content = $hrv_admin->to_customer_email_hrv_content_body();
 
 /**
-* Other Addons Owner
+*Other Addons Owner
 */
 $extra_owner_total = 0;
+$extra_admin_total = 0;
 $other_addons_owner = '';
+$other_addons_admin = '<tr class="item">
+    <td>Home Rental</td>
+    <td>$' . $owner_price . '</td>
+</tr>';;
 if ( ! empty( $extracostname ) ) {
 foreach ( $extracostname as $key => $cost ) {
 // $compute = ( 1 - ( (int) $extracostownerpercent[ $key ] / 100 ) ) * $extracostprice[ $key ];
 $compute = $extracostoriginalprice[ $key ] * $nights;
+$compute_admin = round( ( $extracostownerpercent[ $key ] / 100 ) * ( $extracostoriginalprice[ $key ] * $nights ), 1);
+
 $extra_owner_total = $extra_owner_total + $compute;
+$extra_admin_total = $extra_admin_total + $compute_admin;
 
 $other_addons_owner .= '<tr class="item">
     <td>' . $cost . '</td>
     <td>$' . $compute . '</td>
 </tr>';
+
+$other_addons_admin .= '<tr class="item">
+    <td>' . $cost . '</td>
+    <td>$' . $compute_admin . '</td>
+</tr>';
+
 }
 }
 
 if ( $api_price == 0 ) {
 $owner_total_price = $total_room_rate + $extra_owner_total;
-$profit = $total_price - $owner_total_price;
+$profit = $compute_admin + $owner_price;
 }
 
 if ( $days_left <= $hrv_admin->days_to_notify ) {
@@ -869,7 +892,7 @@ if ( $days_left <= $hrv_admin->days_to_notify ) {
     );
     $get_to_admin_email_content = str_replace( 'OTHER_ADDONS', $other_addons, $get_to_admin_email_content );
     $get_to_admin_email_content = str_replace( 'OWNER_ADDONS', $other_addons_owner, $get_to_admin_email_content );
-    $get_to_admin_email_content = str_replace( 'OWNER_ADDONS', $other_addons_owner, $get_to_admin_email_content );
+    $get_to_admin_email_content = str_replace( 'ADMIN_ADDONS', $other_addons_admin, $get_to_admin_email_content );
     $get_to_admin_email_content = str_replace( '[PROFIT]', $profit, $get_to_admin_email_content );
     $get_to_admin_email_content = str_replace( 'DUE_DATE', $due_date, $get_to_admin_email_content );
 
@@ -1146,7 +1169,7 @@ if ( $days_left <= $hrv_admin->days_to_notify ) {
                 <?php endforeach; ?>
             </ul>
             <?php
-				endif;
+					endif;
 			endif;
 			return ob_get_clean();
 			}
@@ -1177,10 +1200,10 @@ if ( $days_left <= $hrv_admin->days_to_notify ) {
                 </div>
             </div>
             <?php
-					add_action(
-						'wp_footer',
-						function () {
-							?>
+				add_action(
+					'wp_footer',
+					function () {
+						?>
             <script>
             const villaResults = document.getElementById('villaResults');
             const fx = [];
@@ -1224,9 +1247,9 @@ if ( $days_left <= $hrv_admin->days_to_notify ) {
                 });
             </script>
             <?php
-						},
-						99
-					);
+					},
+					99
+				);
 				return ob_get_clean();
 			}
 
@@ -1263,10 +1286,10 @@ if ( $days_left <= $hrv_admin->days_to_notify ) {
 
 
             <?php
-					add_action(
-						'wp_footer',
-						function () {
-							?>
+				add_action(
+					'wp_footer',
+					function () {
+						?>
             <script>
             const villaResults = document.getElementById('villaResults');
             const propertyIds = HRV.properties_result_ids[<?php echo $_REQUEST['bedrooms']; ?>];
@@ -1380,9 +1403,9 @@ if ( $days_left <= $hrv_admin->days_to_notify ) {
             }
             </script>
             <?php
-						},
-						99
-					);
+					},
+					99
+				);
 				return ob_get_clean();
 			}
 
@@ -1490,5 +1513,4 @@ if ( $days_left <= $hrv_admin->days_to_notify ) {
 			}
 
 }
-
 ?>

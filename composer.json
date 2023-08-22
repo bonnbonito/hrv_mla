@@ -6,11 +6,23 @@
         "drewm/mailchimp-api": "^2.5"
     },
     "require-dev": {
-        "phpcompatibility/php-compatibility": "^9.3"
+        "dealerdirect/phpcodesniffer-composer-installer": "*",
+        "object-calisthenics/phpcs-calisthenics-rules": "*",
+        "phpcompatibility/php-compatibility": "*",
+        "wp-coding-standards/wpcs": "*"
     },
     "prefer-stable": true,
     "scripts": {
-        "post-install-cmd": "phpcs --config-set installed_paths vendor/phpcompatibility/php-compatibility",
-        "post-update-cmd": "phpcs --config-set installed_paths vendor/phpcompatibility/php-compatibility"
+        "install-codestandards": [
+            "PHPCSStandards\\Composer\\Plugin\\Installers\\PHPCodeSniffer\\Plugin::run"
+        ],
+        "post-install-cmd": [
+            "@install-codestandards"
+        ]
+    },
+    "config": {
+        "allow-plugins": {
+            "dealerdirect/phpcodesniffer-composer-installer": true
+        }
     }
 }

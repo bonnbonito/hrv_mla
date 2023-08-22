@@ -210,6 +210,7 @@ function stripeBooking(token) {
 	form.append('property_owner_email', document.querySelector('#ownerEmail').value);
 	form.append('dueDate', document.querySelector('#dueDate').value);
 	form.append('deposit', document.querySelector('#depositPrice').value);
+	<?php if ( get_field( 'api_price', $_GET['id'] ) ) : ?>
 	form.append('apiPrice', document.querySelector('#apiPrice').value);
 	form.append('apiProfit', document.querySelector('#apiProfit').value);
 	form.append('roomPrice', document.querySelector('#roomPrice').value);
@@ -218,6 +219,8 @@ function stripeBooking(token) {
 	form.append('additional', document.querySelector('#additional').value);
 	form.append('taxRate', document.querySelector('#taxRate').value);
 	form.append('extras', document.querySelector('#extras').value);
+	<?php endif; ?>
+
 
 	let extraCostName = [];
 	let extraCostPrice = [];
@@ -775,7 +778,7 @@ span.price-highlight {
 
 		pricetotalcompute.innerText = Number(computedTotal).toLocaleString();
 		totalPrice.value = computedTotal;
-		summaryPrice.innerText = Number(computed).toLocaleString();
+		summaryPrice.innerText = Number(computedTotal).toLocaleString();
 		depositPrice.value = depositTotal;
 		document.getElementById('depositpricecompute').innerText = Number(depositTotal).toLocaleString();
 		summaryDeposit.innerText = Number(depositTotal).toLocaleString();

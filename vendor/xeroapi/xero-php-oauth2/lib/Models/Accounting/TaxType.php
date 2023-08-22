@@ -108,10 +108,10 @@ class TaxType
     const IGDSINPUT3 = 'IGDSINPUT3';
     const SROVR = 'SROVR';
     const TOURISTREFUND = 'TOURISTREFUND';
-    const TXRCN33_INPUT = 'TXRCN33INPUT';
-    const TXRCREINPUT = 'TXRCREINPUT';
-    const TXRCESSINPUT = 'TXRCESSINPUT';
-    const TXRCTSINPUT = 'TXRCTSINPUT';
+    const TXRCN33 = 'TXRCN33';
+    const TXRCRE = 'TXRCRE';
+    const TXRCESS = 'TXRCESS';
+    const TXRCTS = 'TXRCTS';
     const OUTPUTY23 = 'OUTPUTY23';
     const DSOUTPUTY23 = 'DSOUTPUTY23';
     const INPUTY23 = 'INPUTY23';
@@ -127,6 +127,20 @@ class TaxType
     const SROVRRSY23 = 'SROVRRSY23';
     const SROVRLVGY23 = 'SROVRLVGY23';
     const SRLVGY23 = 'SRLVGY23';
+    const TXRCN33_Y23 = 'TXRCN33Y23';
+    const TXRCREY23 = 'TXRCREY23';
+    const TXRCESSY23 = 'TXRCESSY23';
+    const TXRCTSY23 = 'TXRCTSY23';
+    const IM = 'IM';
+    const IMY23 = 'IMY23';
+    const IMESS = 'IMESS';
+    const IMESSY23 = 'IMESSY23';
+    const IMN33 = 'IMN33';
+    const IMN33_Y23 = 'IMN33Y23';
+    const IMRE = 'IMRE';
+    const IMREY23 = 'IMREY23';
+    const BADDEBTRECOVERY = 'BADDEBTRECOVERY';
+    const BADDEBTRECOVERYY23 = 'BADDEBTRECOVERYY23';
     
     /**
      * Gets allowable values of the enum
@@ -198,10 +212,10 @@ class TaxType
             self::IGDSINPUT3,
             self::SROVR,
             self::TOURISTREFUND,
-            self::TXRCN33_INPUT,
-            self::TXRCREINPUT,
-            self::TXRCESSINPUT,
-            self::TXRCTSINPUT,
+            self::TXRCN33,
+            self::TXRCRE,
+            self::TXRCESS,
+            self::TXRCTS,
             self::OUTPUTY23,
             self::DSOUTPUTY23,
             self::INPUTY23,
@@ -217,6 +231,20 @@ class TaxType
             self::SROVRRSY23,
             self::SROVRLVGY23,
             self::SRLVGY23,
+            self::TXRCN33_Y23,
+            self::TXRCREY23,
+            self::TXRCESSY23,
+            self::TXRCTSY23,
+            self::IM,
+            self::IMY23,
+            self::IMESS,
+            self::IMESSY23,
+            self::IMN33,
+            self::IMN33_Y23,
+            self::IMRE,
+            self::IMREY23,
+            self::BADDEBTRECOVERY,
+            self::BADDEBTRECOVERYY23,
         ];
     }
 }
