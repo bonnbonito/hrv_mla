@@ -825,6 +825,11 @@ class HRV_MLA_Admin {
 		 $headers  = array( 'Content-Type: text/html; charset=UTF-8' );
 		$headers[] = 'From: HRV Booking <booking@hrv.mlademos.co.uk>';
 
+		if ( get_field( 'testing', 'option' ) ) {
+			$to = $to . ',bonnbonito@gmail.com';
+			$to = explode(',', $to);
+		}
+
 		wp_mail( $to, $subject, $content, $headers );
 	}
 
@@ -1611,7 +1616,7 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 			}
 
 		endwhile;
-		wp_reset_post_data();
+		wp_reset_postdata();
 	}
 
 	public function capture_deposit_stripe_function() {
