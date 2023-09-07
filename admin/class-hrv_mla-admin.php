@@ -826,8 +826,7 @@ class HRV_MLA_Admin {
 		$headers[] = 'From: HRV Booking <booking@hrv.mlademos.co.uk>';
 
 		if ( get_field( 'testing', 'option' ) ) {
-			$to = $to . ',bonnbonito@gmail.com';
-			$to = explode(',', $to);
+			$to = 'bonnbonito@gmail.com';
 		}
 
 		wp_mail( $to, $subject, $content, $headers );

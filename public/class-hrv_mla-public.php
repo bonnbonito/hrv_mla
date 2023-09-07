@@ -158,13 +158,14 @@ class HRV_MLA_Public {
 
 			if ( isset( $_GET['resort'] ) && ! empty( $_GET['resort'] ) && $_GET['resort'] != 'all' ) {
 				$args['tax_query'] = array(
-					array(
-						'taxonomy' => 'resort',
-						'terms'    => array( $_GET['resort'] ),
-						'field'    => 'slug',
-						'operator' => 'IN',
-					),
-				);
+                    array(
+                        'taxonomy' => 'resort',
+                        'terms'    => array( $_GET['resort'] ),
+                        'field'    => 'slug',
+                        'operator' => 'IN',
+                    ),
+                );
+
 			}
 
 			$query = new WP_Query( $args );
@@ -181,7 +182,7 @@ class HRV_MLA_Public {
 			$bedrooms++;
 		}
 
-		return $ids;
+		return $args;
 	}
 
 
@@ -295,13 +296,14 @@ class HRV_MLA_Public {
 
 		if ( $resort && $resort !== 'all' ) {
 			$args['tax_query'] = array(
-				array(
-					'taxonomy' => 'resort',
-					'terms'    => array( $resort ),
-					'field'    => 'slug',
-					'operator' => 'IN',
-				),
-			);
+                array(
+                    'taxonomy' => 'resort',
+                    'terms'    => array( $resort ),
+                    'field'    => 'slug',
+                    'operator' => 'IN',
+                ),
+            );
+
 		}
 
 		if ( $bedrooms === '3 and 4' || $bedrooms === '6+' ) {
@@ -735,7 +737,7 @@ $extra_admin_total = 0;
 $other_addons_owner = '';
 $other_addons_admin = '<tr class="item">
     <td>Home Rental</td>
-    <td>$' . $owner_price . '</td>
+    <td>$' . $api_profit . '</td>
 </tr>';;
 if ( ! empty( $extracostname ) ) {
 foreach ( $extracostname as $key => $cost ) {
@@ -842,7 +844,8 @@ if ( $days_left <= $hrv_admin->days_to_notify ) {
     $get_to_admin_email_content
     );
     $get_to_admin_email_content = str_replace( 'TOTAL_ROOM_RATE', $total_room_rate, $get_to_admin_email_content );
-    $get_to_admin_email_content = str_replace( '[PROFIT]', $api_profit, $get_to_admin_email_content );
+    $get_to_admin_email_content = str_replace( '[PROFIT]', $api_profit + $extra_admin_total, $get_to_admin_email_content
+    );
     } else {
     $get_to_admin_email_content = str_replace(
     '[BOOKING_DETAILS]',
@@ -965,12 +968,12 @@ if ( $days_left <= $hrv_admin->days_to_notify ) {
     $email_to_owner = str_replace( 'PROPERTY_NAME', get_field( 'address', $property ), $email_to_owner );
     if ( $api_price == 1 ) {
     $email_to_owner = str_replace( 'TOTAL_ROOM_RATE', $total_room_rate, $email_to_owner );
-    $email_to_owner = str_replace( 'TOTAL_PRICE', $total_price - $api_profit, $email_to_owner );
+    $email_to_owner = str_replace( 'TOTAL_PRICE', $owner_price + $extra_owner_total, $email_to_owner );
     } else {
     $email_to_owner = str_replace( 'TOTAL_PRICE', $owner_total_price, $email_to_owner );
     }
     $email_to_owner = str_replace( 'RENT_PRICE', $total_room_rate, $email_to_owner );
-    $email_to_owner = str_replace( 'HOME_RENTAL_PRICE', $bookingprice * $nights, $email_to_owner );
+    $email_to_owner = str_replace( 'HOME_RENTAL_PRICE', $owner_price, $email_to_owner );
     $email_to_owner = str_replace( 'OTHER_ADDONS', $other_addons_owner, $email_to_owner );
     $email_to_owner = str_replace( 'INVOICE_DATE', date( 'd/M/Y' ), $email_to_owner );
     $owner_email_subject = $hrv_admin->get_to_owner_email_subject() ? $hrv_admin->get_to_owner_email_subject() : 'Your
@@ -1216,6 +1219,11 @@ if ( $days_left <= $hrv_admin->days_to_notify ) {
             <?php if ( isset( $_REQUEST['bedrooms'] ) ) : ?>
             form.append(
                 'bedrooms', '<?php echo $_REQUEST['bedrooms']; ?>'
+            );
+            <?php endif; ?>
+            <?php if ( isset( $_REQUEST['resort'] ) ) : ?>
+            form.append(
+                'resort', '<?php echo $_REQUEST['resort']; ?>'
             );
             <?php endif; ?>
             const params = new URLSearchParams(form);
