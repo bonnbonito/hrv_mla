@@ -569,9 +569,9 @@ class HRV_MLA_Public {
 		$owner_price            = $_POST['ownerPrice'];
 		$owner_name             = $_POST['ownerName'];
 		$bookingprice           = $_POST['bookingprice'];
-		$due_date               = $_POST['dueDate'];
+		$due_date               = date( 'Y-m-d', strtotime( $_POST['dueDate'] ) );
 		$deposit_compute        = $total_price * 0.10;
-		$deposit_price          = $deposit_compute > $hrv_admin->deposit ? $hrv_admin->deposit : $deposit_compute;
+		$deposit_price          = $_POST['deposit'];
 		$rental_price           = ( $bookingprice * $nights ) + $owner_price;
 		$api_price              = $_POST['apiPrice'] == 1 ? 1 : 0;
 		$api_profit             = $_POST['apiProfit'];
@@ -646,6 +646,8 @@ class HRV_MLA_Public {
 				update_field( 'property_post', array( $property ), $booking_id );
 				update_field( 'stripe_payment_intent', $payment_intents->id, $booking_id );
 				update_field( 'booking_season_price', $bookingprice, $booking_id );
+                update_field( 'due_date', str_replace( '-', '', $due_date ), $booking_id );
+                update_field( 'deposit_amount', $deposit_price, $booking_id);
 				update_field( 'booking_property_owner', $owner_id, $booking_id );
 				update_field( 'api_price', $api_price, $booking_id );
 				update_field( 'payment_status', 'deposit', $booking_id );

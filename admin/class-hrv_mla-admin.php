@@ -1672,6 +1672,11 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 		wp_reset_postdata();
 	}
 
+	public function acf_diable_field( $field ) {
+		$field['readonly'] = true;
+		return $field;
+	}	
+
 	public function send_ask_review_email_function() {
 		$query = new WP_Query(
 			array(
@@ -1731,6 +1736,24 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 
 		endwhile;
 		wp_reset_postdata();
+	}
+
+	public function calculate_deposit( $post_id ) {
+		if ( 'bookings' == get_post_type( $post_id ) ) {
+			$total_price = get_field( 'total_price', $post_id );
+			$deposit_amount = get_field( 'deposit_amount', $post_id ) ? get_field( 'deposit_amount', $post_id ) : 0;
+			$additional_deposit = get_field('additional_deposit', $post_id) ? get_field('additional_deposit', $post_id) : 0;
+			$total_amount_paid = $deposit_amount + $additional_deposit;
+			update_field( 'total_amount_paid', $total_amount_paid, $post_id );
+			$balance = $total_price - $total_amount_paid;
+			update_field( 'balance', $balance, $post_id );
+		}
+	}
+
+	public function update_property_address( $post_id ) {
+		$property_id    = get_field( 'property_post', $post_id )[0];
+		$address = get_field('address', $property_id);
+		update_field('booking_property_address', $address, $post_id);
 	}
 
 
@@ -1820,7 +1843,7 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 			
 			add_meta_box(
 				'booking_paid_email_metabox',
-				__( 'Email Golf Booking', 'hrv-mla' ),
+				__( 'Fully Paid Email', 'hrv-mla' ),
 				array( $this, 'booking_paid_email_metabox_callback' ),
 				'bookings',
 				'side',
@@ -1843,11 +1866,50 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 		?>
             <div id="booking-full-email">
                 <label style="margin-bottom: 1em; display: block;"><input type="checkbox" value="yes"
-                        name="paid_email_sent" <?php echo ( 'yes' === $value ? 'checked' : '' ); ?>> Email
-                    already
-                    sent?</label>
+                        name="paid_email_sent" disabled <?php echo ( 'yes' === $value ? 'checked' : '' ); ?>>Email
+                    already sent?</label>
 
-                <button id="paid-email-end" class="button button-success button-large">Send Fully Paid Email</button>
+                <button id="paidEmailBtn" class="button button-success button-large">Send Fully Paid Email</button>
+
+                <script>
+                const paidEmailBtn = document.getElementById('paidEmailBtn');
+                if (paidEmailBtn) {
+                    paidEmailBtn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        paidEmailBtn.setAttribute('disabled', 'disabled');
+                        paidEmailBtn.innerHTML = 'Sending...';
+
+                        const form = new FormData();
+                        form.append('action', 'send_booking_paid_email');
+                        form.append('nonce', XERO.golfnonce);
+                        form.append('post_id', <?php echo $id; ?>);
+
+                        const params = new URLSearchParams(form);
+                        console.log(params);
+                        fetch(XERO.ajax_url, {
+                                method: 'POST',
+                                credentials: 'same-origin',
+                                headers: {
+                                    'Content-Type': 'application/x-www-form-urlencoded',
+                                    'Cache-Control': 'no-cache',
+                                },
+                                body: params,
+                            })
+                            .then((response) => response.json())
+                            .then((data) => {
+                                if (data) {
+                                    console.log(data);
+                                    paidEmailBtn.innerHTML = 'Sent';
+                                }
+                            })
+                            .catch((error) => {
+                                console.log('EMAIL FAILED');
+                                console.error(error);
+                            });
+
+                    });
+                }
+                </script>
 
             </div>
 
@@ -1883,7 +1945,7 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 		// Update the meta field in the database.
 		update_post_meta($post_id, '_paid_email_sent', $checkbox_value);
 
-		$this->full_paid_process( $post_id );
+		//$this->full_paid_process( $post_id );
 
 	}
 
@@ -1902,12 +1964,13 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 		$deposit_price = $deposit_price > $this->deposit ? $this->deposit : $deposit_price;
 
 	
-		$request_payment_email_content = $this->request_payment_email_content();
 		$email_to_send = $this->get_fully_paid_content();
 		if ( get_field('api_price') ) {
-			$email_to_send = str_replace( '[BOOKING_DETAILS]', $this->booking_details_content_api(), $email_to_send );
+			$email_to_send = str_replace( '[BOOKING_DETAILS]', $this->fully_paid_details_content_api(), $email_to_send );
+			$email_to_send = str_replace( 'TOTAL_ROOM_RATE', get_field('total_ciirus_price_with_comission'), $email_to_send );
 		} else {
-			$email_to_send = str_replace( '[BOOKING_DETAILS]', $this->booking_details_content(), $email_to_send );
+			$email_to_send = str_replace( '[BOOKING_DETAILS]', $this->fully_paid_details_content(), $email_to_send );
+			$email_to_send = str_replace( 'HOME_RENTAL_PRICE', get_field('booking_season_price'), $email_to_send  );
 		}
 		
 
@@ -1937,11 +2000,13 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 		$email_to_send = str_replace( 'PROPERTY_NAME', get_field( 'property' ), $email_to_send );
 		$email_to_send = str_replace( 'TOTAL_PRICE', $total_price, $email_to_send );
 		$email_to_send = str_replace( 'RENT_PRICE', get_field( 'booking_season_price' ), $email_to_send );
-		$email_to_send = str_replace( 'TOTAL_DEPOSIT', '', $email_to_send );
 		$email_to_send = str_replace( 'TOTAL_BALANCE', '0.00', $email_to_send );
 		$email_to_send = str_replace( 'OTHER_ADDONS', $other_addons, $email_to_send );
+		$email_to_send = str_replace( 'DUE_DATE', get_field( 'due_date' ), $email_to_send );
 		$email_to_send = str_replace( 'INVOICE_DATE', get_the_date( 'd/M/Y' ), $email_to_send );
 		$email_to_send = str_replace( 'DIRECTIONS_FROM_AIRPORT', get_field( 'directions_from_airport' ), $email_to_send );
+		$email_to_send = str_replace( 'TOTAL_DEPOSIT', get_field( 'total_amount_paid' ), $email_to_send );
+		$email_to_send = str_replace( 'AMOUNT_PAID', get_field( 'balance' ), $email_to_send );
 		$email_to_send = str_replace( 'CHECKIN_INSTRUCTIONS', get_field( 'checkin_instructions' ), $email_to_send );
 		$email = get_field( 'email' );
 		$this->send_hrv_email( $email, $email_subject, $email_to_send );
@@ -2042,6 +2107,20 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
             </script>
             <?php
 			echo ob_get_clean();
+	}
+
+	public function send_booking_paid_email() {
+		 $status = array(
+			 'code' => 2,
+		 );
+		 if ( ! wp_verify_nonce( $_POST['nonce'], 'golf-nonce' ) ) {
+			 wp_send_json( 'Nonce Error' );
+		 }
+
+		$this->full_paid_process( $_POST['post_id'] );
+	 
+		 $status['post'] = $_POST;
+		 wp_send_json( $status );
 	}
 
 	public function send_golf_booking_email() {
@@ -2204,6 +2283,18 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 		return get_field('fully_paid_email_subject', 'option');
 	}
 
+	public function fully_paid_details_content() {
+		 ob_start();
+		require 'emails/fully-paid-details.html';
+		return ob_get_clean();
+	}
+
+	public function fully_paid_details_content_api() {
+		 ob_start();
+		require 'emails/fully-paid-details-api.html';
+		return ob_get_clean();
+	}
+
 
 	public function booking_details_content() {
 		 ob_start();
@@ -2247,6 +2338,12 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 		return ob_get_clean();
 	}
 
+	public function paid_email_template() {
+		ob_start();
+		require 'emails/paid-template.html';
+		return ob_get_clean();
+	}
+
 	public function get_to_customer_content_option() {
 		return get_field( 'to_customer_email_content', 'option' );
 	}
@@ -2273,7 +2370,7 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 	 * Get fully paid Email content
 	 */
 	public function get_fully_paid_content() {
-		 $content = $this->email_template();
+		 $content = $this->fully_paid_email_content();
 		$content  = str_replace( 'EMAIL_CONTENT', get_field( 'fully_paid_email_content', 'option' ), $content );
 		return $content;
 	}
