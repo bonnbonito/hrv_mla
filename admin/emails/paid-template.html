@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset="utf-8" />
+	<title>Higland Reserve Villas</title>
+
+	<style>
+		.invoice-box {
+			margin: auto;
+			padding: 30px;
+			border: 1px solid #eee;
+			font-size: 16px;
+			line-height: 24px;
+			font-family: Verdana, 'Helvetica Neue', 'Helvetica', Helvetica, Arial, sans-serif;
+			color: #555;
+		}
+
+		.invoice-box table .content td {
+			padding-bottom: 20px;
+		}
+
+		.invoice-box table .content .inner-table td {
+			padding-bottom: 5px;
+		}
+
+		.invoice-box table {
+			width: 100%;
+			line-height: inherit;
+			text-align: left;
+		}
+
+		.invoice-box table td {
+			padding: 5px;
+			vertical-align: top;
+		}
+
+		.invoice-box table tr td:nth-child(2) {
+			text-align: right;
+		}
+
+		.invoice-box table tr.top table td {
+			padding-bottom: 20px;
+		}
+
+		.invoice-box table tr.top table td.title .logo {
+			font-size: 35px;
+			line-height: 1;
+			color: #333;
+			margin-bottom: 0;
+			margin-top: 0;
+		}
+
+		.invoice-box table tr.top table td.title a {
+			color: #000;
+		}
+
+		.invoice-box table tr.information table td {
+			padding-bottom: 40px;
+		}
+
+		.invoice-box table tr.heading td {
+			background: #eee;
+			border-bottom: 1px solid #ddd;
+			font-weight: bold;
+		}
+
+		.invoice-box table tr.item td {
+			border-bottom: 1px solid #eee;
+		}
+
+		.invoice-box table tr.item.last td {
+			border-bottom: none;
+		}
+
+		.invoice-box table tr.total td:nth-child(2) {
+			border-top: 2px solid #eee;
+		}
+
+		.invoice-box table tr.total.bold {
+			font-weight: bold;
+		}
+
+		.invoice-box .content-row .content-td {
+			padding: 20px;
+			border: 1px solid #ddd;
+			box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+		}
+
+		.invoice-box .my20 {
+			margin-top: 20px;
+			margin-bottom: 20px;
+		}
+
+		@media only screen and (max-width: 600px) {
+			.invoice-box table tr.top table td {
+				width: 100%;
+				display: block;
+				text-align: center;
+			}
+
+			.invoice-box table tr.information table td {
+				width: 100%;
+				display: block;
+				text-align: center;
+			}
+		}
+
+		/** RTL **/
+		.invoice-box.rtl {
+			direction: rtl;
+			font-family: Tahoma, 'Helvetica Neue', 'Helvetica', Helvetica, Arial, sans-serif;
+		}
+
+		.invoice-box.rtl table {
+			text-align: right;
+		}
+
+		.invoice-box.rtl table tr td:nth-child(2) {
+			text-align: left;
+		}
+	</style>
+</head>
+
+<body>
+	<div class="invoice-box">
+		<table cellpadding="0" cellspacing="0">
+			<tr class="top">
+				<td colspan="2">
+					<table class="inner-table">
+						<tr>
+							<td class="title">
+								<p class="logo">Highlands Reserve Villas</p>
+								<p><a href="http://www.highlandsreservevillas.com" target="_blank"
+										data-saferedirecturl="https://www.google.com/url?q=http://www.highlandsreservevillas.com&amp;source=gmail&amp;ust=1652953610962000&amp;usg=AOvVaw37D-ULWsoOnnifH3JVraMp">www.highlandsreservevillas.com</a>
+								</p>
+							</td>
+
+							<td>
+								Transaction ID: BOOKING_ID<br />
+								Invoice Date: INVOICE_DATE<br />
+							</td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+
+			<tr class="content">
+				<td>
+					EMAIL_CONTENT
+				</td>
+			</tr>
+
+			<tr class="content">
+				<td>
+					DIRECTIONS_FROM_AIRPORT
+				</td>
+			</tr>
+
+			<tr class="content">
+				<td>
+					CHECK_IN_INSTRUCTIONS
+				</td>
+			</tr>
+
+		</table>
+	</div>
+</body>
+
+</html>

@@ -1030,6 +1030,7 @@ class HRV_MLA_Admin {
 						break;
 					}
 				}
+				$property_rates['per_day'] = $total_rates;
 				$property_rates['total_rates'] = round( $total_rates * $nights, 0 );
 			} else {
 				$property_rates = false;
@@ -1205,14 +1206,15 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
     $minimum_price = $additional['minimum_price'];
 
     $api_price = $this->getPropertyRates( $id, $checkin, $nights );
+    $total_api_price = $api_price['total'];
     $cleaning = $this->ciirus_get_cleaning_fee( $id, $nights );
     $tax = $this->getTaxRates( $id );
-    $extras = $this->getExtras( $id, $api_price );
+    $extras = $this->getExtras( $id, $total_api_price );
 
-    $tax_price = $this->calculateTax( $api_price, $tax );
+    $tax_price = $this->calculateTax( $total_api_price, $tax );
     $cleaning_tax_price = $this->calculateTax( $cleaning, $tax );
 
-    $price = $this->calculatePrices( $api_price, $cleaning, $tax_price, $cleaning_tax_price, $extras );
+    $price = $this->calculatePrices( $total_api_price, $cleaning, $tax_price, $cleaning_tax_price, $extras );
 
     $total_price = $price['total'];
 
@@ -1225,9 +1227,11 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
     $additional_price = $this->calculateCommission( $total_price, $commission_percent );
     $total_price = $total_price + $additional_price;
 
+    $price['per_day'] = $api_price['per_day'];
     $price['old_total'] = $price['total'];
     $price['additional'] = $additional_price;
     $price['total'] = $total_price;
+
 
     return $price;
     }
@@ -1238,7 +1242,12 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 
     private function getPropertyRates( $id, $checkin, $nights ) {
     $api_get_price = $this->ciirus_get_property_rates( $id, $checkin, $nights );
-    return $api_get_price['total_rates'] ? $api_get_price['total_rates'] : 0;
+    $total = $api_get_price['total_rates'] ? $api_get_price['total_rates'] : 0;
+    $per_day = $api_get_price['per_day'] ? $api_get_price['per_day'] : 0;
+    return array(
+    'total' => $total,
+    'per_day' => $per_day,
+    );
     }
 
     private function getTaxRates( $id ) {
@@ -1522,6 +1531,12 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 	/**
 	 * Get deposit email content
 	 */
+	public function fully_paid_email_content() {
+		ob_start();
+		require 'emails/paid-template.html';
+		$content = ob_get_clean();
+		return $content;
+	}
 
 	public function request_payment_email_content() {
 		ob_start();
@@ -1575,7 +1590,7 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 			$deposit_price = $total_price - ( $total_price * 0.10 );
 			$deposit_price = $deposit_price > $this->deposit ? $this->deposit : $deposit_price;
 
-			if ( $days <= $this->days_to_notify ) {
+			if ( $days <= $this->days_to_notify && 'full' !== get_field('payment_status', get_the_ID()) ) {
 				if ( get_post_meta( get_the_ID(), 'payment_email_sent', true ) != 'yes' ) {
 					$request_payment_email_content = $this->request_payment_email_content();
 
@@ -1606,7 +1621,7 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 					$request_payment_email_content = str_replace( 'OTHER_ADDONS', $other_addons, $request_payment_email_content );
 					$request_payment_email_content = str_replace( 'INVOICE_DATE', get_the_date( 'd/M/Y' ), $request_payment_email_content );
 					$request_payment_email_content = str_replace( 'DIRECTIONS_FROM_AIRPORT', get_field( 'directions_from_airport' ), $request_payment_email_content );
-
+					$email = get_field('email');
 					$this->send_hrv_email( $email, 'Request for payment', $request_payment_email_content );
 					$this->send_hrv_email( get_field( 'admin_email', 'option' ), 'Request for payment', $request_payment_email_content );
 
@@ -1797,6 +1812,147 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 			}
 		}
 	}
+
+	public function booking_paid_email_metabox() {
+		$id = $_GET['post'];
+
+		if (isset( $id ) && !empty( $id ) && 'full' === get_field('payment_status', $id ) ) {
+			
+			add_meta_box(
+				'booking_paid_email_metabox',
+				__( 'Email Golf Booking', 'hrv-mla' ),
+				array( $this, 'booking_paid_email_metabox_callback' ),
+				'bookings',
+				'side',
+				'default',
+			);
+		}
+
+	}
+
+	public function booking_paid_email_metabox_callback($post) {
+		$id = $post->ID;
+
+		if ( ! isset( $id ) && empty( $id ) ) {
+			return;
+		}
+
+		ob_start();
+		 wp_nonce_field('paid_email_meta_box', 'paid_meta_box_nonce');
+		 $value = get_post_meta($id, '_paid_email_sent', true);
+		?>
+            <div id="booking-full-email">
+                <label style="margin-bottom: 1em; display: block;"><input type="checkbox" value="yes"
+                        name="paid_email_sent" <?php echo ( 'yes' === $value ? 'checked' : '' ); ?>> Email
+                    already
+                    sent?</label>
+
+                <button id="paid-email-end" class="button button-success button-large">Send Fully Paid Email</button>
+
+            </div>
+
+            <?php
+		echo ob_get_clean();
+	}
+
+	public function booking_paid_save_post($post_id) {
+
+		// Check if our nonce is set.
+		if (!isset($_POST['paid_meta_box_nonce'])) {
+			return;
+		}
+
+		// Verify that the nonce is valid.
+		if (!wp_verify_nonce($_POST['paid_meta_box_nonce'], 'paid_email_meta_box')) {
+			return;
+		}
+
+		// If this is an autosave, our form has not been submitted, so we don't want to do anything.
+		if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
+			return;
+		}
+
+		// Check the user's permissions.
+		if (!current_user_can('edit_post', $post_id)) {
+			return;
+		}
+
+		// Check if there's a field set
+		$checkbox_value = isset($_POST['paid_email_sent']) && $_POST['paid_email_sent'] === 'yes' ? 'yes' : 'no';
+
+		// Update the meta field in the database.
+		update_post_meta($post_id, '_paid_email_sent', $checkbox_value);
+
+		$this->full_paid_process( $post_id );
+
+	}
+
+	public function full_paid_process( $post_id ) {
+		global $post;
+		$post = get_post( $post_id );
+
+		setup_postdata($post);
+		
+		$arrival_date  = strtotime( get_field( 'arrival_date' ) );
+		$today         = time();
+		$diff          = $arrival_date - $today;
+		$days          = floor( $diff / ( 60 * 60 * 24 ) );
+		$total_price   = get_field( 'total_price' );
+		$deposit_price = $total_price - ( $total_price * 0.10 );
+		$deposit_price = $deposit_price > $this->deposit ? $this->deposit : $deposit_price;
+
+	
+		$request_payment_email_content = $this->request_payment_email_content();
+		$email_to_send = $this->get_fully_paid_content();
+		if ( get_field('api_price') ) {
+			$email_to_send = str_replace( '[BOOKING_DETAILS]', $this->booking_details_content_api(), $email_to_send );
+		} else {
+			$email_to_send = str_replace( '[BOOKING_DETAILS]', $this->booking_details_content(), $email_to_send );
+		}
+		
+
+		
+
+		$other_addons = '';
+
+		if ( have_rows( 'extra_cost' ) ) :
+			while ( have_rows( 'extra_cost' ) ) :
+				the_row();
+				$other_addons .= '<tr class="item">
+			<td>' . get_sub_field( 'extra_cost' ) . '</td>
+			<td>$' . get_sub_field( 'price' ) . '</td>
+			</tr>';
+			endwhile;
+		endif;
+
+		$email_subject = $this->get_fully_paid_subject() ? $this->get_fully_paid_subject() : 'Fully paid';
+
+		$email_to_send = str_replace( 'BOOKING_ID', 'HRV-' . get_the_ID(), $email_to_send );
+		$email_to_send = str_replace( 'NO_ADULTS', get_field( 'adult' ), $email_to_send );
+		$email_to_send = str_replace( 'NO_NIGHTS', get_field( 'no_of_nights' ), $email_to_send );
+		$email_to_send = str_replace( 'NO_CHILDREN', get_field( 'children' ), $email_to_send );
+		$email_to_send = str_replace( '[GUEST_NAME]', get_field( 'first_name' ) . ' ' . get_field( $surname ), $email_to_send );
+		$email_to_send = str_replace( 'DEPARTURE_DATE', date( 'd/M/Y', strtotime( get_field( 'end_date' ) ) ), $email_to_send );
+		$email_to_send = str_replace( 'ARRIVAL_DATE', date( 'd/M/Y', strtotime( get_field( 'arrival_date' ) ) ), $email_to_send );
+		$email_to_send = str_replace( 'PROPERTY_NAME', get_field( 'property' ), $email_to_send );
+		$email_to_send = str_replace( 'TOTAL_PRICE', $total_price, $email_to_send );
+		$email_to_send = str_replace( 'RENT_PRICE', get_field( 'booking_season_price' ), $email_to_send );
+		$email_to_send = str_replace( 'TOTAL_DEPOSIT', '', $email_to_send );
+		$email_to_send = str_replace( 'TOTAL_BALANCE', '0.00', $email_to_send );
+		$email_to_send = str_replace( 'OTHER_ADDONS', $other_addons, $email_to_send );
+		$email_to_send = str_replace( 'INVOICE_DATE', get_the_date( 'd/M/Y' ), $email_to_send );
+		$email_to_send = str_replace( 'DIRECTIONS_FROM_AIRPORT', get_field( 'directions_from_airport' ), $email_to_send );
+		$email_to_send = str_replace( 'CHECKIN_INSTRUCTIONS', get_field( 'checkin_instructions' ), $email_to_send );
+		$email = get_field( 'email' );
+		$this->send_hrv_email( $email, $email_subject, $email_to_send );
+		$this->send_hrv_email( get_field( 'admin_email', 'option' ), $email_subject, $email_to_send );
+
+		wp_reset_postdata(); 
+		
+		update_post_meta($post_id, '_paid_email_sent', 'yes');
+	}
+
+
 
 	public function booking_golf_email_metabox() {
 		add_meta_box(
@@ -2044,6 +2200,10 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 		return get_field( 'to_admin_email_subject', 'option' );
 	}
 
+	public function get_fully_paid_subject() {
+		return get_field('fully_paid_email_subject', 'option');
+	}
+
 
 	public function booking_details_content() {
 		 ob_start();
@@ -2106,6 +2266,15 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 	public function get_request_payment_content() {
 		 $content = $this->email_template();
 		$content  = str_replace( 'EMAIL_CONTENT', '[BOOKING_DETAILS]', $content );
+		return $content;
+	}
+
+	/**
+	 * Get fully paid Email content
+	 */
+	public function get_fully_paid_content() {
+		 $content = $this->email_template();
+		$content  = str_replace( 'EMAIL_CONTENT', get_field( 'fully_paid_email_content', 'option' ), $content );
 		return $content;
 	}
 

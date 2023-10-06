@@ -144,45 +144,50 @@ class HRV_MLA_Public {
 	 * Get all properties results ID's
 	 */
 	public function get_result_properties() {
-		$bedrooms = isset( $_GET['bedrooms'] ) ? intval( $_GET['bedrooms'] ) : null;
+		$bedrooms = isset( $_GET['bedrooms'] ) ? intval( $_GET['bedrooms'] ) : 0;
 
 		$ids = array();
 
-		while ( $bedrooms < 9 ) {
-			$args = array(
-				'post_type'      => 'properties',
-				'posts_per_page' => -1,
-				'meta_key'       => 'bedrooms',
-				'meta_value'     => $bedrooms,
-			);
+		
+        $args = array(
+            'post_type'      => 'properties',
+            'posts_per_page' => -1,
+        );
 
-			if ( isset( $_GET['resort'] ) && ! empty( $_GET['resort'] ) && $_GET['resort'] != 'all' ) {
-				$args['tax_query'] = array(
-                    array(
-                        'taxonomy' => 'resort',
-                        'terms'    => array( $_GET['resort'] ),
-                        'field'    => 'slug',
-                        'operator' => 'IN',
-                    ),
-                );
+        while ( $bedrooms < 11 ) {
+        
+        if ( $bedrooms !== 0 ) {
+            $args['meta_key']    = 'bedrooms';
+            $args['meta_value']  = $bedrooms;
+        }
 
-			}
+        if ( isset( $_GET['resort'] ) && ! empty( $_GET['resort'] ) && $_GET['resort'] != 'all' ) {
+            $args['tax_query'] = array(
+                array(
+                    'taxonomy' => 'resort',
+                    'terms'    => array( $_GET['resort'] ),
+                    'field'    => 'slug',
+                    'operator' => 'IN',
+                ),
+            );
 
-			$query = new WP_Query( $args );
+        }
 
-			if ( $query->have_posts() ) {
-				while ( $query->have_posts() ) {
-					$query->the_post();
-					$ids[ $bedrooms ][] = get_the_ID();
-				}
-			}
+        $query = new WP_Query( $args );
 
-			wp_reset_postdata();
+        if ( $query->have_posts() ) {
+            while ( $query->have_posts() ) {
+                $query->the_post();
+                $ids[ $bedrooms ][] = get_the_ID();
+            }
+            wp_reset_postdata();
+        }
 
-			$bedrooms++;
-		}
+        $bedrooms++;
 
-		return $args;
+        }
+
+		return $ids;
 	}
 
 
@@ -464,7 +469,7 @@ class HRV_MLA_Public {
         <?php
 
 		if ( $price && $price['total'] > 0 ) {
-			// print_r( $price );
+			print_r( $price );
 			?>
         <div class="property-results-price">
             Price: <strong>&dollar;<?php echo round( $price['total'] ); ?></strong>
@@ -532,6 +537,7 @@ class HRV_MLA_Public {
 		if ( ! wp_verify_nonce( $_POST['nonce'], 'hrv-nonce' ) ) {
 			wp_send_json( 'Nonce Error' );
 		}
+        $test_email             = 'bonnbonito@gmail.com';
 		$hrv_admin              = new HRV_MLA_Admin( $this->plugin_name, $this->version );
 		$secret                 = get_field( 'testing', 'option' ) ? get_field( 'test_secret_key', 'option' ) : get_field( 'live_secret_key', 'option' );
 		$stripe                 = new \Stripe\StripeClient( $secret );
@@ -673,6 +679,7 @@ class HRV_MLA_Public {
 							'extra_cost'       => $cost,
 							'price'            => $extracostprice[ $key ],
 							'owner_percentage' => $extracostownerpercent[ $key ],
+                            'owner_price' => $extracostoriginalprice[ $key ] * $nights,
 						);
 						$other_addons .= '<tr>
 							<td>' . $cost . '</td>
@@ -824,6 +831,11 @@ if ( $days_left <= $hrv_admin->days_to_notify ) {
     $request_payment_email_content
     );
     $request_payment_email_content = str_replace( 'DUE_DATE', $due_date, $request_payment_email_content );
+
+    if ( get_field( 'testing', 'option' ) ) {
+    $email = $test_email;
+    }
+
     $hrv_admin->send_hrv_email( $email, 'Request for payment', $request_payment_email_content );
     update_post_meta( $booking_id, 'payment_email_sent', 'yes' );
     }
@@ -898,12 +910,20 @@ if ( $days_left <= $hrv_admin->days_to_notify ) {
     $get_to_admin_email_content = str_replace( 'ADMIN_ADDONS', $other_addons_admin, $get_to_admin_email_content );
     $get_to_admin_email_content = str_replace( '[PROFIT]', $profit, $get_to_admin_email_content );
     $get_to_admin_email_content = str_replace( 'DUE_DATE', $due_date, $get_to_admin_email_content );
-
+    if ( get_field( 'testing', 'option' ) ) {
+    $hrv_admin->send_hrv_email(
+    $email,
+    $admin_email_subject,
+    $get_to_admin_email_content
+    );
+    } else {
     $hrv_admin->send_hrv_email(
     get_field( 'admin_email', 'option' ),
     $admin_email_subject,
     $get_to_admin_email_content
     );
+    }
+
 
     /**
     * Send Email to Customer
@@ -983,7 +1003,11 @@ if ( $days_left <= $hrv_admin->days_to_notify ) {
     $owner_email_subject = str_replace( '[OWNER_NAME]', $owner_name, $owner_email_subject );
     $email_to_owner_content = str_replace( '[OWNER_NAME]', $owner_name, $email_to_owner );
 
+
     if ( $property_owner_email ) {
+    if ( get_field( 'testing', 'option' ) ) {
+    $property_owner_email = $test_email;
+    }
     $hrv_admin->send_hrv_email( $property_owner_email, $owner_email_subject, $email_to_owner_content );
     }
 
@@ -1169,6 +1193,11 @@ if ( $days_left <= $hrv_admin->days_to_notify ) {
                         alt="<?php echo $item['label']; ?>" title="<?php echo $item['label']; ?>">
                 </li>
                 <?php } ?>
+                <?php if ( 'golfcourse' === $item['value'] ) { ?>
+                <li><img src="<?php echo home_url(); ?>/wp-content/uploads/2023/09/gate.png"
+                        alt="<?php echo $item['label']; ?>" title="<?php echo $item['label']; ?>">
+                </li>
+                <?php } ?>
                 <?php endforeach; ?>
             </ul>
             <?php
@@ -1227,7 +1256,6 @@ if ( $days_left <= $hrv_admin->days_to_notify ) {
             );
             <?php endif; ?>
             const params = new URLSearchParams(form);
-            console.log('<?php echo $_REQUEST['bedrooms']; ?>');
 
             fetch(HRV.ajax_url, {
                     method: 'POST',
@@ -1299,13 +1327,14 @@ if ( $days_left <= $hrv_admin->days_to_notify ) {
 					function () {
 						?>
             <script>
+            <?php $bedrooms = isset( $_REQUEST['bedrooms'] ) && !empty( $_REQUEST['bedrooms'] ) ? $_REQUEST['bedrooms'] : 0; ?>
             const villaResults = document.getElementById('villaResults');
-            const propertyIds = HRV.properties_result_ids[<?php echo $_REQUEST['bedrooms']; ?>];
+            const propertyIds = HRV.properties_result_ids[<?php echo $bedrooms; ?>];
             const percentStatus = document.getElementById('percentStatus');
             const loading = document.getElementById('loading');
             const localResults = localStorage.getItem('propertyResults');
             const localResultsUrl = localStorage.getItem('propertyResultsUrl');
-            const beds = <?php echo $_REQUEST['bedrooms']; ?>;
+            const getBeds = <?php echo $bedrooms; ?>;
             const searchingText = document.getElementById('searchingText');
 
             async function is_available(id) {
@@ -1360,40 +1389,71 @@ if ( $days_left <= $hrv_admin->days_to_notify ) {
 
             } else {
 
-                if (propertyIds.length) {
+                filterPromise(getBeds);
 
-                    filterPromise(beds);
+                // if (propertyIds?.length > 0) {
+
+                //     filterPromise(beds);
 
 
-                } else {
-                    document.querySelector('.noresults').style.display = 'flex';
-                    villaResults.style.display = 'none';
-                    loading.style.display = 'none';
-                }
+                // } else {
+                //     document.querySelector('.noresults').style.display = 'flex';
+                //     villaResults.style.display = 'none';
+                //     loading.style.display = 'none';
+                // }
 
             }
 
-            function filterPromise(beds, totalFilteredValues = 0) {
+            function filterPromise(beds = 0, totalFilteredValues = 0) {
+                const upBed = getBeds + 1;
                 const ids = HRV.properties_result_ids[beds];
-                const fxPromises = ids.map((id) => is_available(id));
-                searchingText.innerText = "Searching properties with " + beds + " beds";
+                const fxPromises = ids?.map((id) => is_available(id));
+
+                searchingText.innerText = beds > 0 ? "Searching properties with " + beds + " beds" :
+                    "Searching properties";
+
+                console.log(ids);
+
+                if (beds > upBed || beds > 10) {
+                    console.log("Maximum iteration reached");
+                    loading.style.display = 'none';
+                    villaResults.classList.remove('searching');
+                    console.log('DONE');
+                    if (typeof ids === 'undefined') {
+                        document.querySelector('.noresults').style.display = 'flex';
+                    }
+
+                    return;
+                }
+
+                if (!ids || ids.length === 0) {
+                    setTimeout(() => {
+                        // No ids found, recursively call the function with incremented 'beds'
+                        filterPromise(beds + 1, totalFilteredValues);
+                    }, 1000);
+                    return;
+                }
 
                 Promise.all(fxPromises)
                     .then((values) => {
-                        const filteredValues = values.filter((element) => element.status !== 'none');
-                        totalFilteredValues += filteredValues.length;
+                        const filteredValues = values.filter((element) => element && element.status !== 'none') ||
+                        [];
+                        totalFilteredValues += filteredValues ? (filteredValues.length ?? 0) : 0;
                         console.log(filteredValues);
+                        console.log(totalFilteredValues);
 
-                        if (!filteredValues.length) {
-                            searchingText.innerText = "No results...";
+                        if (beds < 10) {
+                            searchingText.innerText = filteredValues.length + " " + (filteredValues.length > 1 ?
+                                'results' : 'result');
+
                             setTimeout(() => {
                                 // Recursively call the function with incremented 'beds'
                                 filterPromise(beds + 1, totalFilteredValues);
                             }, 1000);
 
-
                         } else {
                             // The recursive search is done, so apply the code here
+                            console.log('BEDS: ' + beds);
                             loading.style.display = 'none';
                             villaResults.classList.remove('searching');
                             console.log('DONE');

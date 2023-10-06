@@ -580,18 +580,19 @@ span.price-highlight {
 
 							// Load sub field value.
 							$name        = get_sub_field( 'name' );
-							$price_field = get_sub_field( 'price' );
+							$price_field = floatval(get_sub_field( 'price' ));
 							$percentage  = get_sub_field( 'owner_percentage' ) ? get_sub_field( 'owner_percentage' ) : get_field( 'additional_pricing', 'option' )['default_additional_costs_property_owner_percentage'];
-							$price       = $price_field + ( $price_field * $percentage / 100 );
-							$price_total = round( $price * $_GET['nights'], 2 );
+							$price       = $price_field + ( $price_field * floatval($percentage) / 100 );
+							$price_total = number_format( round( $price * $_GET['nights'], 2 ), 2);
 							$extraCost   = $extraCost + $price_total;
 							// Do something...
 							?>
                     <p class="extra-cost-checkbox">
-                        <input type="checkbox" name="extra-cost[]" value="<?php echo $price_total; ?>"
-                            data-name="<?php echo $name; ?>" data-percentage="<?php echo $percentage; ?>"
-                            data-original="<?php echo $price_field; ?>">
-                        <span><?php echo $name; ?> $<?php echo $price_total; ?></span>
+                        <input id="<?php echo esc_attr( $name ); ?>" type="checkbox" name="extra-cost[]"
+                            value="<?php echo $price_total; ?>" data-name="<?php echo $name; ?>"
+                            data-percentage="<?php echo $percentage; ?>" data-original="<?php echo $price_field; ?>">
+                        <label for="<?php echo esc_attr( $name ); ?>"><?php echo $name; ?>
+                            $<?php echo $price_total; ?></label>
                     </p>
                     <?php
 
