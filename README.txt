@@ -65,6 +65,10 @@ directory take precedence. For example, `/assets/screenshot-1.png` would win ove
 
 == Changelog ==
 
+= 2.3.003 =
+* Fully paid email checkin and directions from airport
+
+
 = 2.3.001 =
 * Fixes, add 10 bed
 

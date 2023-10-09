@@ -16,7 +16,7 @@
  * Plugin Name:       HRV - MLA Plugin
  * Plugin URI:        https://www.mlawebdesigns.co.uk
  * Description:       Plugin for HRV Website
- * Version:           2.3.002
+ * Version:           2.3.003
  * Author:            Bonn Joel Elimanco
  * Author URI:        https://www.linkedin.com/in/bonn-joel-elimanco-56a43a20
  * License:           GPL-2.0+

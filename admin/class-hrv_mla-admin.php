@@ -1989,7 +1989,7 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 		endif;
 
 		$email_subject = $this->get_fully_paid_subject() ? $this->get_fully_paid_subject() : 'Fully paid';
-
+		$property_id = get_field('property_post');
 		$email_to_send = str_replace( 'BOOKING_ID', 'HRV-' . get_the_ID(), $email_to_send );
 		$email_to_send = str_replace( 'NO_ADULTS', get_field( 'adult' ), $email_to_send );
 		$email_to_send = str_replace( 'NO_NIGHTS', get_field( 'no_of_nights' ), $email_to_send );
@@ -2004,10 +2004,10 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 		$email_to_send = str_replace( 'OTHER_ADDONS', $other_addons, $email_to_send );
 		$email_to_send = str_replace( 'DUE_DATE', get_field( 'due_date' ), $email_to_send );
 		$email_to_send = str_replace( 'INVOICE_DATE', get_the_date( 'd/M/Y' ), $email_to_send );
-		$email_to_send = str_replace( 'DIRECTIONS_FROM_AIRPORT', get_field( 'directions_from_airport' ), $email_to_send );
+		$email_to_send = str_replace( 'DIRECTIONS_FROM_AIRPORT', get_field( 'directions_from_airport', $property_id ), $email_to_send );
 		$email_to_send = str_replace( 'TOTAL_DEPOSIT', get_field( 'total_amount_paid' ), $email_to_send );
 		$email_to_send = str_replace( 'AMOUNT_PAID', get_field( 'balance' ), $email_to_send );
-		$email_to_send = str_replace( 'CHECKIN_INSTRUCTIONS', get_field( 'checkin_instructions' ), $email_to_send );
+		$email_to_send = str_replace( 'CHECKIN_INSTRUCTIONS', get_field( 'check_in_instructions', $property_id ), $email_to_send );
 		$email = get_field( 'email' );
 		$this->send_hrv_email( $email, $email_subject, $email_to_send );
 		$this->send_hrv_email( get_field( 'admin_email', 'option' ), $email_subject, $email_to_send );
@@ -2095,6 +2095,7 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
                                     booking_golf_email_wrap.style.display = "block";
                                 }
                                 statusText.innerText = "EMAIL SENT";
+                                location.reload();
                             }
                         })
                         .catch((error) => {
