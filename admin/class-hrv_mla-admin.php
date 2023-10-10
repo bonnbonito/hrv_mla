@@ -1867,35 +1867,40 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 
 		ob_start();
 		 wp_nonce_field('paid_email_meta_box', 'paid_meta_box_nonce');
-		 $value = get_post_meta($id, '_paid_email_sent', true);
+		 $customer_sent = get_post_meta($id, '_paid_email_sent', true);
+		 $owner_sent = get_post_meta($id, '_owner_paid_email_sent', true);
 		?>
             <div id="booking-full-email">
                 <label style="margin-bottom: 1em; display: block;"><input type="checkbox" value="yes"
-                        name="paid_email_sent" disabled <?php echo ( 'yes' === $value ? 'checked' : '' ); ?>>Email
+                        name="paid_email_sent" disabled
+                        <?php echo ( 'yes' === $customer_sent ? 'checked' : '' ); ?>>Email
                     already sent?</label>
 
                 <button id="paidEmailBtn"
-                    class="button button-primary button-large"><?php echo ( 'yes' === $value ? 'Send Fully Paid Email Again?' : 'Send Fully Paid Email' ); ?></button>
+                    class="button button-primary button-large"><?php echo ( 'yes' === $customer_sent ? 'Send Fully Paid Email Again?' : 'Send Fully Paid Email' ); ?></button>
 
                 <hr>
                 <label style="margin-bottom: 1em; display: block;"><input type="checkbox" value="yes"
-                        name="owner_paid_email_sent" disabled <?php echo ( 'yes' === $value ? 'checked' : '' ); ?>>Email
+                        name="owner_paid_email_sent" disabled
+                        <?php echo ( 'yes' === $owner_sent ? 'checked' : '' ); ?>>Email
                     already sent?</label>
 
                 <button id="ownerPaidEmailBtn"
-                    class="button button-primary button-large"><?php echo ( 'yes' === $value ? 'Send Fully Paid Email To Owner Again?' : 'Send Fully Paid Email to Owner' ); ?></button>
+                    class="button button-primary button-large"><?php echo ( 'yes' === $owner_sent ? 'Send Fully Paid Email To Owner Again?' : 'Send Fully Paid Email to Owner' ); ?></button>
 
 
                 <script>
                 const paidEmailBtn = document.getElementById('paidEmailBtn');
-                if (paidEmailBtn) {
-                    paidEmailBtn.addEventListener('click', function(e) {
+                const ownerPaidEmailBtn = document.getElementById('ownerPaidEmailBtn');
+
+                function sendEmailFunction(elem, action) {
+                    elem.addEventListener('click', function(e) {
                         e.preventDefault();
-                        paidEmailBtn.setAttribute('disabled', 'disabled');
-                        paidEmailBtn.innerHTML = 'Sending...';
+                        elem.setAttribute('disabled', 'disabled');
+                        elem.innerHTML = 'Sending...';
 
                         const form = new FormData();
-                        form.append('action', 'send_booking_paid_email');
+                        form.append('action', action);
                         form.append('nonce', XERO.golfnonce);
                         form.append('post_id', <?php echo $id; ?>);
 
@@ -1914,7 +1919,7 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
                             .then((data) => {
                                 if (data) {
                                     console.log(data);
-                                    paidEmailBtn.innerHTML = 'Sent';
+                                    elem.innerHTML = 'Sent';
                                     location.reload();
                                 }
                             })
@@ -1925,6 +1930,9 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 
                     });
                 }
+
+                paidEmailBtn(paidEmailBtn, 'send_booking_paid_email');
+                paidEmailBtn(ownerPaidEmailBtn, 'send_owner_booking_paid_email');
                 </script>
 
             </div>
@@ -2257,6 +2265,20 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 		 }
 
 		$this->full_paid_process( $_POST['post_id'] );
+	 
+		 $status['post'] = $_POST;
+		 wp_send_json( $status );
+	}
+
+	public function send_owner_booking_paid_email() {
+		 $status = array(
+			 'code' => 2,
+		 );
+		 if ( ! wp_verify_nonce( $_POST['nonce'], 'golf-nonce' ) ) {
+			 wp_send_json( 'Nonce Error' );
+		 }
+
+		$this->owner_full_paid_process( $_POST['post_id'] );
 	 
 		 $status['post'] = $_POST;
 		 wp_send_json( $status );
