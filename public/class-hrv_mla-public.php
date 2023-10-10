@@ -657,6 +657,7 @@ class HRV_MLA_Public {
 				update_field( 'tax_rate', $tax_rate, $booking_id );
 				update_field( 'extras_pricing', $extras_pricing, $booking_id );
 				update_post_meta( $booking_id, 'payment_email_sent', 'no' );
+                update_post_meta( $booking_id, 'manual_booking', 'no' );
 
 				if ( $api_profit ) {
 					update_field( 'api_profit', $api_profit, $booking_id );
@@ -781,6 +782,8 @@ $owner_total_price = ((int) $total_room_rate - (int) $api_profit) + $extra_owner
 }
 
 update_field('total_payment_to_owner', $owner_total_price, $booking_id);
+
+update_field('api_profit', $total_price - $owner_total_price, $booking_id); /**THISSSS */
 
 if ( $days_left <= $hrv_admin->days_to_notify ) {
     $request_payment_email_content = $hrv_admin->get_request_payment_content();

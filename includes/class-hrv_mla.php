@@ -171,12 +171,15 @@ class HRV_MLA {
 		$this->loader->add_action( 'acf/save_post', $plugin_admin, 'calculate_total_price' );
 		$this->loader->add_action( 'acf/save_post', $plugin_admin, 'calculate_total_extra_price' );
 		$this->loader->add_action( 'acf/save_post', $plugin_admin, 'calculate_deposit' );
+		$this->loader->add_action( 'acf/save_post', $plugin_admin, 'populate_booking_fields' );
 		$this->loader->add_action( 'init', $plugin_admin, 'booking_register_query_vars' );
 		$this->loader->add_action( 'load-post.php', $plugin_admin, 'booking_golf_email_metabox' );
 		$this->loader->add_action( 'load-post.php', $plugin_admin, 'booking_paid_email_metabox' );
+		$this->loader->add_action( 'load-post.php', $plugin_admin, 'booking_manual_email_metabox' );
 		$this->loader->add_action( 'wp_ajax_send_golf_booking_email', $plugin_admin, 'send_golf_booking_email' );
 		$this->loader->add_action( 'wp_ajax_send_booking_paid_email', $plugin_admin, 'send_booking_paid_email' );
-		$this->loader->add_action( 'wp_ajax_send_owner_booking_paid_email', $plugin_admin, 'send_owner_booking_paid_email' );
+		$this->loader->add_action( 'wp_ajax_send_owner_manual_booking_email', $plugin_admin, 'send_owner_manual_booking_email' );
+		$this->loader->add_action( 'wp_ajax_send_customer_manual_booking_email', $plugin_admin, 'send_customer_manual_booking_email' );
 		$this->loader->add_action( 'manage_posts_extra_tablenav', $plugin_admin, 'render_owner_filter_options' );
 		$this->loader->add_filter( 'acf/load_field/name=booking_property_owner', $plugin_admin, 'owner_radio_values' );
 		$this->loader->add_action( 'acf/save_post', $plugin_admin, 'bookings_save_post' );
