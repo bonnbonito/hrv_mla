@@ -180,10 +180,11 @@ class HRV_MLA {
 		$this->loader->add_filter( 'acf/load_field/name=booking_property_owner', $plugin_admin, 'owner_radio_values' );
 		$this->loader->add_action( 'acf/save_post', $plugin_admin, 'bookings_save_post' );
 		$this->loader->add_action( 'acf/save_post', $plugin_admin, 'update_property_address' );
-		$this->loader->add_action( 'save_post', $plugin_admin, 'booking_paid_save_post' );
+		//$this->loader->add_action( 'save_post', $plugin_admin, 'booking_paid_save_post' );
 		$this->loader->add_filter( 'acf/prepare_field/name=total_amount_paid', $plugin_admin, 'acf_diable_field' );
 		$this->loader->add_filter( 'acf/prepare_field/name=balance', $plugin_admin, 'acf_diable_field' );
 		$this->loader->add_filter( 'acf/prepare_field/name=booking_property_address', $plugin_admin, 'acf_diable_field' );
+		$this->loader->add_filter( 'acf/prepare_field/name=total_payment_to_owner', $plugin_admin, 'acf_diable_field' );
 
 	}
 

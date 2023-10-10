@@ -444,7 +444,7 @@ class HRV_MLA_Public {
 		}
 
 		?>
-<div class="property-result-wrap">
+<div class="property-result-wrap" id="<?php $id; ?>">
     <div class="img-wrap-property">
         <?php echo get_the_post_thumbnail( $id, 'full' ); ?>
 
@@ -677,11 +677,14 @@ class HRV_MLA_Public {
 				$other_addons = '';
 				if ( ! empty( $extracostname ) ) {
 					foreach ( $extracostname as $key => $cost ) {
+                        $owner_price = $extracostoriginalprice[ $key ] * $nights;
+                        $commission = $extracostprice[ $key ] - $owner_price;
 						$rows[]        = array(
 							'extra_cost'       => $cost,
 							'price'            => $extracostprice[ $key ],
 							'owner_percentage' => $extracostownerpercent[ $key ],
-                            'owner_price' => $extracostoriginalprice[ $key ] * $nights,
+                            'owner_price' => $owner_price,
+                            'commission'  => $commission,
 						);
 						$other_addons .= '<tr>
 							<td>' . $cost . '</td>
@@ -773,7 +776,11 @@ $other_addons_admin .= '<tr class="item">
 if ( $api_price == 0 ) {
 $owner_total_price = $total_room_rate + $extra_owner_total;
 $profit = $compute_admin + $owner_price;
+} else {
+$owner_total_price = ((int) $total_room_rate - (int) $api_profit) + $extra_owner_total;
 }
+
+update_field('total_payment_to_owner', $owner_total_price, $booking_id);
 
 if ( $days_left <= $hrv_admin->days_to_notify ) {
     $request_payment_email_content = $hrv_admin->get_request_payment_content();
@@ -1003,6 +1010,7 @@ if ( $days_left <= $hrv_admin->days_to_notify ) {
     $owner_email_subject = str_replace( '[REF_#]', $booking_id, $owner_email_subject );
     $owner_email_subject = str_replace( '[GUEST_NAME]', $firstname . ' ' . $surname, $owner_email_subject );
     $owner_email_subject = str_replace( '[OWNER_NAME]', $owner_name, $owner_email_subject );
+    $owner_email_subject = str_replace( '[PROPERTY ADDRESS]', get_field( 'address', $property ), $owner_email_subject);
     $email_to_owner_content = str_replace( '[OWNER_NAME]', $owner_name, $email_to_owner );
 
 
@@ -1362,8 +1370,6 @@ if ( $days_left <= $hrv_admin->days_to_notify ) {
 
                     const data = await response.json();
 
-                    console.log(data);
-
                     if (data.is_available === 'available') {
                         villaResults.insertAdjacentHTML('beforeend', data.content);
                         return {
@@ -1410,6 +1416,7 @@ if ( $days_left <= $hrv_admin->days_to_notify ) {
                 const upBed = getBeds + 1;
                 const ids = HRV.properties_result_ids[beds];
                 const fxPromises = ids?.map((id) => is_available(id));
+                const propertyResults = document.getElementById('villaResults').innerHTML;
 
                 searchingText.innerText = beds > 0 ? "Searching properties with " + beds + " beds" :
                     "Searching properties";
@@ -1424,6 +1431,16 @@ if ( $days_left <= $hrv_admin->days_to_notify ) {
                     if (typeof ids === 'undefined') {
                         document.querySelector('.noresults').style.display = 'flex';
                     }
+
+                    console.log('BEDS: ' + beds);
+                    loading.style.display = 'none';
+                    villaResults.classList.remove('searching');
+                    console.log('DONE');
+
+
+
+                    // Log the total filtered values length
+                    console.log('Total Filtered Values Length:', totalFilteredValues);
 
                     return;
                 }
@@ -1459,9 +1476,6 @@ if ( $days_left <= $hrv_admin->days_to_notify ) {
                             loading.style.display = 'none';
                             villaResults.classList.remove('searching');
                             console.log('DONE');
-                            const propertyResults = document.getElementById('villaResults').innerHTML;
-                            localStorage.setItem('propertyResults', propertyResults);
-                            localStorage.setItem('propertyResultsUrl', window.location.search);
 
                             // Log the total filtered values length
                             console.log('Total Filtered Values Length:', totalFilteredValues);
@@ -1470,6 +1484,9 @@ if ( $days_left <= $hrv_admin->days_to_notify ) {
                     .catch((error) => {
                         console.error(error);
                     });
+
+                localStorage.setItem('propertyResults', propertyResults);
+                localStorage.setItem('propertyResultsUrl', window.location.search);
             }
             </script>
             <?php

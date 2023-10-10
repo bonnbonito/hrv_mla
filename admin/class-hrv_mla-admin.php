@@ -1790,12 +1790,14 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 
 			if ( get_field( 'api_price', $post_id ) ) {
 				$total_all                         = 0;
+				$owner_total = 0;		
 				$total_ciirus_price_with_comission = get_field( 'total_ciirus_price_with_comission', $post_id );
 				$extra_costs                       = get_field( 'extra_cost', $post_id );
 
 				if ( $extra_costs ) {
 					foreach ( $extra_costs as $cost ) {
 						$total_all = $total_all + $cost['price'];
+						$owner_total = $owner_total + $cost['owner_price'];
 					}
 				}
 
@@ -1809,8 +1811,11 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 
 				$total_price_and_extras = $total_all + $total_ciirus_price_with_comission;
 
+				$total_owner_amount = $owner_total + get_field('ciirus_room_price', $post_id);
+
 				update_field( 'extra_price', $total_all, $post_id );
 				update_field( 'total_price_and_extras', $total_price_and_extras, $post_id );
+				update_field( 'total_payment_to_owner', $total_owner_amount, $post_id );
 			}
 		}
 	}
@@ -1869,7 +1874,17 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
                         name="paid_email_sent" disabled <?php echo ( 'yes' === $value ? 'checked' : '' ); ?>>Email
                     already sent?</label>
 
-                <button id="paidEmailBtn" class="button button-success button-large">Send Fully Paid Email</button>
+                <button id="paidEmailBtn"
+                    class="button button-primary button-large"><?php echo ( 'yes' === $value ? 'Send Fully Paid Email Again?' : 'Send Fully Paid Email' ); ?></button>
+
+                <hr>
+                <label style="margin-bottom: 1em; display: block;"><input type="checkbox" value="yes"
+                        name="owner_paid_email_sent" disabled <?php echo ( 'yes' === $value ? 'checked' : '' ); ?>>Email
+                    already sent?</label>
+
+                <button id="ownerPaidEmailBtn"
+                    class="button button-primary button-large"><?php echo ( 'yes' === $value ? 'Send Fully Paid Email To Owner Again?' : 'Send Fully Paid Email to Owner' ); ?></button>
+
 
                 <script>
                 const paidEmailBtn = document.getElementById('paidEmailBtn');
@@ -1900,6 +1915,7 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
                                 if (data) {
                                     console.log(data);
                                     paidEmailBtn.innerHTML = 'Sent';
+                                    location.reload();
                                 }
                             })
                             .catch((error) => {
@@ -1949,6 +1965,116 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 
 	}
 
+	public function owner_full_paid_process( $post_id ) {
+
+		global $post;
+		$post = get_post( $post_id );
+		$test_email             = 'bonnbonito@gmail.com';
+		
+
+		setup_postdata($post);
+		
+		$arrival_date  = strtotime( get_field( 'arrival_date' ) );
+		$property_id = get_field('property_post')[0];
+		$property_owner_id = get_field( 'property_owner', $property_id );
+		$property_owner_email = get_field('owner_email'. $property_owner_id);
+		$today         = time();
+		$diff          = $arrival_date - $today;
+		$days          = floor( $diff / ( 60 * 60 * 24 ) );
+		$total_price   = get_field( 'total_price' );
+		$deposit_price = $total_price - ( $total_price * 0.10 );
+		$deposit_price = $deposit_price > $this->deposit ? $this->deposit : $deposit_price;
+
+		if ( $property_owner_email ) {
+			if ( get_field( 'testing', 'option' ) ) {
+				$property_owner_email = $test_email;
+			}
+		}
+
+	
+		$email_to_owner = $this->get_fully_paid_content_owner();
+		if ( get_field('api_price') ) {
+
+			$email_to_owner = str_replace( '[BOOKING_DETAILS]', $this->booking_owner_details_content_api(), $email_to_owner );
+			$email_to_owner = str_replace( 'TOTAL_ROOM_RATE', get_field('total_payment_to_owner'), $email_to_owner );
+
+		} else {
+
+			$email_to_owner = str_replace( '[BOOKING_DETAILS]', $this->booking_owner_details_content(), $email_to_owner );
+			$email_to_owner = str_replace( 'HOME_RENTAL_PRICE', get_field('owner_total_price'), $email_to_owner  );
+		}
+		
+
+		
+
+		$other_addons = '';
+
+		if ( have_rows( 'extra_cost' ) ) :
+			while ( have_rows( 'extra_cost' ) ) :
+				the_row();
+				$other_addons .= '<tr class="item">
+			<td>' . get_sub_field( 'extra_cost' ) . '</td>
+			<td>$' . get_sub_field( 'owner_price' ) . '</td>
+			</tr>';
+			endwhile;
+		endif;
+
+		$owner_email_subject = $this->get_owner_fully_paid_subject() ? $this->get_owner_fully_paid_subject() : 'Fully paid';
+
+		$email_to_owner = $hrv_admin->get_to_owner_email_content();
+		if ( $api_price == 1 ) {
+		$email_to_owner = str_replace(
+		'[OWNER_DETAILS]',
+		$hrv_admin->booking_owner_details_content_api(),
+		$email_to_owner
+		);
+		} else {
+		$email_to_owner = str_replace( '[OWNER_DETAILS]', $hrv_admin->booking_owner_details_content(), $email_to_owner );
+		}
+
+		$email_to_owner = str_replace( 'BOOKING_ID', 'HRV-' . $booking_id, $email_to_owner );
+		$email_to_owner = str_replace( 'NO_ADULTS', $adults, $email_to_owner );
+		$email_to_owner = str_replace( 'NO_NIGHTS', $nights, $email_to_owner );
+		$email_to_owner = str_replace( 'NO_CHILDREN', $children, $email_to_owner );
+		$email_to_owner = str_replace( 'DUE_DATE', $due_date, $email_to_owner );
+		$email_to_owner = str_replace( '[GUEST_NAME]', $firstname . ' ' . $surname, $email_to_owner );
+		$email_to_owner = str_replace( 'DEPARTURE_DATE', date( 'd/M/Y', strtotime( $enddate ) ), $email_to_owner );
+		$email_to_owner = str_replace( 'ARRIVAL_DATE', date( 'd/M/Y', strtotime( $startdate ) ), $email_to_owner );
+		$email_to_owner = str_replace( 'PROPERTY_NAME', get_field( 'address', $property ), $email_to_owner );
+		if ( $api_price == 1 ) {
+		$email_to_owner = str_replace( 'TOTAL_ROOM_RATE', $total_room_rate, $email_to_owner );
+		$email_to_owner = str_replace( 'TOTAL_PRICE', $owner_price + $extra_owner_total, $email_to_owner );
+		} else {
+		$email_to_owner = str_replace( 'TOTAL_PRICE', $owner_total_price, $email_to_owner );
+		}
+		$email_to_owner = str_replace( 'RENT_PRICE', $total_room_rate, $email_to_owner );
+		$email_to_owner = str_replace( 'HOME_RENTAL_PRICE', $owner_price, $email_to_owner );
+		$email_to_owner = str_replace( 'OTHER_ADDONS', $other_addons_owner, $email_to_owner );
+		$email_to_owner = str_replace( 'INVOICE_DATE', date( 'd/M/Y' ), $email_to_owner );
+		$owner_email_subject = $hrv_admin->get_to_owner_email_subject() ? $hrv_admin->get_to_owner_email_subject() : 'Your
+		property is booked.';
+		$owner_email_subject = str_replace( '[REF_#]', $booking_id, $owner_email_subject );
+		$owner_email_subject = str_replace( '[GUEST_NAME]', $firstname . ' ' . $surname, $owner_email_subject );
+		$owner_email_subject = str_replace( '[OWNER_NAME]', $owner_name, $owner_email_subject );
+		$owner_email_subject = str_replace( '[PROPERTY ADDRESS]', get_field( 'address', $property ), $owner_email_subject);
+		$email_to_owner = str_replace( '[OWNER_NAME]', $owner_name, $email_to_owner );
+
+
+		if ( $property_owner_email ) {
+			if ( get_field( 'testing', 'option' ) ) {
+			$property_owner_email = $test_email;
+			}
+		}
+		
+		
+		$this->send_hrv_email( $property_owner_email, $owner_email_subject, $email_to_owner );
+
+		wp_reset_postdata(); 
+		
+		update_post_meta($post_id, '_owner_paid_email_sent', 'yes');
+
+	}
+
 	public function full_paid_process( $post_id ) {
 		global $post;
 		$post = get_post( $post_id );
@@ -1956,6 +2082,7 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 		setup_postdata($post);
 		
 		$arrival_date  = strtotime( get_field( 'arrival_date' ) );
+		$property_id = get_field('property_post')[0];
 		$today         = time();
 		$diff          = $arrival_date - $today;
 		$days          = floor( $diff / ( 60 * 60 * 24 ) );
@@ -1965,12 +2092,20 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 
 	
 		$email_to_send = $this->get_fully_paid_content();
+		$email_to_owner = $this->get_fully_paid_content_owner();
 		if ( get_field('api_price') ) {
 			$email_to_send = str_replace( '[BOOKING_DETAILS]', $this->fully_paid_details_content_api(), $email_to_send );
 			$email_to_send = str_replace( 'TOTAL_ROOM_RATE', get_field('total_ciirus_price_with_comission'), $email_to_send );
+
+			$email_to_owner = str_replace( '[BOOKING_DETAILS]', $this->fully_paid_details_content_api(), $email_to_owner );
+			$email_to_owner = str_replace( 'TOTAL_ROOM_RATE', get_field('total_ciirus_price_with_comission'), $email_to_owner );
+
 		} else {
 			$email_to_send = str_replace( '[BOOKING_DETAILS]', $this->fully_paid_details_content(), $email_to_send );
 			$email_to_send = str_replace( 'HOME_RENTAL_PRICE', get_field('booking_season_price'), $email_to_send  );
+
+			$email_to_owner = str_replace( '[BOOKING_DETAILS]', $this->fully_paid_details_content(), $email_to_owner );
+			$email_to_owner = str_replace( 'HOME_RENTAL_PRICE', get_field('owner_total_price'), $email_to_owner  );
 		}
 		
 
@@ -1989,7 +2124,8 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 		endif;
 
 		$email_subject = $this->get_fully_paid_subject() ? $this->get_fully_paid_subject() : 'Fully paid';
-		$property_id = get_field('property_post');
+		$owner_email_subject = $this->get_fully_paid_subject() ? $this->get_fully_paid_subject() : 'Fully paid';
+		
 		$email_to_send = str_replace( 'BOOKING_ID', 'HRV-' . get_the_ID(), $email_to_send );
 		$email_to_send = str_replace( 'NO_ADULTS', get_field( 'adult' ), $email_to_send );
 		$email_to_send = str_replace( 'NO_NIGHTS', get_field( 'no_of_nights' ), $email_to_send );
@@ -2007,10 +2143,12 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 		$email_to_send = str_replace( 'DIRECTIONS_FROM_AIRPORT', get_field( 'directions_from_airport', $property_id ), $email_to_send );
 		$email_to_send = str_replace( 'TOTAL_DEPOSIT', get_field( 'total_amount_paid' ), $email_to_send );
 		$email_to_send = str_replace( 'AMOUNT_PAID', get_field( 'balance' ), $email_to_send );
-		$email_to_send = str_replace( 'CHECKIN_INSTRUCTIONS', get_field( 'check_in_instructions', $property_id ), $email_to_send );
+		$email_to_send = str_replace( 'CHECK_IN_INSTRUCTIONS', get_field( 'check_in_instructions', $property_id ), $email_to_send );
+		$email_to_send = str_replace( 'SPECIFIC_CHECK_IN_INSTRUCTIONS', get_field( 'specific_check_in_instructions', $property_id), $email_to_send);
+		$email_to_send = str_replace( 'ALARM_INFORMATION', get_field( 'alarm_information', $property_id), $email_to_send);
 		$email = get_field( 'email' );
 		$this->send_hrv_email( $email, $email_subject, $email_to_send );
-		$this->send_hrv_email( get_field( 'admin_email', 'option' ), $email_subject, $email_to_send );
+		//$this->send_hrv_email( get_field( 'admin_email', 'option' ), $email_subject, $email_to_send );
 
 		wp_reset_postdata(); 
 		
@@ -2284,6 +2422,10 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 		return get_field('fully_paid_email_subject', 'option');
 	}
 
+	public function get_owner_fully_paid_subject() {
+		return get_field('fully_paid_email_subject_owner', 'option');
+	}
+
 	public function fully_paid_details_content() {
 		 ob_start();
 		require 'emails/fully-paid-details.html';
@@ -2371,8 +2513,17 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 	 * Get fully paid Email content
 	 */
 	public function get_fully_paid_content() {
-		 $content = $this->fully_paid_email_content();
+		$content = $this->fully_paid_email_content();
 		$content  = str_replace( 'EMAIL_CONTENT', get_field( 'fully_paid_email_content', 'option' ), $content );
+		return $content;
+	}
+
+	/**
+	 * Get fully paid Email content - Owner
+	 */
+	public function get_fully_paid_content_owner() {
+		$content = $this->fully_paid_email_content();
+		$content  = str_replace( 'EMAIL_CONTENT', get_field( 'fully_paid_email_content_owner', 'option' ), $content );
 		return $content;
 	}
 
