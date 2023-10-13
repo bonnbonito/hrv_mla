@@ -1375,6 +1375,8 @@ if ( $days_left <= $hrv_admin->days_to_notify ) {
 
                     if (data.is_available === 'available') {
                         villaResults.insertAdjacentHTML('beforeend', data.content);
+                        localStorage.setItem('propertyResults', propertyResults);
+                        localStorage.setItem('propertyResultsUrl', window.location.search);
                         return {
                             id: id,
                             status: data.is_available
@@ -1487,9 +1489,6 @@ if ( $days_left <= $hrv_admin->days_to_notify ) {
                     .catch((error) => {
                         console.error(error);
                     });
-
-                localStorage.setItem('propertyResults', propertyResults);
-                localStorage.setItem('propertyResultsUrl', window.location.search);
             }
             </script>
             <?php
