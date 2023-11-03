@@ -1433,11 +1433,15 @@ if ( $days_left <= $hrv_admin->days_to_notify ) {
                     })
                     .catch((error) => {
                         console.error(error);
-                    });
+                    }); <<
+                << << < HEAD
 
 
 
 
+                    ===
+                    === = >>>
+                    >>> > 1 b9d268ad3aa19e4794339ac9384b0c658a1e5e1
             }
             </script>
             <?php
