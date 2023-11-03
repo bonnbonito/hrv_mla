@@ -129,6 +129,7 @@ class HRV_MLA_Public {
 			array(
 				'post_type'      => 'properties',
 				'posts_per_page' => -1,
+                'post_status'    => 'publish'
 			)
 		);
 		$ids   = array();
@@ -148,14 +149,15 @@ class HRV_MLA_Public {
 
 		$ids = array();
 
-		
+
         $args = array(
             'post_type'      => 'properties',
             'posts_per_page' => -1,
+            'post_status'    => 'publish'
         );
 
         while ( $bedrooms < 11 ) {
-        
+
         if ( $bedrooms !== 0 ) {
             $args['meta_key']    = 'bedrooms';
             $args['meta_value']  = $bedrooms;
@@ -200,6 +202,7 @@ class HRV_MLA_Public {
 			array(
 				'post_type'      => 'properties',
 				'posts_per_page' => -1,
+                'post_status'    => 'publish',
 			)
 		);
 		$ids   = array();
@@ -297,6 +300,7 @@ class HRV_MLA_Public {
 			'post_type'      => 'properties',
 			'numberposts'    => -1,
 			'posts_per_page' => -1,
+            'post_status'    => 'publish',
 		);
 
 		if ( $resort && $resort !== 'all' ) {
@@ -469,7 +473,6 @@ class HRV_MLA_Public {
         <?php
 
 		if ( $price && $price['total'] > 0 ) {
-			print_r( $price );
 			?>
         <div class="property-results-price">
             Price: <strong>&dollar;<?php echo round( $price['total'] ); ?></strong>
@@ -656,7 +659,7 @@ class HRV_MLA_Public {
 				update_field( 'pricing_additional', $additional, $booking_id );
 				update_field( 'tax_rate', $tax_rate, $booking_id );
 				update_field( 'extras_pricing', $extras_pricing, $booking_id );
-				update_post_meta( $booking_id, 'payment_email_sent', 'no' );
+				update_post_meta( $booking_id, 'reminder_email_sent', 'no' );
                 update_post_meta( $booking_id, 'manual_booking', 'no' );
 
 				if ( $api_profit ) {
@@ -786,70 +789,9 @@ update_field('total_payment_to_owner', $owner_total_price, $booking_id);
 update_field('api_profit', $total_price - $owner_total_price, $booking_id); /**THISSSS */
 
 if ( $days_left <= $hrv_admin->days_to_notify ) {
-    $request_payment_email_content = $hrv_admin->get_request_payment_content();
-    $request_payment_email_content = str_replace( 'BOOKING_ID', 'HRV-' . $booking_id, $request_payment_email_content );
-    $request_payment_email_content = str_replace( 'INVOICE_DATE', date( 'd/M/Y' ), $request_payment_email_content );
-    $directions_acf = get_field( 'directions_from_airport', $property );
-    if ( $api_price == 1 ) {
-    $request_payment_email_content = str_replace(
-    '[BOOKING_DETAILS]',
-    $hrv_admin->booking_details_content_api(),
-    $request_payment_email_content
-    );
-    $request_payment_email_content = str_replace( 'TOTAL_ROOM_RATE', $total_room_rate, $request_payment_email_content );
-    } else {
-    $request_payment_email_content = str_replace(
-    '[BOOKING_DETAILS]',
-    $hrv_admin->booking_details_content(),
-    $request_payment_email_content
-    );
-    }
-    $request_payment_email_content = str_replace( 'NO_ADULTS', $adults, $request_payment_email_content );
-    $request_payment_email_content = str_replace( 'NO_NIGHTS', $nights, $request_payment_email_content );
-    $request_payment_email_content = str_replace( 'NO_CHILDREN', $children, $request_payment_email_content );
-    $request_payment_email_content = str_replace(
-    '[GUEST_NAME]',
-    $firstname . ' ' . $surname,
-    $request_payment_email_content
-    );
-    $request_payment_email_content = str_replace(
-    'DEPARTURE_DATE',
-    date( 'd/M/Y', strtotime( $enddate ) ),
-    $request_payment_email_content
-    );
-    $request_payment_email_content = str_replace(
-    'ARRIVAL_DATE',
-    date( 'd/M/Y', strtotime( $startdate ) ),
-    $request_payment_email_content
-    );
-    $request_payment_email_content = str_replace(
-    'PROPERTY_NAME',
-    get_the_title( $property ),
-    $request_payment_email_content
-    );
-    $request_payment_email_content = str_replace( 'TOTAL_PRICE', $total_price, $request_payment_email_content );
-    $request_payment_email_content = str_replace( 'RENT_PRICE', $bookingprice, $request_payment_email_content );
-    $request_payment_email_content = str_replace( 'HOME_RENTAL_PRICE', $rental_price, $request_payment_email_content );
-    $request_payment_email_content = str_replace( 'TOTAL_DEPOSIT', $deposit_price, $request_payment_email_content );
-    $request_payment_email_content = str_replace(
-    'TOTAL_BALANCE',
-    $total_price - $deposit_price,
-    $request_payment_email_content
-    );
-    $request_payment_email_content = str_replace( 'OTHER_ADDONS', $other_addons, $request_payment_email_content );
-    $request_payment_email_content = str_replace(
-    'DIRECTIONS_FROM_AIRPORT',
-    $directions_acf,
-    $request_payment_email_content
-    );
-    $request_payment_email_content = str_replace( 'DUE_DATE', $due_date, $request_payment_email_content );
 
-    if ( get_field( 'testing', 'option' ) ) {
-    $email = $test_email;
-    }
+    $hrv_admin->send_reminder_email_process( $booking_id );
 
-    $hrv_admin->send_hrv_email( $email, 'Request for payment', $request_payment_email_content );
-    update_post_meta( $booking_id, 'payment_email_sent', 'yes' );
     }
 
     /**
@@ -1375,6 +1317,10 @@ if ( $days_left <= $hrv_admin->days_to_notify ) {
 
                     if (data.is_available === 'available') {
                         villaResults.insertAdjacentHTML('beforeend', data.content);
+
+                        localStorage.setItem('propertyResults', document.getElementById('villaResults').innerHTML);
+                        localStorage.setItem('propertyResultsUrl', window.location.search);
+
                         return {
                             id: id,
                             status: data.is_available
@@ -1439,11 +1385,10 @@ if ( $days_left <= $hrv_admin->days_to_notify ) {
                     loading.style.display = 'none';
                     villaResults.classList.remove('searching');
                     console.log('DONE');
-
-
-
                     // Log the total filtered values length
                     console.log('Total Filtered Values Length:', totalFilteredValues);
+
+
 
                     return;
                 }
@@ -1482,14 +1427,17 @@ if ( $days_left <= $hrv_admin->days_to_notify ) {
 
                             // Log the total filtered values length
                             console.log('Total Filtered Values Length:', totalFilteredValues);
+
                         }
+
                     })
                     .catch((error) => {
                         console.error(error);
                     });
 
-                localStorage.setItem('propertyResults', propertyResults);
-                localStorage.setItem('propertyResultsUrl', window.location.search);
+
+
+
             }
             </script>
             <?php
@@ -1561,6 +1509,7 @@ if ( $days_left <= $hrv_admin->days_to_notify ) {
 				$args         = array(
 					'post_type'   => 'properties',
 					'numberposts' => -1,
+                    'post_status' => 'publish',
 					'meta_key'    => 'bedrooms',
 					'meta_value'  => $bedrooms,
 				);

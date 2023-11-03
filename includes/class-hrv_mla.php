@@ -160,7 +160,7 @@ class HRV_MLA {
 		$this->loader->add_action( 'admin_menu', $plugin_admin, 'add_hrv_page_menu_settings' );
 		$this->loader->add_action( 'init', $plugin_admin, 'add_booking_column' );
 		$this->loader->add_action( 'manage_bookings_posts_custom_column', $plugin_admin, 'hrv_mla_booking_days', 10, 2 );
-		$this->loader->add_action( 'pre_get_posts', $plugin_admin, 'booking_column_sort' );
+		$this->loader->add_action( 'parse_query', $plugin_admin, 'booking_column_sort' );
 		$this->loader->add_action( 'admin_init', $plugin_admin, 'send_ask_payment_email_schedule' );
 		$this->loader->add_action( 'admin_init', $plugin_admin, 'send_ask_review_schedule' );
 		$this->loader->add_action( 'admin_init', $plugin_admin, 'capture_deposit_stripe_schedule' );
@@ -175,21 +175,32 @@ class HRV_MLA {
 		$this->loader->add_action( 'init', $plugin_admin, 'booking_register_query_vars' );
 		$this->loader->add_action( 'load-post.php', $plugin_admin, 'booking_golf_email_metabox' );
 		$this->loader->add_action( 'load-post.php', $plugin_admin, 'booking_paid_email_metabox' );
+		$this->loader->add_action( 'load-post.php', $plugin_admin, 'reminder_email_metabox' );
+		$this->loader->add_action( 'load-post.php', $plugin_admin, 'manual_pricing_metabox' );
 		$this->loader->add_action( 'load-post.php', $plugin_admin, 'booking_manual_email_metabox' );
 		$this->loader->add_action( 'wp_ajax_send_golf_booking_email', $plugin_admin, 'send_golf_booking_email' );
 		$this->loader->add_action( 'wp_ajax_send_booking_paid_email', $plugin_admin, 'send_booking_paid_email' );
 		$this->loader->add_action( 'wp_ajax_send_owner_manual_booking_email', $plugin_admin, 'send_owner_manual_booking_email' );
 		$this->loader->add_action( 'wp_ajax_send_customer_manual_booking_email', $plugin_admin, 'send_customer_manual_booking_email' );
-		$this->loader->add_action( 'manage_posts_extra_tablenav', $plugin_admin, 'render_owner_filter_options' );
+		$this->loader->add_action( 'wp_ajax_send_reminder_email_ajax', $plugin_admin, 'send_reminder_email_ajax' );
+		$this->loader->add_action( 'bulk_edit_custom_box', $plugin_admin, 'owner_filter_dropdown_start', 10 );
+		$this->loader->add_action( 'restrict_manage_posts', $plugin_admin, 'render_owner_filter_options' );
 		$this->loader->add_filter( 'acf/load_field/name=booking_property_owner', $plugin_admin, 'owner_radio_values' );
 		$this->loader->add_action( 'acf/save_post', $plugin_admin, 'bookings_save_post' );
 		$this->loader->add_action( 'acf/save_post', $plugin_admin, 'update_property_address' );
+		$this->loader->add_action( 'acf/save_post', $plugin_admin, 'update_due_date' );
+		$this->loader->add_action( 'acf/save_post', $plugin_admin, 'update_owner_email' );
+		$this->loader->add_action( 'acf/save_post', $plugin_admin, 'update_owner_name' );
+		$this->loader->add_action( 'acf/save_post', $plugin_admin, 'update_total_golf_booking_price' );
+		$this->loader->add_action( 'save_post', $plugin_admin, 'update_manual_pricing_metabox', 20, 2 );
 		//$this->loader->add_action( 'save_post', $plugin_admin, 'booking_paid_save_post' );
 		$this->loader->add_filter( 'acf/prepare_field/name=total_amount_paid', $plugin_admin, 'acf_diable_field' );
 		$this->loader->add_filter( 'acf/prepare_field/name=balance', $plugin_admin, 'acf_diable_field' );
-		$this->loader->add_filter( 'acf/prepare_field/name=booking_property_address', $plugin_admin, 'acf_diable_field' );
 		$this->loader->add_filter( 'acf/prepare_field/name=total_payment_to_owner', $plugin_admin, 'acf_diable_field' );
-
+		$this->loader->add_filter( 'acf/prepare_field/name=no_of_nights', $plugin_admin, 'acf_diable_field' );
+		$this->loader->add_filter( 'acf/prepare_field/name=no_of_bedrooms', $plugin_admin, 'acf_diable_field' );
+		$this->loader->add_filter( 'acf/prepare_field/name=due_date', $plugin_admin, 'acf_diable_field' );
+		$this->loader->add_filter( 'acf/prepare_field/name=total_golf_booking_price', $plugin_admin, 'acf_diable_field' );
 	}
 
 	/**

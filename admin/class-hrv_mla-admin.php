@@ -60,7 +60,7 @@ class HRV_MLA_Admin {
 		$this->ciirus_api      = 'http://api.ciirus.com/CiirusXML.15.025.asmx';
 		$this->ciirus_user     = '74db9a060ce9426';
 		$this->ciirus_password = '4e1276922b63493';
-		$this->days_to_notify  = 36;
+		$this->days_to_notify  = get_field( 'number_of_days', 'option' ) ? (int) get_field( 'number_of_days', 'option' ) : 36;
 		$this->deposit         = get_field( 'stripe_deposit', 'option' ) ? (int) get_field( 'stripe_deposit', 'option' ) : 250;
 	}
 
@@ -187,21 +187,43 @@ class HRV_MLA_Admin {
 	public function add_hrv_page_menu_settings() {
 		add_menu_page( 'Xero Integration', 'Xero Integration', 'manage_options', 'xero-integration', array( $this, 'hrv_xero_integration' ), 'dashicons-controls-repeat' );
 
-		add_submenu_page( 'xero-integration', 'HRV Import', 'HRV Import', 'manage_options', 'hrv-import', array( $this, 'hrv_import_function' ) );
+		//add_submenu_page( 'xero-integration', 'HRV Import', 'HRV Import', 'manage_options', 'hrv-import', array( $this, 'hrv_import_function' ) );
 
-		add_submenu_page( 'xero-integration', 'Booking Import', 'Booking Import', 'manage_options', 'booking-import', array( $this, 'hrv_import_booking_function' ) );
+		//add_submenu_page( 'xero-integration', 'Booking Import', 'Booking Import', 'manage_options', 'booking-import', array( $this, 'hrv_import_booking_function' ) );
 	}
 
 	/**
 	 * Import Old bookings
 	 */
 	public function hrv_import_booking_function() {
-		 global $wpdb;
 
-		$results = $wpdb->get_results( "SELECT * FROM `VillaBookings` WHERE `BookingDate` > '2018-12-30' AND `CancelNo` IS NULL ORDER BY `BookingDate` ASC", ARRAY_A );
+		global $wpdb;
+
+		$results = $wpdb->get_results( "SELECT * FROM `VillaBookings` WHERE `BookingDate` > '2022-12-30' AND `CancelNo` IS NULL ORDER BY `BookingDate` ASC", ARRAY_A );
 
 		foreach ( $results as $result ) {
 			$user = $wpdb->get_row( 'SELECT * FROM `Client` WHERE `ClientID` = ' . $result['ClientID'] );
+
+			$booking_details = $wpdb->get_row( 'SELECT * FROM `VillaBookingDetail` WHERE `BookingID` = ' . $result['BookingID'] );
+
+			$villa = $wpdb->get_row( 'SELECT * FROM `Villa` WHERE `VillaID` = ' . $booking_details->VillaID );
+
+
+
+			$owners = $wpdb->get_row( 'SELECT * FROM `Owners` WHERE `OwnerID` = ' . $booking_details->OwnerID );
+
+			echo '<pre>';
+			print_r($result);
+			print_r($user);
+			echo '</pre>';
+
+			$comments = $result['Comments'];
+			$villa_percentage = $result['commpertage'];
+			$total_price = $booking_details->Pricetous;
+			$villa_name = $villa->VillaName;
+			$villa_address = $villa->Address1 . ' ' . $villa->Address2 . ' ' . $villa->Address3;
+			$owner_name = $owners->OwnerName;
+			$owner_email = $owners->Email;
 
 			$first_name    = $user->FirstName;
 			$last_name     = $user->FamilyName;
@@ -210,7 +232,14 @@ class HRV_MLA_Admin {
 			$arrival       = $result['ArrivalDate'];
 			$departure     = $result['DepartureDate'];
 			$post_date     = date( 'Y-m-d', strtotime( $result['BookingDate'] ) );
-			$booking_title = $result['BookingID'] . ' - ' . $first_name . ' ' . $last_name;
+			$state = $user->state;
+			$postalzipcode = $user->zip;
+
+			$booking_title = 'HRV-' . $result['BookingID'] . ' - ' . $first_name . ' ' . $last_name;
+
+			$phamout = $result['phamount'];
+			$bbqamount = $result['bbqamount'];
+			$commission = $result['commission'];
 
 			$booking = array(
 				'post_type'   => 'bookings',
@@ -223,16 +252,61 @@ class HRV_MLA_Admin {
 			$post_id = post_exists( $booking_title ) or wp_insert_post( $booking );
 
 			if ( $post_id ) {
+				update_field( 'state', $state, $post_id );
+				update_field( 'postalzipcode', $postalzipcode, $post_id );
+				update_post_meta( $post_id, 'manual_booking', 'yes' );
 				update_field( 'first_name', $first_name, $post_id );
 				update_field( 'surname', $last_name, $post_id );
 				update_field( 'email', $email, $post_id );
 				update_field( 'phone', $phone, $post_id );
+				update_field( 'adults', $result['AdultsNo'], $post_id );
+				update_field( 'children', $result['ChildrenNo'], $post_id );
 				update_field( 'arrival_date', date( 'Ymd', strtotime( $arrival ) ), $post_id );
 				update_field( 'end_date', date( 'Ymd', strtotime( $departure ) ), $post_id );
 				update_field( 'no_of_nights', $result['NoofNights'], $post_id );
 				update_field( 'no_of_bedrooms', $result['Noofbedrooms'], $post_id );
-				update_field( 'total_price', $result['PricetoClient'], $post_id );
-				update_field( 'payment_status', 'full', $post_id );
+				update_field( 'booking_season_price', $result['PricetoClient'], $post_id );
+				update_field( 'payment_status', 'deposit', $post_id );
+				update_field( 'booking_property_address', $villa_address, $post_id );
+				update_field( 'property', $villa_name, $post_id );
+				update_field( 'booking_property_owner_name', $owner_name, $post_id );
+				update_field( 'booking_property_owner_email', $owner_email, $post_id );
+			 	update_field( 'comments', $comments, $post_id );
+				update_field( 'total_profit', "", $post_id);
+				update_field( 'owner_total_villa_price', $total_price, $post_id);
+				update_field( 'property_owner_percentage', $villa_percentage, $post_id);
+				update_field( 'old_booking_id', $result['BookingID'], $post_id);
+
+				$rows = array();
+
+				if ( $phamout || $bbqamount ) {
+
+					if ( $phamout ) {
+
+						$rows[]        = array(
+							'extra_cost'       => 'Extra',
+							'price'            => $phamout,
+						);
+
+					}
+
+					if ( $bbqamount ) {
+
+						$rows[]        = array(
+							'extra_cost'       => 'bbqamount',
+							'price'            => $bbqamount,
+						);
+
+					}
+
+
+					update_field( 'field_61fbad0ce3c30', $rows, $post_id );
+				}
+
+				if ( $commission ) {
+					update_field('total_profit', $commission, $post_id);
+				}
+
 
 				$my_post = array(
 					'ID'            => $post_id,
@@ -619,9 +693,9 @@ class HRV_MLA_Admin {
 		}
 
 		if ( 'owner' == $column_name ) {
-			$owner_id = get_field( 'booking_property_owner', $post_id );
-			if ( $owner_id ) {
-				echo get_the_title( $owner_id );
+			$name = get_field( 'booking_property_owner_name', $post_id );
+			if ( $name ) {
+				echo $name;
 			}
 		}
 
@@ -825,7 +899,7 @@ class HRV_MLA_Admin {
 	 */
 	public function send_hrv_email( $to, $subject, $content ) {
 		 $headers  = array( 'Content-Type: text/html; charset=UTF-8' );
-		$headers[] = 'From: HRV Booking <booking@hrv.mlademos.co.uk>';
+		$headers[] = 'From: HRV Booking <admin@highlandsreservevillas.com>';
 
 		if ( get_field( 'testing', 'option' ) ) {
 			$to = 'bonnbonito@gmail.com';
@@ -1444,9 +1518,7 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
             <body>
                 <table border="0" width="90%">
                     <tbody>
-                        <tr>
-                            <td align="center" colspan="5">&nbsp; </td>
-                        </tr>
+
                         <tr>
                             <td align="center" colspan="5">
                                 <font color="#215272" size="7" face="verdana">Golf Agents TeeTime Booking</font>
@@ -1496,11 +1568,11 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
                             </td>
                         </tr>
                         <tr>
-                            <td valign="top" align="center"><b>Date</b></td>
-                            <td valign="top" align="center"><b>Course Name</b></td>
-                            <td valign="top" align="center"><b>Preferred Time </b></td>
-                            <td valign="top" align="center"><b>Holes </b></td>
-                            <td valign="top" align="center"><b>Golfers</b> </td>
+                            <th valign="top" align="center"><b>Date</b></th>
+                            <th valign="top" align="center"><b>Course Name</b></th>
+                            <th valign="top" align="center"><b>Preferred Time </b></th>
+                            <th valign="top" align="center"><b>Holes </b></th>
+                            <th valign="top" align="center"><b>Golfers</b> </th>
                         </tr>
                         <tr>
                             <td colspan="5">
@@ -1508,7 +1580,7 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
                             </td>
                         </tr>
                         <!-- START -->
-                        GOLF_BOOKING_DETAILS
+                        [GOLF_BOOKING_DETAILS]
                         <!-- END -->
 
 
@@ -1593,46 +1665,135 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 			$deposit_price = $deposit_price > $this->deposit ? $this->deposit : $deposit_price;
 
 			if ( $days <= $this->days_to_notify && 'full' !== get_field('payment_status', get_the_ID()) ) {
-				if ( get_post_meta( get_the_ID(), 'payment_email_sent', true ) != 'yes' ) {
-					$request_payment_email_content = $this->request_payment_email_content();
-
-					$other_addons = '';
-
-					if ( have_rows( 'extra_cost' ) ) :
-						while ( have_rows( 'extra_cost' ) ) :
-							the_row();
-							$other_addons .= '<tr class="item">
-						<td>' . get_sub_field( 'extra_cost' ) . '</td>
-						<td>$' . get_sub_field( 'price' ) . '</td>
-						</tr>';
-						endwhile;
-					endif;
-
-					$request_payment_email_content = str_replace( 'BOOKING_ID', 'HRV-' . get_the_ID(), $request_payment_email_content );
-					$request_payment_email_content = str_replace( 'NO_ADULTS', get_field( 'adult' ), $request_payment_email_content );
-					$request_payment_email_content = str_replace( 'NO_NIGHTS', get_field( 'no_of_nights' ), $request_payment_email_content );
-					$request_payment_email_content = str_replace( 'NO_CHILDREN', get_field( 'children' ), $request_payment_email_content );
-					$request_payment_email_content = str_replace( '[GUEST_NAME]', get_field( 'first_name' ) . ' ' . get_field( $surname ), $request_payment_email_content );
-					$request_payment_email_content = str_replace( 'DEPARTURE_DATE', date( 'd/M/Y', strtotime( get_field( 'end_date' ) ) ), $request_payment_email_content );
-					$request_payment_email_content = str_replace( 'ARRIVAL_DATE', date( 'd/M/Y', strtotime( get_field( 'arrival_date' ) ) ), $request_payment_email_content );
-					$request_payment_email_content = str_replace( 'PROPERTY_NAME', get_field( 'property' ), $request_payment_email_content );
-					$request_payment_email_content = str_replace( 'TOTAL_PRICE', $total_price, $request_payment_email_content );
-					$request_payment_email_content = str_replace( 'RENT_PRICE', get_field( 'booking_season_price' ), $request_payment_email_content );
-					$request_payment_email_content = str_replace( 'TOTAL_DEPOSIT', $deposit_price, $request_payment_email_content );
-					$request_payment_email_content = str_replace( 'TOTAL_BALANCE', $total_price - $deposit_price, $request_payment_email_content );
-					$request_payment_email_content = str_replace( 'OTHER_ADDONS', $other_addons, $request_payment_email_content );
-					$request_payment_email_content = str_replace( 'INVOICE_DATE', get_the_date( 'd/M/Y' ), $request_payment_email_content );
-					$request_payment_email_content = str_replace( 'DIRECTIONS_FROM_AIRPORT', get_field( 'directions_from_airport' ), $request_payment_email_content );
-					$email = get_field('email');
-					$this->send_hrv_email( $email, 'Request for payment', $request_payment_email_content );
-					$this->send_hrv_email( get_field( 'admin_email', 'option' ), 'Request for payment', $request_payment_email_content );
-
-					update_post_meta( get_the_ID(), 'payment_email_sent', 'yes' );
+				if ( get_post_meta( get_the_ID(), 'reminder_email_sent', true ) != 'yes' ) {
+					$this->send_reminder_email_process( get_the_ID() );
 				}
 			}
 
 		endwhile;
 		wp_reset_postdata();
+	}
+
+	public function send_reminder_email_process( $post_id, $to_email ) {
+
+		global $post;
+		$post = get_post( $post_id );
+
+		setup_postdata($post);
+
+		$arrival_date  = strtotime( get_field( 'arrival_date' ) );
+		$property_id = get_field('property_post')[0];
+		$today         = time();
+		$diff          = $arrival_date - $today;
+
+		$total_price   = get_field( 'total_price' );
+
+
+		$email_to_send = $this->get_request_payment_content();
+		if ( get_field('api_price') ) {
+			$email_to_send = str_replace( '[BOOKING_DETAILS]', $this->booking_details_content_api(), $email_to_send );
+			$email_to_send = str_replace( 'TOTAL_ROOM_RATE',  number_format(get_field('total_ciirus_price_with_comission'), 2), $email_to_send );
+			$total_price   = get_field( 'total_price' );
+
+		} else {
+			$email_to_send = str_replace( '[BOOKING_DETAILS]', $this->booking_details_content(), $email_to_send );
+			$email_to_send = str_replace( 'HOME_RENTAL_PRICE',  number_format( get_field('booking_season_price'), 2), $email_to_send  );
+			$email_to_send = str_replace( 'TOTAL_PRICE',  number_format( get_field('total_price'), 2), $email_to_send );
+		}
+
+		$golf_bookings = '';
+
+		if ( have_rows( 'golf_booking' ) ) {
+			$golf_bookings .= '<div style="overflow-x:auto;" class="golf-table"><table style="border: 1px solid #000; border-collapse: collapse;" class="golf"><thead>
+						<tr>
+						<th valign="top" align="center" style="border: 1px solid #000; border-collapse: collapse; padding: 5px;">Date</th>
+						<th valign="top" align="center" style="border: 1px solid #000; border-collapse: collapse; padding: 5px;">Golf Course</th>
+						<th valign="top" align="center" style="border: 1px solid #000; border-collapse: collapse; padding: 5px;">Preferred Time</th>
+						<th valign="top" align="center" style="border: 1px solid #000; border-collapse: collapse; padding: 5px;">Number of Holes</th>
+						<th valign="top" align="center" style="border: 1px solid #000; border-collapse: collapse; padding: 5px;">Number of Players</th>
+						</tr>
+					</thead><tbody>';
+			 while ( have_rows( 'golf_booking' ) ) {
+				 the_row();
+				 $golf_courses = get_sub_field( 'golf_course' );
+
+				 $golf_bookings .= '<tr>
+				<td valign="middle" align="center" style="border: 1px solid #000; border-collapse: collapse; padding: 5px;">' . get_sub_field( 'date' ) . '</td>
+				<td valign="middle" align="center" style="border: 1px solid #000; border-collapse: collapse; padding: 5px;">' . get_the_title( $golf_courses ) . '</td>
+				<td valign="middle" align="center" style="border: 1px solid #000; border-collapse: collapse; padding: 5px;">' . get_sub_field( 'preferred_time' ) . '</td>
+				<td valign="middle" align="center" style="border: 1px solid #000; border-collapse: collapse; padding: 5px;">' . get_sub_field( 'number_of_rounds' ) . ' Holes</td>
+				<td valign="middle" align="center" style="border: 1px solid #000; border-collapse: collapse; padding: 5px;">' . get_sub_field( 'number_of_players' ) . ' Golfers</td>
+				</tr>';
+			 }
+
+			 $golf_bookings .= '</tbody></table></div>';
+
+			 $email_to_send = str_replace( '[GOLF_BOOKING_DETAILS]', $golf_bookings, $email_to_send );
+
+		 } else {
+			$email_to_send = str_replace( '[GOLF_BOOKING_DETAILS]', '', $email_to_send );
+		 }
+
+		$total_golf_booking = get_field('total_golf_booking_price');
+
+		if ( $total_golf_booking ) {
+			$golf_content = '<tr class="item">
+                    <td>Golf Fees</td>
+                    <td>$'.number_format( $total_golf_booking, 2).'</td>
+                </tr>';
+			$email_to_send = str_replace('GOLF_FEES', $golf_content, $email_to_send);
+		} else {
+			$email_to_send = str_replace('GOLF_FEES', '', $email_to_send);
+		}
+
+
+
+		$other_addons = '';
+
+		if ( have_rows( 'extra_cost' ) ) :
+			while ( have_rows( 'extra_cost' ) ) :
+				the_row();
+				$other_addons .= '<tr class="item">
+			<td>' . get_sub_field( 'extra_cost' ) . '</td>
+			<td>$' . (get_sub_field( 'price' ) ? number_format( get_sub_field( 'price' ), 2) : '0.00') . '</td>
+			</tr>';
+			endwhile;
+		endif;
+
+		$email_subject = $this->get_reminder_email_subject() ? $this->get_reminder_email_subject() : 'Thanks for enquiring';
+		$email_subject = str_replace( '[REF_#]', 'HRV-' . get_the_ID(), $email_subject );
+		$email_subject = str_replace( '[GUEST_NAME]', get_field( 'first_name' ) . ' ' . get_field( 'surname' ), $email_subject );
+
+		$email_to_send = str_replace( 'BOOKING_ID', 'HRV-' . get_the_ID(), $email_to_send );
+		$email_to_send = str_replace( 'NO_ADULTS', get_field( 'adult' ), $email_to_send );
+		$email_to_send = str_replace( 'NO_NIGHTS', get_field( 'no_of_nights' ), $email_to_send );
+		$email_to_send = str_replace( 'NO_CHILDREN', get_field( 'children' ), $email_to_send );
+		$email_to_send = str_replace( '[GUEST_NAME]', get_field( 'first_name' ) . ' ' . get_field( 'surname' ), $email_to_send );
+		$email_to_send = str_replace( 'DEPARTURE_DATE', date( 'd/M/Y', strtotime( get_field( 'end_date' ) ) ), $email_to_send );
+		$email_to_send = str_replace( 'ARRIVAL_DATE', date( 'd/M/Y', strtotime( get_field( 'arrival_date' ) ) ), $email_to_send );
+		$email_to_send = str_replace( 'PROPERTY_NAME', get_field( 'property' ), $email_to_send );
+		$email_to_send = str_replace( 'PROPERTY_ADDRESS', get_field( 'booking_property_address' ), $email_to_send );
+		$email_to_send = str_replace( 'TOTAL_PRICE',  number_format($total_price, 2), $email_to_send );
+		$email_to_send = str_replace( 'RENT_PRICE',  number_format(get_field( 'booking_season_price' ), 2), $email_to_send );
+		$email_to_send = str_replace( 'TOTAL_BALANCE',  number_format(get_field('balance'), 2), $email_to_send );
+		$email_to_send = str_replace( 'OTHER_ADDONS', $other_addons, $email_to_send );
+		$email_to_send = str_replace( 'DUE_DATE', get_field( 'due_date' ), $email_to_send );
+		$email_to_send = str_replace( 'INVOICE_DATE', get_the_date( 'd/M/Y' ), $email_to_send );
+		$email_to_send = str_replace( 'TOTAL_DEPOSIT',  number_format( get_field( 'total_amount_paid' ), 2), $email_to_send );
+		$email_to_send = str_replace( 'AMOUNT_PAID',  number_format( get_field( 'balance' ), 2), $email_to_send );
+		$email = $to_email ? $to_email : get_field( 'email' );
+
+		$this->send_hrv_email( $email, $email_subject, $email_to_send );
+
+
+		wp_reset_postdata();
+
+		update_post_meta( get_the_ID(), 'reminder_email_sent', 'yes' );
+
+		return array(
+			'email' => $email
+		);
+
 	}
 
 	public function capture_deposit_stripe_function() {
@@ -1660,10 +1821,10 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 			if ( get_field('stripe_payment_intent') && ! get_field('stripe_payment_captured') ) {
 				$secret = get_field( 'testing', 'option' ) ? get_field( 'test_secret_key', 'option' ) : get_field( 'live_secret_key', 'option' );
 				$stripe = new \Stripe\StripeClient( $secret );
-				
-				
+
+
 				$capture = $stripe->paymentIntents->capture(get_field('stripe_payment_intent'), array());
-				
+
 				if ( $capture->status === 'succeeded' ) {
 					update_field( 'stripe_charge_id', $capture->latest_charge, get_the_ID() );
 					update_field('stripe_payment_captured', 1, get_the_ID());
@@ -1677,7 +1838,7 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 	public function acf_diable_field( $field ) {
 		$field['readonly'] = true;
 		return $field;
-	}	
+	}
 
 	public function send_ask_review_email_function() {
 		$query = new WP_Query(
@@ -1699,7 +1860,7 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 			$deposit_price = $deposit_price > $this->deposit ? $this->deposit : $deposit_price;
 
 			if ( $days <= $this->days_to_notify ) {
-				if ( get_post_meta( get_the_ID(), 'payment_email_sent', true ) != 'yes' ) {
+				if ( get_post_meta( get_the_ID(), 'reminder_email_sent', true ) != 'yes' ) {
 					$request_payment_email_content = $this->request_payment_email_content();
 
 					$other_addons = '';
@@ -1709,10 +1870,22 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 							the_row();
 							$other_addons .= '<tr>
 						<td>' . get_sub_field( 'extra_cost' ) . '</td>
-						<td colspan="2" align="right">$' . get_sub_field( 'price' ) . '</td>
+						<td colspan="2" align="right">$' . (get_sub_field( 'price' ) ? number_format(get_sub_field( 'price' ),2) : '0.00') . '</td>
 						</tr>';
 						endwhile;
 					endif;
+
+					$total_golf_booking = get_field('total_golf_booking_price');
+
+					if ( $total_golf_booking ) {
+						$golf_content = '<tr class="item">
+								<td>Golf Fees</td>
+								<td>$'.number_format( $total_golf_booking, 2).'</td>
+							</tr>';
+						$request_payment_email_content = str_replace('GOLF_FEES', $golf_content, $request_payment_email_content);
+					} else {
+						$request_payment_email_content = str_replace('GOLF_FEES', '', $request_payment_email_content);
+					}
 
 					$request_payment_email_content = str_replace( 'BOOKING_ID', 'HRV-' . get_the_ID(), $request_payment_email_content );
 					$request_payment_email_content = str_replace( 'NO_ADULTS', get_field( 'adult' ), $request_payment_email_content );
@@ -1722,6 +1895,7 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 					$request_payment_email_content = str_replace( 'DEPARTURE_DATE', date( 'd/M/Y', strtotime( get_field( 'end_date' ) ) ), $request_payment_email_content );
 					$request_payment_email_content = str_replace( 'ARRIVAL_DATE', date( 'd/M/Y', strtotime( get_field( 'arrival_date' ) ) ), $request_payment_email_content );
 					$request_payment_email_content = str_replace( 'PROPERTY_NAME', get_field( 'property' ), $request_payment_email_content );
+					$request_payment_email_content = str_replace( 'PROPERTY_ADDRESS', get_field( 'booking_property_address' ), $request_payment_email_content );
 					$request_payment_email_content = str_replace( 'TOTAL_PRICE', $total_price, $request_payment_email_content );
 					$request_payment_email_content = str_replace( 'RENT_PRICE', get_field( 'booking_season_price' ), $request_payment_email_content );
 					$request_payment_email_content = str_replace( 'TOTAL_DEPOSIT', $deposit_price, $request_payment_email_content );
@@ -1732,7 +1906,7 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 
 					$this->send_hrv_email( $email, 'Request for payment', $request_payment_email_content );
 
-					update_post_meta( get_the_ID(), 'payment_email_sent', 'yes' );
+					update_post_meta( get_the_ID(), 'reminder_email_sent', 'yes' );
 				}
 			}
 
@@ -1747,27 +1921,65 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 			$additional_deposit = get_field('additional_deposit', $post_id) ? get_field('additional_deposit', $post_id) : 0;
 			$total_amount_paid = $deposit_amount + $additional_deposit;
 			update_field( 'total_amount_paid', $total_amount_paid, $post_id );
-			$balance = $total_price - $total_amount_paid;
+			$balance = $total_price - $total_amount_paid > 0 ? $total_price - $total_amount_paid : 0;
 			update_field( 'balance', $balance, $post_id );
 		}
 	}
 
 	public function update_property_address( $post_id ) {
-		$property_id    = get_field( 'property_post', $post_id )[0];
-		$address = get_field('address', $property_id);
-		update_field('booking_property_address', $address, $post_id);
+		if ( 'bookings' == get_post_type( $post_id ) && ( 'no' !== get_post_meta( $post_id, 'manual_booking', true ) ) ) {
+			$property_id    = get_field( 'property_post', $post_id )[0];
+			if ( $property_id ) {
+				$address = get_field('address', $property_id);
+				if ( get_field('booking_property_address', $post_id) === "" && $address) {
+					update_field('booking_property_address', $address, $post_id);
+				}
+
+			}
+
+		}
+	}
+
+	public function update_booking_property_owner( $post_id ) {
+		if ( 'bookings' == get_post_type( $post_id ) && ( 'no' !== get_post_meta( $post_id, 'manual_booking', true ) ) ) {
+			$property_id    = get_field( 'property_post', $post_id )[0];
+			if ( $property_id ) {
+				$owner = get_field('property_owner', $property_id)[0];
+				$selected = array(
+					'value'=> $owner,
+					'label'=> get_the_title( $owner )
+				);
+				if ( get_field('field_62b5a407bb418', $post_id) === "" && $owner ) {
+					update_field('field_62b5a407bb418', $owner, $post_id);
+				}
+
+			}
+		}
+	}
+
+
+
+	public function update_due_date( $post_id ) {
+		if ( 'bookings' == get_post_type( $post_id ) && ( 'no' !== get_post_meta( $post_id, 'manual_booking', true ) ) ) {
+			$arrival_date    = get_field( 'arrival_date', $post_id );
+			$arrival_timestamp = strtotime( $arrival_date );
+			$due_timestamp = $arrival_timestamp - (36 * 24 * 60 * 60);
+			$due_date = date( 'Ymd', $due_timestamp );
+
+			update_field('due_date', $due_date, $post_id);
+		}
 	}
 
 	public function populate_booking_fields( $post_id ) {
 		if ( 'bookings' == get_post_type( $post_id ) ) {
 
-			
+
 		}
 	}
 
 
 	public function calculate_total_price( $post_id ) {
-		if ( 'bookings' == get_post_type( $post_id ) ) {
+		if ( 'bookings' == get_post_type( $post_id ) && ( 'no' !== get_post_meta( $post_id, 'manual_booking', true ) ) ) {
 			$total_all = 0;
 			if ( ! get_field( 'api_price', $post_id ) ) {
 				$booking_season_price = get_field( 'booking_season_price', $post_id ) ? get_field( 'booking_season_price', $post_id ) : 0;
@@ -1785,7 +1997,7 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 
 				if ( $golf_bookings ) {
 					foreach ( $golf_bookings as $golf ) {
-						$total_all = $total_all + $golf['price'];
+						$total_all = $total_all + ($golf['price'] ? $golf['price'] : 0);
 					}
 				}
 
@@ -1795,20 +2007,24 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 	}
 
 	public function calculate_total_extra_price( $post_id ) {
-		if ( 'bookings' == get_post_type( $post_id ) ) {
+		if ( 'bookings' == get_post_type( $post_id ) && ( 'no' !== get_post_meta( $post_id, 'manual_booking', true ) ) ) {
 			$rows = array();
 			$total_extra_owner = 0;
 			$extra_cost = get_field( 'extra_cost', $post_id );
+
+			if ( ! $extra_cost[0]['price'] ) return;
+
 			foreach ( $extra_cost as $cost ) {
-				$owner_price = $cost['price'] - number_format( round( $cost[ 'price' ] * ( $cost['owner_percentage'] / 100 ), 2 ), 2) ;
+				$owner_price = $cost['owner_percentage'] !== '' && $cost['owner_price'] === '' ? number_format( ($cost['price'] / ( 1 + ( $cost['owner_percentage'] / 100 ))), 2) : $cost['owner_price'];
 				$rows[]        = array(
 					'extra_cost'       => $cost['extra_cost'],
 					'price'            => $cost[ 'price' ],
 					'owner_percentage' => $cost[ 'owner_percentage' ],
 					'owner_price' => $owner_price,
-					'commission'  => $cost[ 'price' ] - $owner_price,
+					'commission'  => $cost['owner_percentage'] !== '' && $cost['owner_price'] === '' ? $cost[ 'price' ] - $owner_price : $cost['commission'],
 				);
 				$total_extra_owner = $total_extra_owner + $owner_price;
+
 			}
 
 			update_field( 'field_61fbad0ce3c30', $rows, $post_id );
@@ -1816,7 +2032,7 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 
 			if ( get_field( 'api_price', $post_id ) ) {
 				$total_all                         = 0;
-				$owner_total = 0;		
+				$owner_total = 0;
 				$total_ciirus_price_with_comission = get_field( 'total_ciirus_price_with_comission', $post_id );
 				$extra_costs                       = get_field( 'extra_cost', $post_id );
 
@@ -1848,20 +2064,32 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 			} else {
 				$booking_season_price = get_field('booking_season_price', $post_id);
 				$property_percentage = get_field('property_owner_percentage', $post_id);
-				$owner_total_villa_price = $booking_season_price - ( $booking_season_price * ($property_percentage/100));
-				update_field('owner_total_villa_price', $owner_total_villa_price, $post_id );
-				$extra_cost = get_field( 'extra_cost', $post_id );
-				$total_extra_owner = 0;
-				foreach ( $extra_cost as $cost ) {
-					$total_extra_owner = $total_extra_owner + $cost['owner_price'];
+				if ( $property_percentage ) {
+					$owner_total_villa_price = round( ($booking_season_price / ( 1 + ($property_percentage/100))), 2);
+
+					if ( get_field('owner_total_villa_price', $post_id) === '' ) {
+						update_field('owner_total_villa_price', $owner_total_villa_price, $post_id );
+					}
+
+
+				}
+
+				$owner_total_price = $owner_total_villa_price + $total_extra_owner;
+
+
+
+				$total_price = get_field('total_price', $post_id);
+				if ( get_field('total_profit', $post_id) === '') {
+					update_field('total_profit', $total_price - $owner_total_price, $post_id);
 				}
 
 				update_field('owner_total_extra_price', $total_extra_owner, $post_id);
 
-				$owner_total_price = $owner_total_villa_price + $total_extra_owner;
-				update_field('owner_total_price', $owner_total_price, $post_id);
-				$total_price = get_field('total_price', $post_id);
-				update_field('total_profit', $total_price - $owner_total_price, $post_id);
+				if (get_field('owner_total_price', $post_id) === '' ) {
+					update_field('owner_total_price', ( get_field('owner_total_villa_price', $post_id) + get_field('owner_total_extra_price', $post_id) ), $post_id);
+				}
+
+
 			}
 		}
 	}
@@ -1887,11 +2115,153 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 		}
 	}
 
+	public function manual_pricing_metabox() {
+		$id = $_GET['post'];
+
+		add_meta_box(
+			'manual_pricing_metabox',
+			__( 'Manual Booking Pricing', 'hrv-mla' ),
+			array( $this, 'manual_pricing_metabox_callback' ),
+			'bookings',
+			'side',
+			'default',
+		);
+	}
+
+	public function manual_pricing_metabox_callback($post) {
+		$id = $post->ID;
+
+		if ( ! isset( $id ) && empty( $id ) ) {
+			return;
+		}
+
+		$manual_pricing = get_post_meta($id, 'manual_booking', true);
+
+
+		ob_start();
+		wp_nonce_field( 'manual_pricing', 'manual_nonce' );
+		?>
+            <label><input type="checkbox" name="manual_booking" id="manual_booking" value="yes"
+                    <?php echo ($manual_pricing === 'yes' ? 'checked' : ''); ?>>Enable Manual Pricing</label>
+
+            <?php
+		echo ob_get_clean();
+	}
+
+	public function update_manual_pricing_metabox( $post_id, $post ) {
+		// nonce check
+		if ( ! isset( $_POST[ 'manual_nonce' ] ) || ! wp_verify_nonce( $_POST[ 'manual_nonce' ], 'manual_pricing' ) ) {
+			return $post_id;
+		}
+
+		if ( defined('DOING_AUTOSAVE') && DOING_AUTOSAVE ) {
+			return $post_id;
+		}
+
+		// define your own post type here
+		if( 'bookings' !== $post->post_type ) {
+			return $post_id;
+		}
+
+		if( isset( $_POST[ 'manual_booking' ] ) ) {
+			update_post_meta( $post_id, 'manual_booking', sanitize_text_field( $_POST[ 'manual_booking' ] ) );
+		} else {
+			delete_post_meta( $post_id, 'manual_booking' );
+		}
+	}
+
+	public function reminder_email_metabox() {
+		$id = $_GET['post'];
+
+		add_meta_box(
+			'reminder_email_metabox',
+			__( 'Reminder Email', 'hrv-mla' ),
+			array( $this, 'reminder_email_metabox_callback' ),
+			'bookings',
+			'side',
+			'default',
+		);
+
+	}
+
+	public function reminder_email_metabox_callback($post) {
+		$id = $post->ID;
+
+		if ( ! isset( $id ) && empty( $id ) ) {
+			return;
+		}
+
+		ob_start();
+		$reminder_sent = get_post_meta($id, 'reminder_email_sent', true);
+		?>
+            <div id="reminder-email">
+                <label style="margin-bottom: 1em; display: block;"><input type="checkbox" value="yes"
+                        name="reminder_email_sent" disabled
+                        <?php echo ( 'yes' === $reminder_sent ? 'checked' : '' ); ?>>Email
+                    already sent?</label>
+
+                <button id="reminderEmailBtn" class="button button-primary button-large"
+                    style="margin-bottom: 10px;">Test Reminder Email</button>
+                <input type="email" name="reminderEmail" id="reminderEmailField" placeholder="Enter email to test."
+                    value="">
+
+                <script>
+                const reminderEmailBtn = document.getElementById('reminderEmailBtn');
+                const reminderEmailField = document.getElementById('reminderEmailField');
+
+                function reminderEmailFunction(elem, action) {
+                    elem.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        elem.setAttribute('disabled', 'disabled');
+                        elem.innerHTML = 'Sending...';
+
+                        const form = new FormData();
+                        form.append('action', action);
+                        form.append('nonce', XERO.golfnonce);
+                        form.append('email', reminderEmailField.value);
+                        form.append('post_id', <?php echo $id; ?>);
+
+                        const params = new URLSearchParams(form);
+                        console.log(params);
+                        fetch(XERO.ajax_url, {
+                                method: 'POST',
+                                credentials: 'same-origin',
+                                headers: {
+                                    'Content-Type': 'application/x-www-form-urlencoded',
+                                    'Cache-Control': 'no-cache',
+                                },
+                                body: params,
+                            })
+                            .then((response) => response.json())
+                            .then((data) => {
+                                if (data) {
+                                    console.log(data);
+                                    elem.innerHTML = 'Sent';
+                                    location.reload();
+                                }
+                            })
+                            .catch((error) => {
+                                console.log('EMAIL FAILED');
+                                console.error(error);
+                            });
+
+                    });
+                }
+
+                reminderEmailFunction(reminderEmailBtn, 'send_reminder_email_ajax');
+                </script>
+
+            </div>
+
+            <?php
+		echo ob_get_clean();
+	}
+
 	public function booking_paid_email_metabox() {
 		$id = $_GET['post'];
 
 		if (isset( $id ) && !empty( $id ) && 'full' === get_field('payment_status', $id ) ) {
-			
+
 			add_meta_box(
 				'booking_paid_email_metabox',
 				__( 'Fully Paid Email', 'hrv-mla' ),
@@ -1901,15 +2271,15 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 				'default',
 			);
 		}
-
 	}
+
 
 	public function booking_manual_email_metabox() {
 		$id = $_GET['post'];
 		if ( 'bookings' != get_post_type( $id ) ) return;
-		
+
 		if (isset( $id ) && !empty( $id ) ) {
-			
+
 			add_meta_box(
 				'booking_manual_email_metabox',
 				__( 'Manual Email', 'hrv-mla' ),
@@ -2113,31 +2483,28 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 		$post = get_post( $post_id );
 
 		setup_postdata($post);
-		
+
 		$arrival_date  = strtotime( get_field( 'arrival_date' ) );
 		$property_id = get_field('property_post')[0];
 		$today         = time();
 		$diff          = $arrival_date - $today;
-		
+
 		$total_price   = get_field( 'total_price' );
 
-		$deposit_price = get_field( 'deposit_amount' ) ? get_field( 'deposit_amount' ) : '0';
-
-
-	
 		$email_to_send = $this->manual_email_content();
 		if ( get_field('api_price') ) {
 			$email_to_send = str_replace( '[BOOKING_DETAILS]', $this->booking_details_content_api(), $email_to_send );
-			$email_to_send = str_replace( 'TOTAL_ROOM_RATE', get_field('total_ciirus_price_with_comission'), $email_to_send );
+			$email_to_send = str_replace( 'TOTAL_ROOM_RATE',  number_format(get_field('total_ciirus_price_with_comission'), 2), $email_to_send );
+			$total_price   = get_field( 'total_price' );
 
 		} else {
 			$email_to_send = str_replace( '[BOOKING_DETAILS]', $this->booking_details_content(), $email_to_send );
-			$email_to_send = str_replace( 'HOME_RENTAL_PRICE', get_field('booking_season_price'), $email_to_send  );
-			$email_to_send = str_replace( 'TOTAL_PRICE', get_field('total_price'), $email_to_send );
+			$email_to_send = str_replace( 'HOME_RENTAL_PRICE',  number_format( get_field('booking_season_price'), 2), $email_to_send  );
+			$email_to_send = str_replace( 'TOTAL_PRICE',  number_format( get_field('total_price'), 2), $email_to_send );
 		}
-		
 
-		
+
+
 
 		$other_addons = '';
 
@@ -2146,14 +2513,53 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 				the_row();
 				$other_addons .= '<tr class="item">
 			<td>' . get_sub_field( 'extra_cost' ) . '</td>
-			<td>$' . get_sub_field( 'price' ) . '</td>
+			<td>$' . (get_sub_field( 'price' ) ? number_format( get_sub_field( 'price' ), 2) : '0.00') . '</td>
 			</tr>';
 			endwhile;
 		endif;
 
-		$email_subject = $this->get_manual_booking_subject() ? $this->get_manual_booking_subject() : 'Thanks for enquiring';
+		$golf_bookings = '';
 
-		
+		if ( have_rows( 'golf_booking') ) {
+			$golf_bookings .= '<div style="overflow-x:auto;" class="golf-table"><table style="border: 1px solid #000; border-collapse: collapse;" class="golf"><thead>
+						<tr>
+						<th valign="top" align="center" style="border: 1px solid #000; border-collapse: collapse; padding: 5px;">Date</th>
+						<th valign="top" align="center" style="border: 1px solid #000; border-collapse: collapse; padding: 5px;">Golf Course</th>
+						<th valign="top" align="center" style="border: 1px solid #000; border-collapse: collapse; padding: 5px;">Preferred Time</th>
+						<th valign="top" align="center" style="border: 1px solid #000; border-collapse: collapse; padding: 5px;">Number of Holes</th>
+						<th valign="top" align="center" style="border: 1px solid #000; border-collapse: collapse; padding: 5px;">Number of Players</th>
+						</tr>
+					</thead><tbody>';
+			 while ( have_rows( 'golf_booking' ) ) {
+				 the_row();
+				 $golf_courses = get_sub_field( 'golf_course' );
+
+				 $golf_bookings .= '<tr>
+				<td valign="middle" align="center" style="border: 1px solid #000; border-collapse: collapse; padding: 5px;">' . get_sub_field( 'date' ) . '</td>
+				<td valign="middle" align="center" style="border: 1px solid #000; border-collapse: collapse; padding: 5px;">' . get_the_title( $golf_courses ) . '</td>
+				<td valign="middle" align="center" style="border: 1px solid #000; border-collapse: collapse; padding: 5px;">' . get_sub_field( 'preferred_time' ) . '</td>
+				<td valign="middle" align="center" style="border: 1px solid #000; border-collapse: collapse; padding: 5px;">' . get_sub_field( 'number_of_rounds' ) . ' Holes</td>
+				<td valign="middle" align="center" style="border: 1px solid #000; border-collapse: collapse; padding: 5px;">' . get_sub_field( 'number_of_players' ) . ' Golfers</td>
+				</tr>';
+			 }
+
+			 $golf_bookings .= '</tbody></table></div>';
+
+			 $email_to_send = str_replace( '[GOLF_BOOKING_DETAILS]', $golf_bookings, $email_to_send );
+
+		 } else {
+			$email_to_send = str_replace( '[GOLF_BOOKING_DETAILS]', '', $email_to_send );
+		 }
+
+
+
+
+
+
+		$email_subject = $this->get_manual_booking_subject() ? $this->get_manual_booking_subject() : 'Thanks for enquiring';
+		$email_subject = str_replace( '[REF_#]', 'HRV-' . get_the_ID(), $email_subject );
+		$email_subject = str_replace( '[GUEST_NAME]', get_field( 'first_name' ) . ' ' . get_field( 'surname' ), $email_subject );
+
 		$email_to_send = str_replace( 'BOOKING_ID', 'HRV-' . get_the_ID(), $email_to_send );
 		$email_to_send = str_replace( 'NO_ADULTS', get_field( 'adult' ), $email_to_send );
 		$email_to_send = str_replace( 'NO_NIGHTS', get_field( 'no_of_nights' ), $email_to_send );
@@ -2162,23 +2568,85 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 		$email_to_send = str_replace( 'DEPARTURE_DATE', date( 'd/M/Y', strtotime( get_field( 'end_date' ) ) ), $email_to_send );
 		$email_to_send = str_replace( 'ARRIVAL_DATE', date( 'd/M/Y', strtotime( get_field( 'arrival_date' ) ) ), $email_to_send );
 		$email_to_send = str_replace( 'PROPERTY_NAME', get_field( 'property' ), $email_to_send );
-		$email_to_send = str_replace( 'TOTAL_PRICE', $total_price, $email_to_send );
-		$email_to_send = str_replace( 'RENT_PRICE', get_field( 'booking_season_price' ), $email_to_send );
-		$email_to_send = str_replace( 'TOTAL_BALANCE', '0.00', $email_to_send );
+		$email_to_send = str_replace( 'PROPERTY_ADDRESS', get_field( 'booking_property_address' ), $email_to_send );
+		$email_to_send = str_replace( 'TOTAL_PRICE',  number_format($total_price, 2), $email_to_send );
+		$email_to_send = str_replace( 'RENT_PRICE',  number_format(get_field( 'booking_season_price' ), 2), $email_to_send );
+		$email_to_send = str_replace( 'TOTAL_BALANCE',  number_format(get_field('balance'), 2), $email_to_send );
 		$email_to_send = str_replace( 'OTHER_ADDONS', $other_addons, $email_to_send );
 		$email_to_send = str_replace( 'DUE_DATE', get_field( 'due_date' ), $email_to_send );
 		$email_to_send = str_replace( 'INVOICE_DATE', get_the_date( 'd/M/Y' ), $email_to_send );
-		$email_to_send = str_replace( 'TOTAL_DEPOSIT', get_field( 'total_amount_paid' ), $email_to_send );
-		$email_to_send = str_replace( 'AMOUNT_PAID', get_field( 'balance' ), $email_to_send );
+		$email_to_send = str_replace( 'TOTAL_DEPOSIT',  number_format( get_field( 'total_amount_paid' ), 2), $email_to_send );
+		$email_to_send = str_replace( 'AMOUNT_PAID',  number_format( get_field( 'balance' ), 2), $email_to_send );
+
+		$total_golf_booking = get_field('total_golf_booking_price');
+		if ( $total_golf_booking ) {
+			$golf_content = '<tr class="item">
+                    <td>Golf Fees</td>
+                    <td>$'.number_format( $total_golf_booking, 2).'</td>
+                </tr>';
+			$email_to_send = str_replace('GOLF_FEES', $golf_content, $email_to_send);
+		} else {
+			$email_to_send = str_replace('GOLF_FEES', '', $email_to_send);
+		}
+
 		$email = get_field( 'email' );
 
 		$this->send_hrv_email( $email, $email_subject, $email_to_send );
-		
+
 		//$this->send_hrv_email( get_field( 'admin_email', 'option' ), $email_subject, $email_to_send );
 
-		wp_reset_postdata(); 
-		
+		wp_reset_postdata();
+
 		update_post_meta($post_id, '_customer_manual_email_sent', 'yes');
+	}
+
+	public function update_owner_email( $post_id ) {
+		if ( 'bookings' == get_post_type( $post_id ) && ( 'no' !== get_post_meta( $post_id, 'manual_booking', true ) ) ) {
+
+			$property_owner_id = get_field( 'booking_property_owner', $post_id );
+			$property_owner_email = get_field('owner_email', $property_owner_id);
+
+			if ( get_field( 'booking_property_owner_email', $post_id) === '' && $property_owner_email) {
+				update_field( 'booking_property_owner_email', $property_owner_email, $post_id);
+			}
+
+		}
+	}
+
+	public function update_owner_name( $post_id ) {
+		if ( 'bookings' == get_post_type( $post_id ) && ( 'no' !== get_post_meta( $post_id, 'manual_booking', true ) ) ) {
+
+			$property_owner_id = get_field( 'booking_property_owner', $post_id );
+			$property_owner_name = get_the_title( $property_owner_id );
+
+			if ( get_field( 'booking_property_owner_name', $post_id) === '' && $property_owner_name) {
+				update_field( 'booking_property_owner_name', $property_owner_name, $post_id);
+			}
+
+		}
+	}
+
+	public function update_total_golf_booking_price( $post_id ) {
+		if ( 'bookings' === get_post_type( $post_id ) ) {
+
+
+			if ( have_rows( 'golf_booking', $post_id ) ) {
+				$total = 0;
+
+				while ( have_rows( 'golf_booking', $post_id ) ) {
+					the_row();
+
+					$total += get_sub_field('price') ? get_sub_field('price') : 0;
+
+				}
+
+			}
+
+			update_field('total_golf_booking_price', $total, $post_id);
+
+
+
+		}
 	}
 
 	public function owner_manual_email_process( $post_id ) {
@@ -2186,44 +2654,23 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 		global $post;
 		$post = get_post( $post_id );
 		$test_email             = 'bonnbonito@gmail.com';
-		
+
 
 		setup_postdata($post);
-		
+
 		$arrival_date  = strtotime( get_field( 'arrival_date' ) );
 		$property_id = get_field('property_post')[0];
-		$property_owner_id = get_field( 'property_owner', $property_id );
-		$property_owner_email = get_field('owner_email'. $property_owner_id);
+		$property_owner_id = get_field( 'booking_property_owner' );
+		$property_owner_email = get_field('booking_property_owner_email');
+		$owner_name = get_the_title( $property_owner_id );
 		$today         = time();
 		$diff          = $arrival_date - $today;
 		$days          = floor( $diff / ( 60 * 60 * 24 ) );
-		$total_price   = get_field( 'total_price' );
-		$booking_id  = 'HRV-'.get_the_ID();
+		$total_price   = get_field( 'owner_total_price' );
+		$booking_id  = 'HRV-'. get_the_ID();
 
 		$api_price = get_field( 'api_price' );
 
-		if ( $property_owner_email ) {
-			if ( get_field( 'testing', 'option' ) ) {
-				$property_owner_email = $test_email;
-			}
-		}
-
-	
-		$email_to_owner = $this->get_fully_paid_content_owner();
-		if ( get_field('api_price') ) {
-
-			$email_to_owner = str_replace( '[BOOKING_DETAILS]', $this->booking_owner_details_content_api(), $email_to_owner );
-			// $email_to_owner = str_replace( 'TOTAL_ROOM_RATE', get_field('total_payment_to_owner'), $email_to_owner );
-			$email_to_owner = str_replace( 'HOME_RENTAL_PRICE', get_field('ciirus_room_price'), $email_to_owner );
-			$email_to_owner = str_replace( 'TOTAL_PRICE', get_field('total_payment_to_owner'), $email_to_owner );
-		} else {
-
-			$email_to_owner = str_replace( '[BOOKING_DETAILS]', $this->booking_owner_details_content(), $email_to_owner );
-			$email_to_owner = str_replace( 'HOME_RENTAL_PRICE', get_field('owner_total_price'), $email_to_owner  );
-		}
-		
-
-		
 
 		$other_addons = '';
 
@@ -2232,40 +2679,45 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 				the_row();
 				$other_addons .= '<tr class="item">
 			<td>' . get_sub_field( 'extra_cost' ) . '</td>
-			<td>$' . get_sub_field( 'owner_price' ) . '</td>
+			<td>$' .  number_format(get_sub_field( 'owner_price' ),2) . '</td>
 			</tr>';
 			endwhile;
 		endif;
 
 		$owner_email_subject = $this->get_owner_manual_email_subject() ? $this->get_owner_manual_email_subject() : 'Fully paid';
-
+		$email_to_owner = $this->manual_email_owner_content();
 		if ( $api_price == 1 ) {
-		$email_to_owner = str_replace(
-		'[OWNER_DETAILS]',
-		$this->booking_owner_details_content_api(),
-		$email_to_owner
-		);
+			$email_to_owner = str_replace('[OWNER_DETAILS]', $this->booking_owner_details_content_api(), $email_to_owner);
+			$email_to_owner = str_replace( '[BOOKING_DETAILS]', $this->booking_owner_details_content_api(), $email_to_owner );
+			// $email_to_owner = str_replace( 'TOTAL_ROOM_RATE', get_field('total_payment_to_owner'), $email_to_owner );
+			$email_to_owner = str_replace( 'HOME_RENTAL_PRICE',  number_format(get_field('ciirus_room_price'),2), $email_to_owner );
+			$email_to_owner = str_replace( 'TOTAL_PRICE',  number_format(get_field('total_payment_to_owner'),2), $email_to_owner );
 		} else {
-		$email_to_owner = str_replace( '[OWNER_DETAILS]', $this->booking_owner_details_content(), $email_to_owner );
+			$email_to_owner = str_replace( '[OWNER_DETAILS]', $this->booking_owner_details_content(), $email_to_owner );
+			$email_to_owner = str_replace( '[BOOKING_DETAILS]', $this->booking_owner_details_content(), $email_to_owner );
+			$email_to_owner = str_replace( 'HOME_RENTAL_PRICE',  number_format(get_field('owner_total_villa_price'),2), $email_to_owner  );
+			$email_to_owner = str_replace( 'TOTAL_PRICE',  number_format(get_field('owner_total_price'),2), $email_to_owner );
 		}
 
 		$email_to_owner = str_replace( 'BOOKING_ID', 'HRV-' . get_the_ID(), $email_to_owner );
 		$email_to_owner = str_replace( 'NO_ADULTS', get_field( 'adult' ), $email_to_owner );
 		$email_to_owner = str_replace( 'NO_NIGHTS', get_field( 'no_of_nights' ), $email_to_owner );
 		$email_to_owner = str_replace( 'NO_CHILDREN', get_field( 'children' ), $email_to_owner );
-		$email_to_owner = str_replace( '[GUEST_NAME]', get_field( 'first_name' ) . ' ' . get_field( $surname ), $email_to_owner );
+		$email_to_owner = str_replace( '[GUEST_NAME]', get_field( 'first_name' ) . ' ' . get_field( 'surname' ), $email_to_owner );
 		$email_to_owner = str_replace( 'DEPARTURE_DATE', date( 'd/M/Y', strtotime( get_field( 'end_date' ) ) ), $email_to_owner );
 		$email_to_owner = str_replace( 'ARRIVAL_DATE', date( 'd/M/Y', strtotime( get_field( 'arrival_date' ) ) ), $email_to_owner );
 		$email_to_owner = str_replace( 'PROPERTY_NAME', get_field( 'property' ), $email_to_owner );
-		
-		
+		$email_to_owner = str_replace( 'PROPERTY_ADDRESS', get_field( 'booking_property_address' ), $email_to_owner );
+
+
 		$email_to_owner = str_replace( 'OTHER_ADDONS', $other_addons, $email_to_owner );
 		$email_to_owner = str_replace( 'INVOICE_DATE', date( 'd/M/Y' ), $email_to_owner );
+		$email_to_owner = str_replace( '[OWNER_NAME]', $owner_name, $email_to_owner );
+
 		$owner_email_subject = str_replace( '[REF_#]', $booking_id, $owner_email_subject );
 		$owner_email_subject = str_replace( '[GUEST_NAME]', $firstname . ' ' . $surname, $owner_email_subject );
 		$owner_email_subject = str_replace( '[OWNER_NAME]', $owner_name, $owner_email_subject );
-		$owner_email_subject = str_replace( '[PROPERTY ADDRESS]', get_field( 'address', $property ), $owner_email_subject);
-		$email_to_owner = str_replace( '[OWNER_NAME]', $owner_name, $email_to_owner );
+		$owner_email_subject = str_replace( '[PROPERTY ADDRESS]', get_field( 'booking_property_address' ), $owner_email_subject);
 
 
 		if ( $property_owner_email ) {
@@ -2273,12 +2725,12 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 			$property_owner_email = $test_email;
 			}
 		}
-		
-		
+
+
 		$this->send_hrv_email( $property_owner_email, $owner_email_subject, $email_to_owner );
 
-		wp_reset_postdata(); 
-		
+		wp_reset_postdata();
+
 		update_post_meta($post_id, '_owner_manual_email_sent', 'yes');
 
 	}
@@ -2288,29 +2740,29 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 		$post = get_post( $post_id );
 
 		setup_postdata($post);
-		
+
 		$arrival_date  = strtotime( get_field( 'arrival_date' ) );
 		$property_id = get_field('property_post')[0];
 		$today         = time();
 		$diff          = $arrival_date - $today;
 		$days          = floor( $diff / ( 60 * 60 * 24 ) );
-		$total_price   = get_field( 'total_price' );
+		$total_price   =  number_format( get_field( 'total_price' ), 2);
 		$deposit_price = $total_price - ( $total_price * 0.10 );
 		$deposit_price = $deposit_price > $this->deposit ? $this->deposit : $deposit_price;
 
-	
+
 		$email_to_send = $this->get_fully_paid_content();
 		if ( get_field('api_price') ) {
 			$email_to_send = str_replace( '[BOOKING_DETAILS]', $this->fully_paid_details_content_api(), $email_to_send );
-			$email_to_send = str_replace( 'TOTAL_ROOM_RATE', get_field('total_ciirus_price_with_comission'), $email_to_send );
+			$email_to_send = str_replace( 'TOTAL_ROOM_RATE', number_format(get_field('total_ciirus_price_with_comission'),2), $email_to_send );
 
 		} else {
 			$email_to_send = str_replace( '[BOOKING_DETAILS]', $this->fully_paid_details_content(), $email_to_send );
-			$email_to_send = str_replace( 'HOME_RENTAL_PRICE', get_field('booking_season_price'), $email_to_send  );
+			$email_to_send = str_replace( 'HOME_RENTAL_PRICE', number_format(get_field('booking_season_price'),2), $email_to_send  );
 		}
-		
 
-		
+
+
 
 		$other_addons = '';
 
@@ -2319,19 +2771,26 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 				the_row();
 				$other_addons .= '<tr class="item">
 			<td>' . get_sub_field( 'extra_cost' ) . '</td>
-			<td>$' . get_sub_field( 'price' ) . '</td>
+			<td>$' .  (get_sub_field( 'price' ) ? number_format(get_sub_field( 'price' ),2) : '0.00') . '</td>
 			</tr>';
 			endwhile;
 		endif;
 
 		$email_subject = $this->get_fully_paid_subject() ? $this->get_fully_paid_subject() : 'Fully paid';
+		$email_subject = str_replace( '[REF_#]', 'HRV-' . get_the_ID(), $email_subject );
+		$email_subject = str_replace( '[GUEST_NAME]', get_field( 'first_name' ) . ' ' . get_field( 'surname' ), $email_subject );
 
 		$directions = '';
 		if ( get_field( 'directions_from_airport', $property_id ) && !empty( get_field( 'directions_from_airport', $property_id ) ) ) {
 			ob_start();
 			?>
-            <p><strong>Directions from Airport</strong></p>
-            <?php the_field('directions_from_airport', $property_id); ?>
+            <tr class="heading">
+                <td colspan="2">Directions</td>
+            </tr>
+
+            <tr class="item">
+                <td colspan="2"><?php the_field('directions_from_airport', $property_id); ?></td>
+            </tr>
             <?php
 			$directions = ob_get_clean();
 		}
@@ -2340,8 +2799,13 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 		if ( get_field( 'check_in_instructions', $property_id ) && !empty(get_field( 'check_in_instructions', $property_id )) ) {
 			ob_start();
 			?>
-            <p><strong>Checkin Instructions</strong></p>
-            <?php the_field('check_in_instructions', $property_id); ?>
+            <tr class="heading">
+                <td colspan="2">Check In Information</td>
+            </tr>
+
+            <tr class="item">
+                <td colspan="2"><?php the_field('check_in_instructions', $property_id); ?></td>
+            </tr>
             <?php
 			$checkin = ob_get_clean();
 		}
@@ -2350,8 +2814,13 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 		if ( get_field( 'specific_check_in_instructions', $property_id ) && !empty(get_field( 'specific_check_in_instructions', $property_id )) ) {
 			ob_start();
 			?>
-            <p><strong>Specific Checkin Instructions</strong></p>
-            <?php the_field('specific_check_in_instructions', $property_id); ?>
+            <tr class="heading">
+                <td colspan="2">Property Check In Details</td>
+            </tr>
+
+            <tr class="item">
+                <td colspan="2"><?php the_field('specific_check_in_instructions', $property_id); ?></td>
+            </tr>
             <?php
 			$specific_checkin = ob_get_clean();
 		}
@@ -2360,12 +2829,17 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 		if ( get_field( 'alarm_information', $property_id ) && !empty(get_field( 'alarm_information', $property_id )) ) {
 			ob_start();
 			?>
-            <p><strong>Alarm Information</strong></p>
-            <?php the_field('alarm_information', $property_id); ?>
+            <tr class="heading">
+                <td colspan="2">Alarm Information</td>
+            </tr>
+
+            <tr class="item">
+                <td colspan="2"><?php the_field('alarm_information', $property_id); ?></td>
+            </tr>
             <?php
 			$alarm = ob_get_clean();
 		}
-		
+
 		$email_to_send = str_replace( 'BOOKING_ID', 'HRV-' . get_the_ID(), $email_to_send );
 		$email_to_send = str_replace( 'NO_ADULTS', get_field( 'adult' ), $email_to_send );
 		$email_to_send = str_replace( 'NO_NIGHTS', get_field( 'no_of_nights' ), $email_to_send );
@@ -2374,26 +2848,39 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 		$email_to_send = str_replace( 'DEPARTURE_DATE', date( 'd/M/Y', strtotime( get_field( 'end_date' ) ) ), $email_to_send );
 		$email_to_send = str_replace( 'ARRIVAL_DATE', date( 'd/M/Y', strtotime( get_field( 'arrival_date' ) ) ), $email_to_send );
 		$email_to_send = str_replace( 'PROPERTY_NAME', get_field( 'property' ), $email_to_send );
+		$email_to_send = str_replace( 'PROPERTY_ADDRESS', get_field( 'booking_property_address' ), $email_to_send );
 		$email_to_send = str_replace( 'TOTAL_PRICE', $total_price, $email_to_send );
-		$email_to_send = str_replace( 'RENT_PRICE', get_field( 'booking_season_price' ), $email_to_send );
+		$email_to_send = str_replace( 'RENT_PRICE', number_format( get_field( 'booking_season_price' ), 2), $email_to_send );
 		$email_to_send = str_replace( 'TOTAL_BALANCE', '0.00', $email_to_send );
 		$email_to_send = str_replace( 'OTHER_ADDONS', $other_addons, $email_to_send );
 		$email_to_send = str_replace( 'DUE_DATE', get_field( 'due_date' ), $email_to_send );
 		$email_to_send = str_replace( 'INVOICE_DATE', get_the_date( 'd/M/Y' ), $email_to_send );
 		$email_to_send = str_replace( '[DIRECTIONS_FROM_AIRPORT]', $directions, $email_to_send );
-		$email_to_send = str_replace( 'TOTAL_DEPOSIT', get_field( 'total_amount_paid' ), $email_to_send );
-		$email_to_send = str_replace( 'AMOUNT_PAID', get_field( 'balance' ), $email_to_send );
+		$email_to_send = str_replace( 'TOTAL_DEPOSIT', number_format( get_field( 'total_amount_paid' ), 2), $email_to_send );
+		$email_to_send = str_replace( 'AMOUNT_PAID',  number_format( get_field( 'balance' ), 2), $email_to_send );
 		$email_to_send = str_replace( '[CHECK_IN_INSTRUCTIONS]', $checkin, $email_to_send );
 		$email_to_send = str_replace( '[SPECIFIC_CHECK_IN_INSTRUCTIONS]', $specific_checkin, $email_to_send);
 		$email_to_send = str_replace( '[ALARM_INFORMATION]', $alarm, $email_to_send);
+
+		$total_golf_booking = get_field('total_golf_booking_price');
+		if ( $total_golf_booking ) {
+			$golf_content = '<tr class="item">
+                    <td>Golf Fees</td>
+                    <td>$'.number_format( $total_golf_booking, 2).'</td>
+                </tr>';
+			$email_to_send = str_replace('GOLF_FEES', $golf_content, $email_to_send);
+		} else {
+			$email_to_send = str_replace('GOLF_FEES', '', $email_to_send);
+		}
+
 		$email = get_field( 'email' );
 
 		$this->send_hrv_email( $email, $email_subject, $email_to_send );
-		
+
 		//$this->send_hrv_email( get_field( 'admin_email', 'option' ), $email_subject, $email_to_send );
 
-		wp_reset_postdata(); 
-		
+		wp_reset_postdata();
+
 		update_post_meta($post_id, '_paid_email_sent', 'yes');
 	}
 
@@ -2419,7 +2906,8 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 
 		ob_start();
 		?>
-            <div style="background: #ddd; color: #000; padding: 10px; margin-bottom: 10px;">Please update first before
+            <div style="background: #ddd; color: #000; padding: 10px; margin-bottom: 10px;">Please update first
+                before
                 sending
                 an
                 email.</div>
@@ -2499,7 +2987,7 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 		 }
 
 		$this->full_paid_process( $_POST['post_id'] );
-	 
+
 		 $status['post'] = $_POST;
 		 wp_send_json( $status );
 	}
@@ -2513,8 +3001,23 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 		 }
 
 		$this->customer_manual_email_process( $_POST['post_id'] );
-	 
+
 		 $status['post'] = $_POST;
+		 wp_send_json( $status );
+	}
+
+	public function send_reminder_email_ajax() {
+		 $status = array(
+			 'code' => 2,
+		 );
+		 if ( ! wp_verify_nonce( $_POST['nonce'], 'golf-nonce' ) ) {
+			 wp_send_json( 'Nonce Error' );
+		 }
+
+		$result = $this->send_reminder_email_process( $_POST['post_id'], $_POST['email'] );
+
+		 $status['post'] = $_POST;
+		 $status['result'] = $result;
 		 wp_send_json( $status );
 	}
 
@@ -2527,7 +3030,7 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 		 }
 
 		$this->owner_manual_email_process( $_POST['post_id'] );
-	 
+
 		 $status['post'] = $_POST;
 		 wp_send_json( $status );
 	}
@@ -2549,29 +3052,40 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 
 		 $golf_booking_email_content = $this->request_golf_email_content();
 
-		 $golf_bookings = '';
+		 $golf_bookings = '<p>Please book these Courses and Tee Times for our client <strong>'. get_field( 'first_name', $_POST['post_id'] ) . ' ' . get_field( 'surname', $_POST['post_id'] ) .'</strong></p><br/>';
 
 		 if ( have_rows( 'golf_booking', $_POST['post_id'] ) ) {
+			$golf_bookings .= '<div style="overflow-x:auto;" class="golf-table"><table class="golf"><thead>
+						<tr>
+						<th valign="top" align="center">Date</th>
+						<th valign="top" align="center">Golf Course</th>
+						<th valign="top" align="center">Preferred Time</th>
+						<th valign="top" align="center">Number of Holes</th>
+						<th valign="top" align="center">Number of Players</th>
+						</tr>
+					</thead><tbody>';
 			 while ( have_rows( 'golf_booking', $_POST['post_id'] ) ) {
 				 the_row();
 				 $golf_courses = get_sub_field( 'golf_course' );
 
 				 $golf_bookings .= '<tr>
-				<td valign="top" align="center"><font face="verdana" size="2px">' . get_sub_field( 'date' ) . '</font>
-				</td>
-				<td valign="top" align="center"><font face="verdana" size="2px">' . get_the_title( $golf_courses ) . '</font></td>
-				<td valign="top" align="center"><font face="verdana" size="2px">' . get_sub_field( 'preferred_time' ) . '</font></td>
-				<td valign="top" align="center"><font face="verdana" size="2px">' . get_sub_field( 'number_of_rounds' ) . ' Holes</font></td>
-				<td valign="top" align="center"><font face="verdana" size="2px">' . get_sub_field( 'number_of_players' ) . ' Golfers</font></td>
+				<td valign="middle" align="center">' . get_sub_field( 'date' ) . '</td>
+				<td valign="middle" align="center">' . get_the_title( $golf_courses ) . '</td>
+				<td valign="middle" align="center">' . get_sub_field( 'preferred_time' ) . '</td>
+				<td valign="middle" align="center">' . get_sub_field( 'number_of_rounds' ) . ' Holes</td>
+				<td valign="middle" align="center">' . get_sub_field( 'number_of_players' ) . ' Golfers</td>
 				</tr>';
 			 }
+
+			 $golf_bookings .= '</tbody></table></div>';
+
 		 }
 
 		 $guest_name = get_field( 'first_name', $_POST['post_id'] ) . ' ' . get_field( 'surname', $_POST['post_id'] );
 
-		 $golf_booking_email_content = str_replace( 'GUEST_EMAIL', $guest_name, $golf_booking_email_content );
-		 $golf_booking_email_content = str_replace( 'GOLF_BOOKING_DETAILS', $golf_bookings, $golf_booking_email_content );
-		 $golf_booking_email_content = str_replace( 'INVOICE_DATE', get_the_date( 'd/M/Y' ), $golf_booking_email_content );
+		 $golf_booking_email_content = str_replace( '[GUEST_NAME]', $guest_name, $golf_booking_email_content );
+		 $golf_booking_email_content = str_replace( '[GOLF_BOOKING_DETAILS]', $golf_bookings, $golf_booking_email_content );
+		 $golf_booking_email_content = str_replace( 'INVOICE_DATE', date('F j, Y'), $golf_booking_email_content );
 
 		 $this->send_hrv_email( $_POST['golf_booking_email'], 'Golf Reservations', $golf_booking_email_content );
 
@@ -2609,57 +3123,38 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 		return $owners;
 	}
 
-	public function render_owner_filter_options( $which ) {
-		if ( $which == 'top' ) {
-			if ( 'edit-bookings' === get_current_screen()->id ) {
-				$owners = $this->get_all_owners();
-				?>
-            <form method="GET">
-                <select name="property_owner" id="selectPropertyOwner">
-                    <option value="">Choose Property Owner</option>
-                    <?php
-					foreach ( $owners as $owner ) {
-						?>
-                    <option value="<?php echo $owner['id']; ?>"
-                        <?php echo( isset( $_GET['property_owner'] ) && $owner['id'] == $_GET['property_owner'] && ! empty( $_GET['property_owner'] ) ? 'selected' : '' ); ?>>
-                        <?php echo $owner['title']; ?>
-                    </option>
-                    <?php } ?>
-                </select>
-
-                <input type="submit" class="button" value="Filter" id="propertyOwnerSubmit">
-                <?php
-				$linkargs = array();
-				foreach ( $_GET as $label => $value ) :
-					if ( 'property_owner' != $label ) {
-						$linkargs[ $label ] = $value;
-					}
-				endforeach;
-
-				$link = add_query_arg(
-					$linkargs,
-					'edit.php'
-				);
-				?>
-            </form>
-            <script>
-            const propertyOwnerSubmit = document.getElementById('propertyOwnerSubmit'),
-                selectPropertyOwner = document.getElementById('selectPropertyOwner');
-            propertyOwnerSubmit.addEventListener('click', function(event) {
-                event.preventDefault();
-                window.location.href = "<?php echo $link; ?>&property_owner=" +
-                    selectPropertyOwner.value;
-            });
-            </script>
-
-            <?php
-			}
+	public function owner_filter_dropdown_start(){
+		global $typenow;
+		if ( 'bookings' === $typenow ) {
+		ob_start();
 		}
+	}
+
+	public function render_owner_filter_options( $which ) {
+		global $typenow;
+		if ( 'bookings' === $typenow ) {
+			$owners = $this->get_all_owners();
+			?>
+            <select name="property_owner" id="selectPropertyOwner">
+                <option value="">Choose Property Owner</option>
+                <?php
+				foreach ( $owners as $owner ) {
+					?>
+                <option value="<?php echo $owner['id']; ?>"
+                    <?php echo( isset( $_GET['property_owner'] ) && $owner['id'] == $_GET['property_owner'] && ! empty( $_GET['property_owner'] ) ? 'selected' : '' ); ?>>
+                    <?php echo $owner['title']; ?>
+                </option>
+                <?php } ?>
+            </select>
+            <?php
+		}
+		$content = ob_get_clean();
+		echo $content;
 	}
 
 	public function owner_radio_values( $field ) {
 		$owners = $this->get_all_owners();
-		
+
 		foreach ( $owners as $owner ) {
 			$field['choices'][ $owner['id'] ] = $owner['title'];
 		}
@@ -2700,13 +3195,17 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 		return get_field('manual_booking_subject', 'option');
 	}
 
+	public function get_reminder_email_subject() {
+		return get_field('reminder_email_subject', 'option');
+	}
+
 	public function fully_paid_details_content() {
 		 ob_start();
 		require 'emails/fully-paid-details.html';
 		return ob_get_clean();
 	}
 
-	
+
 	public function fully_paid_details_content_api() {
 		 ob_start();
 		require 'emails/fully-paid-details-api.html';
@@ -2780,18 +3279,22 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 	 */
 	public function get_request_payment_content() {
 		 $content = $this->email_template();
-		$content  = str_replace( 'EMAIL_CONTENT', '[BOOKING_DETAILS]', $content );
+		$content  = str_replace( 'EMAIL_CONTENT', get_field( 'reminder_email_content', 'option' ), $content );
 		return $content;
 	}
+
+
 
 	public function manual_email_content() {
 		$content = $this->email_template();
 		$content  = str_replace( 'EMAIL_CONTENT', get_field( 'manual_booking_content', 'option' ), $content );
+		return $content;
 	}
 
 	public function manual_email_owner_content() {
 		$content = $this->email_template();
 		$content  = str_replace( 'EMAIL_CONTENT', get_field( 'manual_booking_owner_content_email', 'option' ), $content );
+		return $content;
 	}
 
 
@@ -2851,7 +3354,7 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 			$first_name    = get_field( 'first_name', $post_id );
 			$surname       = get_field( 'surname', $post_id );
 			$property_id   = get_field( 'property_post', $post_id );
-			
+
 
 			$property_link = array(
 				'title'  => get_the_title( $property_id[0] ),
@@ -2871,22 +3374,37 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 			if ( 'no' === get_post_meta( $post_id, 'manual_booking', true ) ) {
 				$post_update['post_title'] = 'HRV-' . $post_id . ' - ' . $first_name . ' ' . $surname;
 			} else {
-				$booking_id = ' - HRV-' . $post_id;
-				$post_update['post_title'] = str_replace($booking_id, '', get_the_title( $post_id )) . $booking_id;
-				$bedrooms = get_field('bedrooms', $property_id[0] );
-				update_field( 'no_of_bedrooms', $bedrooms, $post_id );
-				
-				$arrival_date = strtotime( get_field( 'arrival_date', $post_id ) );
-				$end_date = strtotime( get_field( 'end_date', $post_id ) );
-				$diff         = $end_date - $arrival_date;
-				$days         = floor( $diff / ( 60 * 60 * 24 ) );
+				if ( get_field('old_booking_id', $post_id) === '' ) {
 
-				$nights = $days > 0 ? $days : 0;
-				update_field('no_of_nights', $nights, $post_id);
+					$post_update['post_title'] = 'HRV-' . $post_id . ' - ' . $first_name . ' ' . $surname;
+
+				} else {
+					$post_update['post_title'] = 'HRV-' . get_field('old_booking_id', $post_id) . ' - ' . $first_name . ' ' . $surname;
+				}
+
 
 			}
 
-			
+			$bedrooms = get_field('bedrooms', $property_id[0] );
+			if ( get_field('no_of_bedrooms', $post_id) === '' && $bedrooms ) {
+				update_field( 'no_of_bedrooms', $bedrooms, $post_id );
+			}
+
+
+			$arrival_date = strtotime( get_field( 'arrival_date', $post_id ) );
+			$end_date = strtotime( get_field( 'end_date', $post_id ) );
+			$diff         = $end_date - $arrival_date;
+			$days         = floor( $diff / ( 60 * 60 * 24 ) );
+
+			$nights = $days > 0 ? $days : 0;
+
+			if ( get_field( 'no_of_nights', $post_id ) === '' && $nights ) {
+				update_field('no_of_nights', $nights, $post_id);
+			}
+
+
+
+
 
 			wp_update_post( $post_update );
 	}
