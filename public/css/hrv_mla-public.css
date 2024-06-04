@@ -1,0 +1,59 @@
+/**
+ * All of the CSS for your public-facing functionality should be
+ * included in this file.
+ */
+
+.wpcf7-field-groups .wpcf7-field-group .holes__1 select {
+    width: 180px;
+}
+
+.wpcf7-field-groups .wpcf7-field-group .date__1 input {
+    width: 250px;
+}
+
+.wpcf7-field-groups  .wpcf7-field-group [data-name="holes"] > select {
+    width: 180px;
+}
+
+.property-result-wrap .amenities-div {
+    margin-top: 1em;
+    margin-bottom: 1em;
+}
+
+.villa-search-results-wrap {
+    display: block;
+}
+
+.villa-search-results-wrap .property-result-wrap {
+    display: grid;
+    grid-gap: 2em;
+    grid-template-columns: 1fr 1fr 1fr;
+    margin-bottom: 4em;
+}
+
+@media ( max-width: 767px ) {
+    .villa-search-results-wrap .property-result-wrap {
+        display: block;
+    }
+}
+
+.villa-search-results-wrap .img-wrap-property {
+    grid-column: span 2;
+    max-height: 350px;
+    width: 100%;
+}
+
+.villa-search-results-wrap .img-wrap-property img {
+    object-fit: cover;
+    display: block;
+}
+
+.villa-search-results-wrap .book-btns .book-btn {
+    margin-bottom: 0;
+}
+
+.property-results-content {
+    display: flex;
+    grid-gap: 1em;
+    flex-direction: column;
+}

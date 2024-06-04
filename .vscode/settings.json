@@ -1,0 +1,9 @@
+{
+    "[php]": {
+        "editor.defaultFormatter": "persoderlind.vscode-phpcbf",
+        "editor.formatOnSave": true,
+        "editor.formatOnPaste": true,
+        "editor.formatOnType": true
+    },
+    "phpsab.standard": "Wordpress-Extra",
+}
