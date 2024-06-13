@@ -281,7 +281,7 @@ class HRV_MLA_Public {
             $propertyTaxRatesApi    = $hrv_admin->ciirus_get_tax_rates( $id );
             $propertyTaxRates       = $propertyTaxRatesApi['total_rates'];
             $api_total_rate         = $api_get_price['total_rates'];
-            $price                  = $hrv_admin->ciirus_calculated_booking_price( $id, $checkin, $nights );
+            $price                  = $hrv_admin->ciirus_calculated_booking_price( $id, $checkin, $checkout );
             $bookingprice           = round( $api_total_rate + $this->percentage_tax_price( $api_total_rate, $propertyTaxRates ) + $cleaning_fees, 2 );
 
             $results['price']       = $api_get_price['QuoteIncludingTax'];
@@ -442,7 +442,7 @@ class HRV_MLA_Public {
 		$nights          = round( $datediff / ( 60 * 60 * 24 ) );
 
 		if ( get_field( 'api_price', $id ) ) {
-			$price         = $hrv_admin->ciirus_calculated_booking_price( $ciirus_id, $checkin, $nights );
+			$price         = $hrv_admin->ciirus_calculated_booking_price_v2( $ciirus_id, $checkin, $checkout );
 			$cleaning_fees = $hrv_admin->ciirus_get_cleaning_fee( $ciirus_id, $nights );
 		} else {
 			$price_cat_ID        = wp_get_post_terms($id, 'price_categories')[0]->term_id;

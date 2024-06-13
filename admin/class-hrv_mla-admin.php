@@ -1077,8 +1077,8 @@ class HRV_MLA_Admin {
 		<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
 		<soap:Body>
 			<GetProperties xmlns="http://xml.ciirus.com/">
-			<APIUsername>74db9a060ce9426</APIUsername>
-			<APIPassword>4e1276922b63493</APIPassword>
+			<APIUsername>'. $this->ciirus_user.'</APIUsername>
+			<APIPassword>'.$this->ciirus_password.'</APIPassword>
 			<ArriveDate>'.$checkin.'</ArriveDate>
 			<DepartDate>'.$checkout.'</DepartDate>
 			<FilterOptions>
@@ -1316,100 +1316,144 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
     }
 
     public function ciirus_get_cleaning_fee( $id, $nights ) {
-    $curl = curl_init();
+		$curl = curl_init();
 
-    curl_setopt_array(
-    $curl,
-    array(
-    CURLOPT_URL => 'http://api.ciirus.com/XMLAdditionalFunctions15.025.asmx/GetCleaningFee?APIUserName=' .
-    $this->ciirus_user . '&APIPassword=' . $this->ciirus_password . '&PropertyID=' . $id,
-    CURLOPT_RETURNTRANSFER => true,
-    CURLOPT_ENCODING => '',
-    CURLOPT_MAXREDIRS => 10,
-    CURLOPT_TIMEOUT => 30,
-    CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-    CURLOPT_CUSTOMREQUEST => 'GET',
-    )
-    );
+		curl_setopt_array(
+		$curl,
+		array(
+		CURLOPT_URL => 'http://api.ciirus.com/XMLAdditionalFunctions15.025.asmx/GetCleaningFee?APIUserName=' .
+		$this->ciirus_user . '&APIPassword=' . $this->ciirus_password . '&PropertyID=' . $id,
+		CURLOPT_RETURNTRANSFER => true,
+		CURLOPT_ENCODING => '',
+		CURLOPT_MAXREDIRS => 10,
+		CURLOPT_TIMEOUT => 30,
+		CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+		CURLOPT_CUSTOMREQUEST => 'GET',
+		)
+		);
 
-    $response = curl_exec( $curl );
-    $err = curl_error( $curl );
+		$response = curl_exec( $curl );
+		$err = curl_error( $curl );
 
-    curl_close( $curl );
+		curl_close( $curl );
 
-    if ( $err ) {
-    return 'cURL Error #:' . $err;
-    } else {
-    libxml_use_internal_errors( true );
+		if ( $err ) {
+		return 'cURL Error #:' . $err;
+		} else {
+		libxml_use_internal_errors( true );
 
-    $xml_result = simplexml_load_string( $response );
+		$xml_result = simplexml_load_string( $response );
 
-    if ( $xml_result ) {
-    $json_encode = wp_json_encode( $xml_result );
-    $arr_output = json_decode( $json_encode, true );
+		if ( $xml_result ) {
+		$json_encode = wp_json_encode( $xml_result );
+		$arr_output = json_decode( $json_encode, true );
 
-    if ( $arr_output['ChargeCleaningFee'] == 'true' && $arr_output['OnlyChargeCleaningFeeWhenLessThanDays'] > $nights )
-    {
-    return round( $arr_output['CleaningFeeAmount'], 0 );
-    } else {
-    return 0;
+		if ( $arr_output['ChargeCleaningFee'] == 'true' && $arr_output['OnlyChargeCleaningFeeWhenLessThanDays'] > $nights )
+		{
+		return round( $arr_output['CleaningFeeAmount'], 0 );
+		} else {
+		return 0;
+		}
+		} else {
+		return 0;
+		}
+		}
     }
-    } else {
-    return 0;
-    }
-    }
+
+	public function ciirus_calculated_booking_price_v2( $id, $checkin, $checkout ) {
+		$additional = get_field( 'additional_pricing', 'option' );
+		$commission_percent = $this->getPercentage( $additional, 'commission_percent' );
+		$default_commission_percent = $this->getPercentage( $additional, 'default_commission_percent' );
+		$minimum_price = $additional['minimum_price'];
+
+		$api_price = $this->getPropertyRates( $id, $checkin, $checkout );
+		$total_api_price = $api_price['total'];
+		$cleaning = $this->ciirus_get_cleaning_fee( $id, $nights );
+		$tax = $this->getTaxRates( $id );
+		$extras = $this->getExtras( $id, $total_api_price );
+
+		$tax_price = $this->calculateTax( $total_api_price, $tax );
+		$cleaning_tax_price = $this->calculateTax( $cleaning, $tax );
+
+		$price = $this->calculatePrices( $total_api_price, $cleaning, $tax_price, $cleaning_tax_price, $extras );
+
+		$total_price = $price['total'];
+
+		if ( $total_price > $minimum_price ) {
+		$commission_percent = $commission_percent;
+		} else {
+		$commission_percent = $default_commission_percent;
+		}
+
+		$additional_price = $this->calculateCommission( $total_price, $commission_percent );
+		$total_price = $total_price + $additional_price;
+
+		$price['per_day'] = $api_price['per_day'];
+		$price['old_total'] = $price['total'];
+		$price['additional'] = $additional_price;
+		$price['total'] = $total_price;
+
+
+		return $price;
     }
 
 
     public function ciirus_calculated_booking_price( $id, $checkin, $nights ) {
-    $additional = get_field( 'additional_pricing', 'option' );
-    $commission_percent = $this->getPercentage( $additional, 'commission_percent' );
-    $default_commission_percent = $this->getPercentage( $additional, 'default_commission_percent' );
-    $minimum_price = $additional['minimum_price'];
+		$additional = get_field( 'additional_pricing', 'option' );
+		$commission_percent = $this->getPercentage( $additional, 'commission_percent' );
+		$default_commission_percent = $this->getPercentage( $additional, 'default_commission_percent' );
+		$minimum_price = $additional['minimum_price'];
 
-    $api_price = $this->getPropertyRates( $id, $checkin, $nights );
-    $total_api_price = $api_price['total'];
-    $cleaning = $this->ciirus_get_cleaning_fee( $id, $nights );
-    $tax = $this->getTaxRates( $id );
-    $extras = $this->getExtras( $id, $total_api_price );
+		$api_price = $this->getPropertyRates( $id, $checkin, $nights );
+		$total_api_price = $api_price['total'];
+		$cleaning = $this->ciirus_get_cleaning_fee( $id, $nights );
+		$tax = $this->getTaxRates( $id );
+		$extras = $this->getExtras( $id, $total_api_price );
 
-    $tax_price = $this->calculateTax( $total_api_price, $tax );
-    $cleaning_tax_price = $this->calculateTax( $cleaning, $tax );
+		$tax_price = $this->calculateTax( $total_api_price, $tax );
+		$cleaning_tax_price = $this->calculateTax( $cleaning, $tax );
 
-    $price = $this->calculatePrices( $total_api_price, $cleaning, $tax_price, $cleaning_tax_price, $extras );
+		$price = $this->calculatePrices( $total_api_price, $cleaning, $tax_price, $cleaning_tax_price, $extras );
 
-    $total_price = $price['total'];
+		$total_price = $price['total'];
 
-    if ( $total_price > $minimum_price ) {
-    $commission_percent = $commission_percent;
-    } else {
-    $commission_percent = $default_commission_percent;
-    }
+		if ( $total_price > $minimum_price ) {
+		$commission_percent = $commission_percent;
+		} else {
+		$commission_percent = $default_commission_percent;
+		}
 
-    $additional_price = $this->calculateCommission( $total_price, $commission_percent );
-    $total_price = $total_price + $additional_price;
+		$additional_price = $this->calculateCommission( $total_price, $commission_percent );
+		$total_price = $total_price + $additional_price;
 
-    $price['per_day'] = $api_price['per_day'];
-    $price['old_total'] = $price['total'];
-    $price['additional'] = $additional_price;
-    $price['total'] = $total_price;
+		$price['per_day'] = $api_price['per_day'];
+		$price['old_total'] = $price['total'];
+		$price['additional'] = $additional_price;
+		$price['total'] = $total_price;
 
 
-    return $price;
+		return $price;
     }
 
     private function getPercentage( $additional, $key ) {
-    return $additional[ $key ] ? $additional[ $key ] : 0;
+    	return $additional[ $key ] ? $additional[ $key ] : 0;
     }
 
     private function getPropertyRates( $id, $checkin, $nights ) {
-    $api_get_price = $this->ciirus_get_property_rates( $id, $checkin, $nights );
-    $total = isset( $api_get_price['total_rates'] ) ? $api_get_price['total_rates'] : 0;
-    $per_day = isset( $api_get_price['per_day'] ) ? $api_get_price['per_day'] : 0;
-    return array(
-    'total' => $total,
-    'per_day' => $per_day,
-    );
+		$api_get_price = $this->ciirus_get_property_rates( $id, $checkin, $nights );
+		$total = isset( $api_get_price['total_rates'] ) ? $api_get_price['total_rates'] : 0;
+		$per_day = isset( $api_get_price['per_day'] ) ? $api_get_price['per_day'] : 0;
+		return array(
+		'total' => $total,
+		'per_day' => $per_day,
+		);
+    }
+
+	private function getPropertyRates_v2( $id, $checkin, $checkout ) {
+		$api_get_price = $this->ciirus_get_property_rates_v2( $id, $checkin, $checkout );		
+		return array(
+		'total' => $api_get_price['QuoteIncludingTax'],
+		);
     }
 
     private function getTaxRates( $id ) {

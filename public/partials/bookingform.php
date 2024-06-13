@@ -288,19 +288,16 @@ function stripeBooking(token) {
 <?php
 
 $hrv_public = new HRV_MLA_Public( 'hrv_mla', HRV_MLA_VERSION );
-$hrv_admin  = new HRV_MLA_Admin( 'hrv_mla', '1.0.0' );
+$hrv_admin  = new HRV_MLA_Admin( 'hrv_mla', HRV_MLA_VERSION );
 
 $ciirus_id    = isset( $_GET['id'] ) && ! empty( $_GET['id'] ) ? get_field( 'ciirus_id', $_GET['id'] ) : '';
-$price_cat_ID        = isset( wp_get_post_terms( $_GET['id'], 'price_categories')[0] ) ? wp_get_post_terms( $_GET['id'], 'price_categories')[0]->term_id : 0;
+$price_cat_ID = isset( wp_get_post_terms( $_GET['id'], 'price_categories')[0] ) ? wp_get_post_terms( $_GET['id'], 'price_categories')[0]->term_id : 0;
 
 $date_checkin  = isset( $_GET['date_checkin'] ) ? $_GET['date_checkin'] : date( 'd M Y' );
 $date_checkout = isset( $_GET['date_checkout'] ) ? $_GET['date_checkout'] : date( 'd M Y' );
 $due_date_get  = new DateTime( $date_checkin );
 $due_date_get->sub( new DateInterval( 'P30D' ) );
 $due_date = $due_date_get->format( 'd M Y' );
-
-
-
 
 
 $owner_price         = 0;
@@ -331,7 +328,7 @@ function previous_page() {
 
 if ( get_field( 'api_price', $_GET['id'] ) ) {
 
-	$getbookingprice = $hrv_admin->ciirus_calculated_booking_price( $ciirus_id, $_GET['date_checkin'], $_GET['nights'] );
+	$getbookingprice = $hrv_admin->ciirus_calculated_booking_price_v2( $ciirus_id, $_GET['date_checkin'], $_GET['date_checkout'] );
 
 	$bookingprice = round( $getbookingprice['total'] );
 	$profit       = round( $getbookingprice['additional'] );
