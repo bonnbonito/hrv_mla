@@ -1061,6 +1061,88 @@ class HRV_MLA_Admin {
 		return $status;
 	}
 
+	public function  ciirus_get_property_rates_v2( $id, $checkin, $checkout ) {
+		$curl = curl_init();
+
+		curl_setopt_array($curl, array(
+		CURLOPT_URL => 'https://api.ciirus.com/CiirusXML.15.025.asmx',
+		CURLOPT_RETURNTRANSFER => true,
+		CURLOPT_ENCODING => '',
+		CURLOPT_MAXREDIRS => 10,
+		CURLOPT_TIMEOUT => 0,
+		CURLOPT_FOLLOWLOCATION => true,
+		CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+		CURLOPT_CUSTOMREQUEST => 'POST',
+		CURLOPT_POSTFIELDS =>'<?xml version="1.0" encoding="utf-8"?>
+		<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+		<soap:Body>
+			<GetProperties xmlns="http://xml.ciirus.com/">
+			<APIUsername>74db9a060ce9426</APIUsername>
+			<APIPassword>4e1276922b63493</APIPassword>
+			<ArriveDate>'.$checkin.'</ArriveDate>
+			<DepartDate>'.$checkout.'</DepartDate>
+			<FilterOptions>
+				<ManagementCompanyID>0</ManagementCompanyID>
+				<CommunityID>0</CommunityID>
+				<PropertyID>'.$id.'</PropertyID>
+				<PropertyType>0</PropertyType>
+
+				<HasPool>2</HasPool>
+				<HasSpa>2</HasSpa>
+				<PrivacyFence>2</PrivacyFence>
+				<CommunalGym>2</CommunalGym>
+				<HasGamesRoom>2</HasGamesRoom>
+				<IsGasFree>false</IsGasFree>
+				<Sleeps>0</Sleeps>
+				<Bedrooms>0</Bedrooms>
+				<PropertyClass>0</PropertyClass>
+				<ConservationView>2</ConservationView>
+				<WaterView>2</WaterView>
+				<LakeView>2</LakeView>
+				<WiFi>2</WiFi>
+				<PetsAllowed>2</PetsAllowed>
+				<OnGolfCourse>2</OnGolfCourse>
+				<SouthFacingPool>2</SouthFacingPool>
+			</FilterOptions>
+			<SearchOptions>
+				<ReturnTopX>0</ReturnTopX>
+				<ReturnFullDetails>true</ReturnFullDetails>
+				<ReturnQuote>true</ReturnQuote>
+				<IncludePoolHeatInQuote>false</IncludePoolHeatInQuote>
+			</SearchOptions>
+			<xmlMsg></xmlMsg>
+			<jSonMsg></jSonMsg>
+			</GetProperties>
+		</soap:Body>
+		</soap:Envelope>',
+		CURLOPT_HTTPHEADER => array(
+			'SOAPAction: http://xml.ciirus.com/GetProperties',
+			'Content-Type: text/xml; charset=utf-8'
+		),
+		));
+
+		$response = curl_exec($curl);
+
+		curl_close($curl);
+
+
+		$xml = simplexml_load_string($response);
+		$namespaces = $xml->getNamespaces(true); // Fetch all namespaces
+
+		// Navigate through the SOAP envelope and body
+		$body = $xml->children($namespaces['soap'])->Body->children();
+
+		// Access the response content directly
+		$propertiesResult = $body->GetPropertiesResponse->GetPropertiesResult->PropertyDetails;
+
+		// Convert to JSON and then decode to an array for easier handling
+		$json = json_encode($propertiesResult);
+		$array = json_decode($json, true);
+
+		return $array;
+
+	}
+
 	public function ciirus_get_property_rates( $id, $checkin, $nights ) {
 		$curl = curl_init();
 
