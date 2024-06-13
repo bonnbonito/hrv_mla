@@ -332,7 +332,7 @@ if ( get_field( 'api_price', $_GET['id'] ) ) {
 	$getbookingprice = $hrv_admin->ciirus_calculated_booking_price_v2( $ciirus_id, $_GET['date_checkin'], $_GET['date_checkout'] );
 
 
-	$bookingprice = round( $getbookingprice['total'] );
+	$bookingprice = round( $getbookingprice['total_with_comission'] );
 	$profit       = round( $getbookingprice['additional'] );
 	$total_price  = $bookingprice;
 	$owner_price = $bookingprice - $profit;

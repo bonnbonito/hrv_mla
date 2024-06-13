@@ -520,7 +520,7 @@ class HRV_MLA_Public {
 			if ( $price['total'] > 0 ) {
 			?>
         <div class="property-results-price">
-            Price: <strong>&dollar;<?php echo round( $price['total'] ); ?></strong>
+            Price: <strong>&dollar;<?php echo round( $price['total_with_comission'] ); ?></strong>
         </div>
         <?php } }?>
 
