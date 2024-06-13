@@ -331,6 +331,7 @@ if ( get_field( 'api_price', $_GET['id'] ) ) {
 
 	$getbookingprice = $hrv_admin->ciirus_calculated_booking_price_v2( $ciirus_id, $_GET['date_checkin'], $_GET['date_checkout'] );
 
+
 	$bookingprice = round( $getbookingprice['total'] );
 	$profit       = round( $getbookingprice['additional'] );
 	$total_price  = $bookingprice;
@@ -514,9 +515,12 @@ span.price-highlight {
                     <input type="hidden" name="property" id="propertyId" value="<?php echo $_GET['id']; ?>">
                     <input type="hidden" name="seasonprice" id="seasonprice" value="<?php echo (int) $bookingprice; ?>">
                     <?php
-                    $ownerbookingpercent = get_field( 'property_owner_booking_percentage', $_GET['id'] ) ? get_field( 'property_owner_booking_percentage', $_GET['id'] ) : get_field( 'additional_pricing', 'option' )['default_property_owner_booking_percentage'];
 
-                    print_r( $ownerbookingpercent );
+                    if ( ! get_field( 'api_price', $_GET['id'])  ) {
+                    $ownerbookingpercent = get_field( 'property_owner_booking_percentage', $_GET['id'] ) ? get_field( 'property_owner_booking_percentage', $_GET['id'] ) : get_field( 'additional_pricing', 'option' )['default_property_owner_booking_percentage'];
+                    } else {
+                        $ownerbookingpercent = get_field( 'property_owner_booking_percentage', $_GET['id'] ) ? get_field( 'property_owner_booking_percentage', $_GET['id'] ) : get_field( 'additional_pricing', 'option' )['default_commission_percent'];
+                    }
 
                     ?>
                     <input type="hidden" name="commissionpercent" id="commissionpercent"

@@ -1143,7 +1143,7 @@ class HRV_MLA_Admin {
 
 	}
 
-	public function ciirus_get_property_rates( $id, $checkin, $nights ) {
+	public function ciirus_get_property_rates_old( $id, $checkin, $nights ) {
 		$curl = curl_init();
 
 		curl_setopt_array(
@@ -1366,18 +1366,9 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 		$default_commission_percent = $this->getPercentage( $additional, 'default_commission_percent' );
 		$minimum_price = $additional['minimum_price'];
 
-		$api_price = $this->getPropertyRates( $id, $checkin, $checkout );
-		$total_api_price = $api_price['total'];
-		$cleaning = $this->ciirus_get_cleaning_fee( $id, $nights );
-		$tax = $this->getTaxRates( $id );
-		$extras = $this->getExtras( $id, $total_api_price );
+		$api_price = $this->getPropertyRates_v2( $id, $checkin, $checkout );		
 
-		$tax_price = $this->calculateTax( $total_api_price, $tax );
-		$cleaning_tax_price = $this->calculateTax( $cleaning, $tax );
-
-		$price = $this->calculatePrices( $total_api_price, $cleaning, $tax_price, $cleaning_tax_price, $extras );
-
-		$total_price = $price['total'];
+		$total_price = $api_price['total'];
 
 		if ( $total_price > $minimum_price ) {
 		$commission_percent = $commission_percent;
@@ -1386,13 +1377,10 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 		}
 
 		$additional_price = $this->calculateCommission( $total_price, $commission_percent );
-		$total_price = $total_price + $additional_price;
 
-		$price['per_day'] = $api_price['per_day'];
-		$price['old_total'] = $price['total'];
+
 		$price['additional'] = $additional_price;
 		$price['total'] = $total_price;
-
 
 		return $price;
     }
