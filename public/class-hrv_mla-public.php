@@ -440,7 +440,11 @@ class HRV_MLA_Public {
 
 		if ( get_field( 'api_price', $id ) ) {
 			$price         = $hrv_admin->ciirus_calculated_booking_price_v2( $ciirus_id, $checkin, $checkout );
+
 			$cleaning_fees = $hrv_admin->ciirus_get_cleaning_fee( $ciirus_id, $nights );
+
+            $price['cleaning_price'] = $cleaning_fees;
+
 		} else {
 			$price_cat_ID        = wp_get_post_terms($id, 'price_categories')[0]->term_id;
 
@@ -519,16 +523,6 @@ class HRV_MLA_Public {
             Price: <strong>&dollar;<?php echo round( $price['total'] ); ?></strong>
         </div>
         <?php } }?>
-
-        <?php if ( current_user_can('administrator') ) {
-
-			//print_r( get_season_pp( $hrv_public->compute_price( $price_cat_ID[0]->term_id, $checkin  ) ) );
-
-			echo print_r($currentprice);
-
-		} ?>
-
-
 
 
 

@@ -1440,7 +1440,8 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 	private function getPropertyRates_v2( $id, $checkin, $checkout ) {
 		$api_get_price = $this->ciirus_get_property_rates_v2( $id, $checkin, $checkout );		
 		return array(
-		'total' => $api_get_price['QuoteIncludingTax'],
+			'total' => $api_get_price['QuoteIncludingTax'],
+			'total_excluding_tax' => $api_get_price['QuoteExcludingTax'],
 		);
     }
 
