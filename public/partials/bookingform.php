@@ -302,7 +302,7 @@ $due_date = $due_date_get->format( 'd M Y' );
 
 $owner_price         = 0;
 
-
+if ( ! get_field( 'api_price', $_GET['id'] ) ) {
 $total_price = $hrv_admin->get_season_total_price( $_GET['id'], $date_checkin, $_GET['nights'], $price_cat_ID);
 $total_price = $total_price;
 $bookingprice = $total_price;
@@ -311,6 +311,7 @@ $deposit_compute  = $total_price * .10;
 $deposit_price    = $deposit_compute > $hrv_admin->deposit ? $hrv_admin->deposit : $deposit_compute;
 $cleaning_fees    = 0;
 $propertyTaxRates = 0;
+}
 
 function percentage_tax_price( $price, $percent ) {
 	return ( $percent / 100 ) * $price;
@@ -514,6 +515,9 @@ span.price-highlight {
                     <input type="hidden" name="seasonprice" id="seasonprice" value="<?php echo (int) $bookingprice; ?>">
                     <?php
                     $ownerbookingpercent = get_field( 'property_owner_booking_percentage', $_GET['id'] ) ? get_field( 'property_owner_booking_percentage', $_GET['id'] ) : get_field( 'additional_pricing', 'option' )['default_property_owner_booking_percentage'];
+
+                    print_r( $ownerbookingpercent );
+
                     ?>
                     <input type="hidden" name="commissionpercent" id="commissionpercent"
                         value="<?php echo $ownerbookingpercent; ?>">
