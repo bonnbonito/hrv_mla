@@ -1379,7 +1379,7 @@ $response = preg_replace( '/(<\ /?)(\w+):([^>]*>)/', '$1$2$3', $response );
 		$additional_price = $this->calculateCommission( $total_price, $commission_percent );
 
 
-		$price['additional'] = $additional_price;
+		$price['commission'] = $additional_price;
 		$price['total_excluding_tax'] = $api_price['total_excluding_tax'];
 		$price['total_with_comission'] = $total_price + $additional_price;
 		$price['total'] = $total_price;		

@@ -459,21 +459,23 @@ class HRV_MLA_Public {
 
             for ($i = 0; $i < $nights; $i++) {
 
-                $checkinDateTime = new DateTime($checkin);
-                $dateToCheck = clone $checkinDateTime;
-                $dateToCheck->modify("+$i day");
 
+                $days_later = strtotime( $checkin . ' +' . intval( $i ) . ' day' );
+				$dateToCheck = date( 'd M Y', $days_later );
 
-                $currentPrice = round($this->get_date_price($dateToCheck->format('d M Y'), $price_cat_ID), 1);
+              
+                $currentPrice = round($this->get_date_price($dateToCheck, $price_cat_ID), 1);
+
 
                 if ( $ownerbookingpercent ) {
                     $owner_price = ( $ownerbookingpercent / 100 ) * $currentPrice;
                 }
+
                 $price_with_owner = $owner_price + $currentPrice;
 
 
                 // Add the current night's price to the total
-                $price[$dateToCheck->format('d M Y')] = $price_with_owner;
+                $price[$dateToCheck] = $price_with_owner;
             }
 
 
@@ -518,9 +520,10 @@ class HRV_MLA_Public {
 
 			}
 			if ( $price['total'] > 0 ) {
+                $totalPrice = get_field('api_price', $id) ? $price['QuoteIncludingTax'] : $price['total'];
 			?>
         <div class="property-results-price">
-            Price: <strong>&dollar;<?php echo round( $price['total_with_comission'] ); ?></strong>
+            Price: <strong>&dollar;<?php echo round( $totalPrice ); ?></strong>
         </div>
         <?php } }?>
 
@@ -1095,66 +1098,69 @@ if ( $days_left <= $hrv_admin->days_to_notify ) {
     }
 
     public function get_date_price( $date, $price_category ) {
-    $dateToCheckStr = str_replace('+', ' ', $date );
-    $dateToCheck = date('md', strtotime($dateToCheckStr));
-    $seasons = new WP_Query(
-    array(
-    'post_type' => 'seasons',
-    'posts_per_page' => -1,
-    )
-    );
+        $dateToCheckStr = str_replace('+', ' ', $date);
+        $dateToCheck = date('md', strtotime($dateToCheckStr));
+    
+        $seasons = new WP_Query(array(
+            'post_type' => 'seasons',
+            'posts_per_page' => -1,
+        ));       
 
-    $price = 0;
+        $price = 0;
 
-    if ( $seasons->have_posts() ) :
-    while ( $seasons->have_posts() ) :
-    $seasons->the_post();
+        if ($seasons->have_posts()) :
+            while ($seasons->have_posts()) :
+                $seasons->the_post();
 
-    $end_date = str_replace('-','/', get_field( 'date_end' ));
-    $start_date = str_replace('-','/', get_field( 'date_from' ));
+                $end_date = str_replace('-', '/', get_field('date_end'));
+                $start_date = str_replace('-', '/', get_field('date_from'));
 
-    $rangeStart = date('md', strtotime($start_date));
-    $rangeEnd = date('md', strtotime($end_date));
+                $rangeStart = date('md', strtotime($start_date));
+                $rangeEnd = date('md', strtotime($end_date));
 
-    if ((int)$rangeStart >= 1200 && strpos($rangeEnd, '01') === 0) {
-    $rangeEnd = substr_replace($rangeEnd, '13', 0, 2);
+                // Adjust rangeEnd for year wrap
+                if ((int)$rangeStart >= 1200 && strpos($rangeEnd, '01') === 0) {
+                    $rangeEnd = substr_replace($rangeEnd, '13', 0, 2);
+                }
+              
+               
+                if ((int)$dateToCheck >= (int)$rangeStart && (int)$dateToCheck <= (int)$rangeEnd) {
+                                
+                    if (have_rows('category')) {
+                        while (have_rows('category')) {
+                            the_row();
+                            $cat = get_sub_field('categories');
+
+                            
+                            if ($cat == $price_category) {
+                                $price = get_sub_field('price');
+                            }
+                        }
+                    }
+                    break;                    
+                }
+            endwhile;
+        endif;
+
+        return $price; // Return default price if no condition is met
     }
 
-    if ( (int)$dateToCheck >= (int)$rangeStart && (int)$dateToCheck <= (int)$rangeEnd ) { if ( have_rows( 'category' ) )
-        : while ( have_rows( 'category' ) ) : the_row(); $cat=get_sub_field( 'categories' ); if ( $cat==$price_category
-        ) { return get_sub_field( 'price' ); } endwhile; endif; break; } endwhile; wp_reset_postdata(); endif; return
-        $price; } /** * Compute season price Property */ public function compute_season_price() { if ( !
-        wp_verify_nonce( $_POST['nonce'], 'hrv-nonce' ) ) { wp_send_json( 'Nonce Error' ); }
-        $dateToCheckStr=str_replace('+', ' ' , $_POST['checkin']); $dateToCheck=date('md', strtotime($dateToCheckStr));
+    
+    
+            
+    public function compute_price( $price_category, $checkin ) {
+
+        $dateToCheckStr=str_replace('+', ' ' , $checkin); 
+        $dateToCheck=date('md', strtotime($dateToCheckStr));
+
         $seasons=new WP_Query( array( 'post_type'=> 'seasons',
-        'posts_per_page' => -1,
-        )
+            'posts_per_page' => -1,
+            )
         );
 
         $price = 0;
+
         if ( $seasons->have_posts() ) :
-        while ( $seasons->have_posts() ) :
-        $seasons->the_post();
-
-        $end_date = str_replace('-','/', get_field( 'date_end' ));
-        $start_date = str_replace('-','/', get_field( 'date_from' ));
-
-        $rangeStart = date('md', strtotime($start_date));
-        $rangeEnd = date('md', strtotime($end_date));
-
-        if ( $dateToCheck >= $rangeStart && $dateToCheck <= $rangeEnd ) { if ( have_rows( 'category' ) ) : while
-            (have_rows( 'category' ) ) : the_row(); $cat=get_sub_field( 'categories' ); if ( $cat==$price_category ) {
-            $price=get_sub_field( 'price' ); } endwhile; endif; break; } endwhile; wp_reset_postdata(); endif;
-            wp_send_json( $price ); } public function compute_price( $price_category, $checkin ) {
-            $dateToCheckStr=str_replace('+', ' ' , $checkin); $dateToCheck=date('md', strtotime($dateToCheckStr));
-            $seasons=new WP_Query( array( 'post_type'=> 'seasons',
-            'posts_per_page' => -1,
-            )
-            );
-
-            $price = 0;
-
-            if ( $seasons->have_posts() ) :
             while ( $seasons->have_posts() ) :
             $seasons->the_post();
 
@@ -1164,503 +1170,536 @@ if ( $days_left <= $hrv_admin->days_to_notify ) {
             $rangeStart = date('md', strtotime($start_date));
             $rangeEnd = date('md', strtotime($end_date));
 
-            if ( $dateToCheck >= $rangeStart && $dateToCheck <= $rangeEnd ) { if ( have_rows( 'category' ) ) : while (
-                have_rows( 'category' ) ) : the_row(); $cat=get_sub_field( 'categories' ); if ( $cat==$price_category )
-                { $price=get_sub_field( 'price' ); break; } endwhile; endif; } endwhile; wp_reset_postdata(); endif;
-                return $price; } public function add_shortcodes( $atts ) { add_shortcode( 'hrv_booking_form' , function
-                () { ob_start(); include_once 'partials/bookingform.php' ; $content=ob_get_clean(); return $content; });
-                add_shortcode( 'check_availability' , function () { ob_start();
-                include_once 'partials/check-availability.php' ; $content=ob_get_clean(); return $content; } );
-                add_shortcode( 'search_booking_form' , function () { ob_start(); include_once 'partials/searchform.php'
-                ; $content=ob_get_clean(); return $content; }); add_shortcode( 'amenities' , array(
-                $this, 'amenities_output' ) ); } public function amenities_output( $atts ) { $atts=shortcode_atts(
-                array( 'id'=> get_the_ID(),
-                ),
-                $atts,
-                'amenities'
-                );
+            if ( $dateToCheck >= $rangeStart && $dateToCheck <= $rangeEnd ) { 
+                if ( have_rows( 'category' ) ) : while (have_rows( 'category' ) ) : the_row(); 
+                $cat=get_sub_field( 'categories' ); 
+                if ( $cat==$price_category ) { 
+                    $price=get_sub_field( 'price' ); break; 
+                } endwhile; 
+            endif; 
+            } 
+        endwhile; 
+        wp_reset_postdata(); 
 
-                ob_start();
-                $amenities = get_field( 'amenities_list', $atts['id'] );
+        endif;
+        return $price; 
+    } 
+    public function add_shortcodes( $atts ) { 
+                
+        add_shortcode( 'hrv_booking_form' , function () { 
+            ob_start(); 
+            include_once 'partials/bookingform.php' ; 
+            $content=ob_get_clean(); 
+            return $content; 
+        });
+        
+        add_shortcode( 'check_availability' , function () { 
+            ob_start();
+            include_once 'partials/check-availability.php'; 
+            $content=ob_get_clean(); 
+            return $content; 
+        });
+                
+        
+        add_shortcode( 'search_booking_form' , function () { 
+            ob_start(); include_once 'partials/searchform.php'; 
+            $content=ob_get_clean(); 
+            return $content; 
+        }); 
+            
+        add_shortcode( 'amenities' , array($this, 'amenities_output' ) ); 
+    
+    } 
+    
+    public function amenities_output( $atts ) { 
+        $atts=shortcode_atts(
+            array( 'id'=> get_the_ID(),),
+            $atts,
+            'amenities'
+        );
 
-                $amenities_icons = get_field( 'amenities_icons', $atts['id'] );
+        ob_start();
+        
+        $amenities = get_field( 'amenities_list', $atts['id'] );
 
-                if ( $amenities || $amenities_icons ) :
+        $amenities_icons = get_field( 'amenities_icons', $atts['id'] );
+
+        if ( $amenities || $amenities_icons ) :
+            ?>
+            <style>
+            ul.aminities-list {
+                margin: 0;
+                padding: 0;
+                display: flex;
+                list-style: none;
+                grid-gap: 1em;
+                font-size: 12px;
+                width: 100%;
+            }
+
+            ul.amenities-text {
+                margin-top: 0;
+                font-weight: 600;
+                list-style: none;
+                padding: 0;
+            }
+
+
+            ul.aminities-list img {
+                height: 30px;
+                object-fit: contain;
+                margin-right: 1rem;
+            }
+
+            ul.aminities-list li {
+                display: flex;
+                align-items: center;
+                line-height: 1.6;
+                text-align: left;
+            }
+            </style>
+            <?php if ( $amenities ) : ?>
+            <ul class="amenities-text">
+                <?php $amenities_text = wp_list_pluck( $amenities, 'label' ); ?>
+                <?php foreach ( $amenities_text as $item ) : ?>
+                <li><?php echo $item; ?></li>
+                <?php endforeach; ?>
+            </ul>
+            <?php endif; ?>
+            <?php if ( $amenities_icons ) : ?>
+            <ul class="aminities-list">
+                <?php foreach ( $amenities_icons as $item ) : ?>
+                <?php if ( 'wifi' === $item['value'] ) { ?>
+                <li><img src="<?php echo home_url(); ?>/wp-content/uploads/2023/01/wifi.png"
+                        alt="<?php echo $item['label']; ?>" title="<?php echo $item['label']; ?>"></li>
+                <?php } ?>
+                <?php if ( 'fullaircon' === $item['value'] ) { ?>
+                <li><img src="<?php echo home_url(); ?>/wp-content/uploads/2023/01/air-conditioner.png"
+                        alt="<?php echo $item['label']; ?>" title="<?php echo $item['label']; ?>"></li>
+                <?php } ?>
+                <?php if ( 'gasbbq' === $item['value'] ) { ?>
+                <li><img src="<?php echo home_url(); ?>/wp-content/uploads/2023/01/gas-bbq.png"
+                        alt="<?php echo $item['label']; ?>" title="<?php echo $item['label']; ?>"></li>
+                <?php } ?>
+                <?php if ( 'soutwestpool' === $item['value'] ) { ?>
+                <li><img src="<?php echo home_url(); ?>/wp-content/uploads/2023/01/swimming-pool.png"
+                        alt="<?php echo $item['label']; ?>" title="<?php echo $item['label']; ?>">
+                </li>
+                <?php } ?>
+                <?php if ( 'pool' === $item['value'] ) { ?>
+                <li><img src="<?php echo home_url(); ?>/wp-content/uploads/2023/01/jacuzzi.png"
+                        alt="<?php echo $item['label']; ?>" title="<?php echo $item['label']; ?>">
+                </li>
+                <?php } ?>
+                <?php if ( 'hottub' === $item['value'] ) { ?>
+                <li><img src="<?php echo home_url(); ?>/wp-content/uploads/2023/01/hot-bath.png"
+                        alt="<?php echo $item['label']; ?>" title="<?php echo $item['label']; ?>">
+                </li>
+                <?php } ?>
+                <?php if ( 'gamesroom' === $item['value'] ) { ?>
+                <li><img src="<?php echo home_url(); ?>/wp-content/uploads/2023/04/table-tennis.png"
+                        alt="<?php echo $item['label']; ?>" title="<?php echo $item['label']; ?>">
+                </li>
+                <?php } ?>
+                <?php if ( 'golfcourse' === $item['value'] ) { ?>
+                <li><img src="<?php echo home_url(); ?>/wp-content/uploads/2023/09/gate.png"
+                        alt="<?php echo $item['label']; ?>" title="<?php echo $item['label']; ?>">
+                </li>
+                <?php } ?>
+                <?php endforeach; ?>
+            </ul>
+            <?php
+                endif;
+        endif;
+        return ob_get_clean();
+        }
+
+    public function has_no_search_dates() {
+            ob_start();
+        ?>
+
+        <div class="villa-search-results-wrap searching" id="villaResults">
+            <div id="loading">
+                <div class="loading-flex">
+                    <h3 id="searchingText">Searching properties <span id="percentStatus"></span></h3>
+                    <div class="lds-spinner">
+                        <div></div>
+                        <div></div>
+                        <div></div>
+                        <div></div>
+                        <div></div>
+                        <div></div>
+                        <div></div>
+                        <div></div>
+                        <div></div>
+                        <div></div>
+                        <div></div>
+                        <div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <?php
+        add_action(
+            'wp_footer',
+            function () {
                 ?>
-                <style>
-                ul.aminities-list {
-                    margin: 0;
-                    padding: 0;
-                    display: flex;
-                    list-style: none;
-                    grid-gap: 1em;
-                    font-size: 12px;
-                    width: 100%;
-                }
+        <script>
+        const villaResults = document.getElementById('villaResults');
+        const fx = [];
+        const propertyIds = HRV.properties_result_ids;
+        const percentStatus = document.getElementById('percentStatus');
+        const loading = document.getElementById('loading');
+        const form = new FormData();
+        form.append('action', 'get_all_property_details');
+        form.append('nonce', HRV.nonce);
+        <?php if ( isset( $_REQUEST['bedrooms'] ) ) : ?>
+        form.append(
+            'bedrooms', '<?php echo $_REQUEST['bedrooms']; ?>'
+        );
+        <?php endif; ?>
+        <?php if ( isset( $_REQUEST['resort'] ) ) : ?>
+        form.append(
+            'resort', '<?php echo $_REQUEST['resort']; ?>'
+        );
+        <?php endif; ?>
+        const params = new URLSearchParams(form);
 
-                ul.amenities-text {
-                    margin-top: 0;
-                    font-weight: 600;
-                    list-style: none;
-                    padding: 0;
-                }
+        fetch(HRV.ajax_url, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'Cache-Control': 'no-cache',
+                },
+                body: params,
+            })
+            .then((response) => response.json())
+            .then((data) => {
+                console.log(data);
+                loading.style.display = "none";
+                villaResults.classList.remove('searching');
+                villaResults.insertAdjacentHTML('beforeend', data.content);
+
+                if (data.numberOfPosts < 1) {
+                    document.querySelector('.noresults').style.display = 'flex';
+                    villaResults.style.display = 'none';
+                } else {}
+            })
+            .catch((error) => {
+                console.error(error);
+            });
+        </script>
+        <?php
+            },
+            99
+        );
+        return ob_get_clean();
+    }
 
 
-                ul.aminities-list img {
-                    height: 30px;
-                    object-fit: contain;
-                    margin-right: 1rem;
-                }
-
-                ul.aminities-list li {
-                    display: flex;
-                    align-items: center;
-                    line-height: 1.6;
-                    text-align: left;
-                }
-                </style>
-                <?php if ( $amenities ) : ?>
-                <ul class="amenities-text">
-                    <?php $amenities_text = wp_list_pluck( $amenities, 'label' ); ?>
-                    <?php foreach ( $amenities_text as $item ) : ?>
-                    <li><?php echo $item; ?></li>
-                    <?php endforeach; ?>
-                </ul>
-                <?php endif; ?>
-                <?php if ( $amenities_icons ) : ?>
-                <ul class="aminities-list">
-                    <?php foreach ( $amenities_icons as $item ) : ?>
-                    <?php if ( 'wifi' === $item['value'] ) { ?>
-                    <li><img src="<?php echo home_url(); ?>/wp-content/uploads/2023/01/wifi.png"
-                            alt="<?php echo $item['label']; ?>" title="<?php echo $item['label']; ?>"></li>
-                    <?php } ?>
-                    <?php if ( 'fullaircon' === $item['value'] ) { ?>
-                    <li><img src="<?php echo home_url(); ?>/wp-content/uploads/2023/01/air-conditioner.png"
-                            alt="<?php echo $item['label']; ?>" title="<?php echo $item['label']; ?>"></li>
-                    <?php } ?>
-                    <?php if ( 'gasbbq' === $item['value'] ) { ?>
-                    <li><img src="<?php echo home_url(); ?>/wp-content/uploads/2023/01/gas-bbq.png"
-                            alt="<?php echo $item['label']; ?>" title="<?php echo $item['label']; ?>"></li>
-                    <?php } ?>
-                    <?php if ( 'soutwestpool' === $item['value'] ) { ?>
-                    <li><img src="<?php echo home_url(); ?>/wp-content/uploads/2023/01/swimming-pool.png"
-                            alt="<?php echo $item['label']; ?>" title="<?php echo $item['label']; ?>">
-                    </li>
-                    <?php } ?>
-                    <?php if ( 'pool' === $item['value'] ) { ?>
-                    <li><img src="<?php echo home_url(); ?>/wp-content/uploads/2023/01/jacuzzi.png"
-                            alt="<?php echo $item['label']; ?>" title="<?php echo $item['label']; ?>">
-                    </li>
-                    <?php } ?>
-                    <?php if ( 'hottub' === $item['value'] ) { ?>
-                    <li><img src="<?php echo home_url(); ?>/wp-content/uploads/2023/01/hot-bath.png"
-                            alt="<?php echo $item['label']; ?>" title="<?php echo $item['label']; ?>">
-                    </li>
-                    <?php } ?>
-                    <?php if ( 'gamesroom' === $item['value'] ) { ?>
-                    <li><img src="<?php echo home_url(); ?>/wp-content/uploads/2023/04/table-tennis.png"
-                            alt="<?php echo $item['label']; ?>" title="<?php echo $item['label']; ?>">
-                    </li>
-                    <?php } ?>
-                    <?php if ( 'golfcourse' === $item['value'] ) { ?>
-                    <li><img src="<?php echo home_url(); ?>/wp-content/uploads/2023/09/gate.png"
-                            alt="<?php echo $item['label']; ?>" title="<?php echo $item['label']; ?>">
-                    </li>
-                    <?php } ?>
-                    <?php endforeach; ?>
-                </ul>
-                <?php
-					endif;
-			endif;
-			return ob_get_clean();
-			}
-
-			public function has_no_search_dates() {
-				 ob_start();
-				?>
-
-                <div class="villa-search-results-wrap searching" id="villaResults">
-                    <div id="loading">
-                        <div class="loading-flex">
-                            <h3 id="searchingText">Searching properties <span id="percentStatus"></span></h3>
-                            <div class="lds-spinner">
-                                <div></div>
-                                <div></div>
-                                <div></div>
-                                <div></div>
-                                <div></div>
-                                <div></div>
-                                <div></div>
-                                <div></div>
-                                <div></div>
-                                <div></div>
-                                <div></div>
-                                <div></div>
-                            </div>
-                        </div>
+    public function has_search_dates() {
+        ob_start();
+        ?>
+        <div class="vsr-container" style="position: relative;">
+            <div id="loading">
+                <div class="loading-flex">
+                    <h3 id="searchingText">Searching properties <span id="percentStatus"></span></h3>
+                    <div class="lds-spinner">
+                        <div></div>
+                        <div></div>
+                        <div></div>
+                        <div></div>
+                        <div></div>
+                        <div></div>
+                        <div></div>
+                        <div></div>
+                        <div></div>
+                        <div></div>
+                        <div></div>
+                        <div></div>
                     </div>
                 </div>
-                <?php
-				add_action(
-					'wp_footer',
-					function () {
-						?>
-                <script>
-                const villaResults = document.getElementById('villaResults');
-                const fx = [];
-                const propertyIds = HRV.properties_result_ids;
-                const percentStatus = document.getElementById('percentStatus');
-                const loading = document.getElementById('loading');
-                const form = new FormData();
-                form.append('action', 'get_all_property_details');
-                form.append('nonce', HRV.nonce);
-                <?php if ( isset( $_REQUEST['bedrooms'] ) ) : ?>
-                form.append(
-                    'bedrooms', '<?php echo $_REQUEST['bedrooms']; ?>'
-                );
-                <?php endif; ?>
-                <?php if ( isset( $_REQUEST['resort'] ) ) : ?>
-                form.append(
-                    'resort', '<?php echo $_REQUEST['resort']; ?>'
-                );
-                <?php endif; ?>
-                const params = new URLSearchParams(form);
+            </div>
+            <div class="villa-search-results-wrap searching" id="villaResults">
 
-                fetch(HRV.ajax_url, {
-                        method: 'POST',
-                        credentials: 'same-origin',
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded',
-                            'Cache-Control': 'no-cache',
-                        },
-                        body: params,
-                    })
-                    .then((response) => response.json())
-                    .then((data) => {
-                        console.log(data);
-                        loading.style.display = "none";
-                        villaResults.classList.remove('searching');
-                        villaResults.insertAdjacentHTML('beforeend', data.content);
-
-                        if (data.numberOfPosts < 1) {
-                            document.querySelector('.noresults').style.display = 'flex';
-                            villaResults.style.display = 'none';
-                        } else {}
-                    })
-                    .catch((error) => {
-                        console.error(error);
-                    });
-                </script>
-                <?php
-					},
-					99
-				);
-				return ob_get_clean();
-			}
-
-
-			public function has_search_dates() {
-				ob_start();
-				?>
-                <div class="vsr-container" style="position: relative;">
-                    <div id="loading">
-                        <div class="loading-flex">
-                            <h3 id="searchingText">Searching properties <span id="percentStatus"></span></h3>
-                            <div class="lds-spinner">
-                                <div></div>
-                                <div></div>
-                                <div></div>
-                                <div></div>
-                                <div></div>
-                                <div></div>
-                                <div></div>
-                                <div></div>
-                                <div></div>
-                                <div></div>
-                                <div></div>
-                                <div></div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="villa-search-results-wrap searching" id="villaResults">
-
-                    </div>
-                </div>
+            </div>
+        </div>
 
 
 
 
-                <?php
-				add_action(
-					'wp_footer',
-					function () {
-						?>
-                <script>
-                <?php $bedrooms = isset( $_REQUEST['bedrooms'] ) && !empty( $_REQUEST['bedrooms'] ) ? $_REQUEST['bedrooms'] : 0; ?>
-                const villaResults = document.getElementById('villaResults');
-                const propertyIds = HRV.properties_result_ids[<?php echo $bedrooms; ?>];
-                const percentStatus = document.getElementById('percentStatus');
-                const loading = document.getElementById('loading');
-                const localResults = localStorage.getItem('propertyResults');
-                const localResultsUrl = localStorage.getItem('propertyResultsUrl');
-                const getBeds = <?php echo $bedrooms; ?>;
-                const searchingText = document.getElementById('searchingText');
+        <?php
+        add_action(
+            'wp_footer',
+            function () {
+                ?>
+        <script>
+        <?php $bedrooms = isset( $_REQUEST['bedrooms'] ) && !empty( $_REQUEST['bedrooms'] ) ? $_REQUEST['bedrooms'] : 0; ?>
+        const villaResults = document.getElementById('villaResults');
+        const propertyIds = HRV.properties_result_ids[<?php echo $bedrooms; ?>];
+        const percentStatus = document.getElementById('percentStatus');
+        const loading = document.getElementById('loading');
+        const localResults = localStorage.getItem('propertyResults');
+        const localResultsUrl = localStorage.getItem('propertyResultsUrl');
+        const getBeds = <?php echo $bedrooms; ?>;
+        const searchingText = document.getElementById('searchingText');
 
-                async function is_available(id) {
-                    const form = new FormData();
-                    form.append('action', 'property_available');
-                    form.append('nonce', HRV.nonce);
-                    form.append('checkin', '<?php echo $_REQUEST['date_checkin']; ?>');
-                    form.append('checkout', '<?php echo $_REQUEST['date_checkout']; ?>');
-                    form.append('property_id', id);
-                    const params = new URLSearchParams(form);
+        async function is_available(id) {
+            const form = new FormData();
+            form.append('action', 'property_available');
+            form.append('nonce', HRV.nonce);
+            form.append('checkin', '<?php echo $_REQUEST['date_checkin']; ?>');
+            form.append('checkout', '<?php echo $_REQUEST['date_checkout']; ?>');
+            form.append('property_id', id);
+            const params = new URLSearchParams(form);
 
-                    try {
-                        console.log('starting...');
-                        const response = await fetch(HRV.ajax_url, {
-                            method: 'POST',
-                            credentials: 'same-origin',
-                            headers: {
-                                'Content-Type': 'application/x-www-form-urlencoded',
-                                'Cache-Control': 'no-cache',
-                            },
-                            body: params,
-                        });
+            try {
+                console.log('starting...');
+                const response = await fetch(HRV.ajax_url, {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'Cache-Control': 'no-cache',
+                    },
+                    body: params,
+                });
 
-                        const data = await response.json();
+                const data = await response.json();
 
-                        if (data.is_available === 'available') {
-                            villaResults.insertAdjacentHTML('beforeend', data.content);
+                if (data.is_available === 'available') {
+                    villaResults.insertAdjacentHTML('beforeend', data.content);
 
-                            localStorage.setItem('propertyResults', document.getElementById('villaResults')
-                                .innerHTML);
-                            localStorage.setItem('propertyResultsUrl', window.location.search);
-
-                            return {
-                                id: id,
-                                status: data.is_available
-                            }
-                        }
-                    } catch (error) {
-                        console.error(error);
-                    }
+                    localStorage.setItem('propertyResults', document.getElementById('villaResults')
+                        .innerHTML);
+                    localStorage.setItem('propertyResultsUrl', window.location.search);
 
                     return {
                         id: id,
-                        status: 'none'
-                    };
+                        status: data.is_available
+                    }
+                }
+            } catch (error) {
+                console.error(error);
+            }
+
+            return {
+                id: id,
+                status: 'none'
+            };
+        }
+
+        if (localResults && localResultsUrl === window.location.search) {
+
+            villaResults.classList.remove('searching');
+
+            villaResults.insertAdjacentHTML('beforeend', localResults);
+
+            loading.style.display = 'none';
+
+        } else {
+
+            filterPromise(getBeds);
+
+            // if (propertyIds?.length > 0) {
+
+            //     filterPromise(beds);
+
+
+            // } else {
+            //     document.querySelector('.noresults').style.display = 'flex';
+            //     villaResults.style.display = 'none';
+            //     loading.style.display = 'none';
+            // }
+
+        }
+
+        function filterPromise(beds = 0, totalFilteredValues = 0) {
+            const upBed = getBeds + 1;
+            const ids = HRV.properties_result_ids[beds];
+            const fxPromises = ids?.map((id) => is_available(id));
+            const propertyResults = document.getElementById('villaResults').innerHTML;
+
+            searchingText.innerText = beds > 0 ? "Searching properties with " + beds + " beds" :
+                "Searching properties";
+
+            console.log(ids);
+
+            if (beds > upBed || beds > 10) {
+                console.log("Maximum iteration reached");
+                loading.style.display = 'none';
+                villaResults.classList.remove('searching');
+                console.log('DONE');
+                if (typeof ids === 'undefined') {
+                    document.querySelector('.noresults').style.display = 'flex';
                 }
 
-                if (localResults && localResultsUrl === window.location.search) {
-
-                    villaResults.classList.remove('searching');
-
-                    villaResults.insertAdjacentHTML('beforeend', localResults);
-
-                    loading.style.display = 'none';
-
-                } else {
-
-                    filterPromise(getBeds);
-
-                    // if (propertyIds?.length > 0) {
-
-                    //     filterPromise(beds);
+                console.log('BEDS: ' + beds);
+                loading.style.display = 'none';
+                villaResults.classList.remove('searching');
+                console.log('DONE');
+                // Log the total filtered values length
+                console.log('Total Filtered Values Length:', totalFilteredValues);
 
 
-                    // } else {
-                    //     document.querySelector('.noresults').style.display = 'flex';
-                    //     villaResults.style.display = 'none';
-                    //     loading.style.display = 'none';
-                    // }
 
-                }
+                return;
+            }
 
-                function filterPromise(beds = 0, totalFilteredValues = 0) {
-                    const upBed = getBeds + 1;
-                    const ids = HRV.properties_result_ids[beds];
-                    const fxPromises = ids?.map((id) => is_available(id));
-                    const propertyResults = document.getElementById('villaResults').innerHTML;
+            if (!ids || ids.length === 0) {
+                setTimeout(() => {
+                    // No ids found, recursively call the function with incremented 'beds'
+                    filterPromise(beds + 1, totalFilteredValues);
+                }, 1000);
+                return;
+            }
 
-                    searchingText.innerText = beds > 0 ? "Searching properties with " + beds + " beds" :
-                        "Searching properties";
+            Promise.all(fxPromises)
+                .then((values) => {
+                    const filteredValues = values.filter((element) => element && element.status !==
+                        'none') || [];
+                    totalFilteredValues += filteredValues ? (filteredValues.length ?? 0) : 0;
+                    console.log(filteredValues);
+                    console.log(totalFilteredValues);
 
-                    console.log(ids);
+                    if (beds < 10) {
+                        searchingText.innerText = filteredValues.length + " " + (filteredValues.length > 1 ?
+                            'results' : 'result');
 
-                    if (beds > upBed || beds > 10) {
-                        console.log("Maximum iteration reached");
-                        loading.style.display = 'none';
-                        villaResults.classList.remove('searching');
-                        console.log('DONE');
-                        if (typeof ids === 'undefined') {
-                            document.querySelector('.noresults').style.display = 'flex';
-                        }
+                        setTimeout(() => {
+                            // Recursively call the function with incremented 'beds'
+                            filterPromise(beds + 1, totalFilteredValues);
+                        }, 1000);
 
+                    } else {
+                        // The recursive search is done, so apply the code here
                         console.log('BEDS: ' + beds);
                         loading.style.display = 'none';
                         villaResults.classList.remove('searching');
                         console.log('DONE');
+
                         // Log the total filtered values length
                         console.log('Total Filtered Values Length:', totalFilteredValues);
 
-
-
-                        return;
                     }
 
-                    if (!ids || ids.length === 0) {
-                        setTimeout(() => {
-                            // No ids found, recursively call the function with incremented 'beds'
-                            filterPromise(beds + 1, totalFilteredValues);
-                        }, 1000);
-                        return;
-                    }
+                })
+                .catch((error) => {
+                    console.error(error);
+                });
+        }
+        </script>
+        <?php
+            },
+            99
+        );
+        return ob_get_clean();
+    }
 
-                    Promise.all(fxPromises)
-                        .then((values) => {
-                            const filteredValues = values.filter((element) => element && element.status !==
-                                'none') || [];
-                            totalFilteredValues += filteredValues ? (filteredValues.length ?? 0) : 0;
-                            console.log(filteredValues);
-                            console.log(totalFilteredValues);
 
-                            if (beds < 10) {
-                                searchingText.innerText = filteredValues.length + " " + (filteredValues.length > 1 ?
-                                    'results' : 'result');
-
-                                setTimeout(() => {
-                                    // Recursively call the function with incremented 'beds'
-                                    filterPromise(beds + 1, totalFilteredValues);
-                                }, 1000);
-
-                            } else {
-                                // The recursive search is done, so apply the code here
-                                console.log('BEDS: ' + beds);
-                                loading.style.display = 'none';
-                                villaResults.classList.remove('searching');
-                                console.log('DONE');
-
-                                // Log the total filtered values length
-                                console.log('Total Filtered Values Length:', totalFilteredValues);
-
-                            }
-
-                        })
-                        .catch((error) => {
-                            console.error(error);
-                        });
+    public function search_results() {
+        add_shortcode(
+            'search_results',
+            function () {
+                if ( isset( $_REQUEST['date_checkin'] ) && ! empty( $_REQUEST['date_checkin'] ) && isset( $_REQUEST['date_checkout'] ) && ! empty( $_REQUEST['date_checkout'] ) ) {
+                    $return = $this->has_search_dates();
+                } else {
+                    $return = $this->has_no_search_dates();
                 }
-                </script>
-                <?php
-					},
-					99
-				);
-				return ob_get_clean();
-			}
 
+                return $return;
+            }
+        );
+    }
 
-			public function search_results() {
-				add_shortcode(
-					'search_results',
-					function () {
-						if ( isset( $_REQUEST['date_checkin'] ) && ! empty( $_REQUEST['date_checkin'] ) && isset( $_REQUEST['date_checkout'] ) && ! empty( $_REQUEST['date_checkout'] ) ) {
-							$return = $this->has_search_dates();
-						} else {
-							$return = $this->has_no_search_dates();
-						}
+    public function contact_date_picker() {
+        if ( is_page( 'contact-us' ) ) {
+            ?>
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const addBtn = document.querySelectorAll('.wpcf7-field-group-add');
+            const dates = document.querySelectorAll(
+                'input[name$="-date"], .wpcf7-text.date, [data-name="date"] > input');
+            dates.forEach((date, i) => {
+                new Datepicker(date, {
+                    minDate: 'tomorrow',
+                    autohide: true,
+                    format: 'dd M yyyy',
+                });
+            });
 
-						return $return;
-					}
-				);
-			}
-
-			public function contact_date_picker() {
-				if ( is_page( 'contact-us' ) ) {
-					?>
-                <script>
-                document.addEventListener('DOMContentLoaded', function() {
-                    const addBtn = document.querySelectorAll('.wpcf7-field-group-add');
-                    const dates = document.querySelectorAll(
-                        'input[name$="-date"], .wpcf7-text.date, [data-name="date"] > input');
-                    dates.forEach((date, i) => {
-                        new Datepicker(date, {
-                            minDate: 'tomorrow',
-                            autohide: true,
-                            format: 'dd M yyyy',
-                        });
-                    });
-
-                    jQuery('body').on('wpcf7-field-groups/added', function() {
-                        document.querySelectorAll('[data-name="date"] > input').forEach((date, i) => {
-                            new Datepicker(date, {
-                                minDate: 'tomorrow',
-                                autohide: true,
-                                format: 'dd M yyyy',
-                            });
-                        });
+            jQuery('body').on('wpcf7-field-groups/added', function() {
+                document.querySelectorAll('[data-name="date"] > input').forEach((date, i) => {
+                    new Datepicker(date, {
+                        minDate: 'tomorrow',
+                        autohide: true,
+                        format: 'dd M yyyy',
                     });
                 });
-                </script>
-                <?php
-				}
-			}
+            });
+        });
+        </script>
+        <?php
+        }
+    }
 
 
 
-			public function search_result_ids() {
-				$checkin      = $_POST['date_checkin'];
-				$bedrooms     = $_POST['bedrooms'];
-				$checkout     = $_POST['date_checkout'];
-				$checkinDate  = date( 'Y-m-d', strtotime( $checkin ) );
-				$datediff     = strtotime( $checkout ) - strtotime( $checkin );
-				$nights       = round( $datediff / ( 60 * 60 * 24 ) );
-				$hrv_admin    = new HRV_MLA_Admin( 'hrv_mla', '1.0.0' );
-				$hrv_public   = new HRV_MLA_Public( 'hrv_mla', '1.0.0' );
-				$property_ids = array();
-				$args         = array(
-					'post_type'   => 'properties',
-					'numberposts' => -1,
-                    'post_status' => 'publish',
-					'meta_key'    => 'bedrooms',
-					'meta_value'  => $bedrooms,
-				);
+    public function search_result_ids() {
+        $checkin      = $_POST['date_checkin'];
+        $bedrooms     = $_POST['bedrooms'];
+        $checkout     = $_POST['date_checkout'];
+        $checkinDate  = date( 'Y-m-d', strtotime( $checkin ) );
+        $datediff     = strtotime( $checkout ) - strtotime( $checkin );
+        $nights       = round( $datediff / ( 60 * 60 * 24 ) );
+        $hrv_admin    = new HRV_MLA_Admin( 'hrv_mla', '1.0.0' );
+        $hrv_public   = new HRV_MLA_Public( 'hrv_mla', '1.0.0' );
+        $property_ids = array();
+        $args         = array(
+            'post_type'   => 'properties',
+            'numberposts' => -1,
+            'post_status' => 'publish',
+            'meta_key'    => 'bedrooms',
+            'meta_value'  => $bedrooms,
+        );
 
-				$query = new WP_Query( $args );
-				if ( $query->have_posts() ) :
-					while ( $query->have_posts() ) :
-						$query->the_post();
-						$id = get_field( 'ciirus_id' );
-						if ( isset( $_POST['date_checkin'] ) ) {
-							if ( $hrv_admin->ciirus_is_property_available( $id, $checkin, $checkout ) === 'available' ) {
-								$property_ids[] = get_the_ID();
-							}
-						}
-						endwhile;
-					wp_reset_postdata();
-					endif;
-				return $property_ids;
-			}
+        $query = new WP_Query( $args );
+        if ( $query->have_posts() ) :
+            while ( $query->have_posts() ) :
+                $query->the_post();
+                $id = get_field( 'ciirus_id' );
+                if ( isset( $_POST['date_checkin'] ) ) {
+                    if ( $hrv_admin->ciirus_is_property_available( $id, $checkin, $checkout ) === 'available' ) {
+                        $property_ids[] = get_the_ID();
+                    }
+                }
+                endwhile;
+            wp_reset_postdata();
+            endif;
+        return $property_ids;
+    }
 
-			public function mailchimp_test() {
-				$MailChimp = new MailChimp( $this->get_mailchimp_api() );
-				$result    = $MailChimp->get( 'lists' );
-				echo '<pre>';
-				print_r( $result['lists'][0]['id'] );
-				echo '</pre>';
-				$list_id = '2061e80bec';
-				$result  = $MailChimp->post(
-					"lists/$list_id/members",
-					array(
-						'email_address' => 'nyhynipa@vomoto.com',
-						'merge_fields'  => array(
-							'FNAME' => 'THIS',
-							'LNAME' => 'TEST',
-						),
-						'status'        => 'subscribed',
-					)
-				);
-				print_r( $result['status'] );
-			}
+    public function mailchimp_test() {
+        $MailChimp = new MailChimp( $this->get_mailchimp_api() );
+        $result    = $MailChimp->get( 'lists' );
+        echo '<pre>';
+        print_r( $result['lists'][0]['id'] );
+        echo '</pre>';
+        $list_id = '2061e80bec';
+        $result  = $MailChimp->post(
+            "lists/$list_id/members",
+            array(
+                'email_address' => 'nyhynipa@vomoto.com',
+                'merge_fields'  => array(
+                    'FNAME' => 'THIS',
+                    'LNAME' => 'TEST',
+                ),
+                'status'        => 'subscribed',
+            )
+        );
+        print_r( $result['status'] );
+    }
 
 }
 ?>

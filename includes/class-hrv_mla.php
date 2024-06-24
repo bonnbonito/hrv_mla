@@ -194,7 +194,7 @@ class HRV_MLA {
 		$this->loader->add_action( 'acf/save_post', $plugin_admin, 'update_owner_email' );
 		$this->loader->add_action( 'acf/save_post', $plugin_admin, 'update_owner_name' );
 		$this->loader->add_action( 'acf/save_post', $plugin_admin, 'update_total_golf_booking_price' );
-		
+
 		$this->loader->add_action( 'save_post', $plugin_admin, 'update_manual_pricing_metabox', 20, 2 );
 		//$this->loader->add_action( 'save_post', $plugin_admin, 'booking_paid_save_post' );
 		$this->loader->add_filter( 'acf/prepare_field/name=total_amount_paid', $plugin_admin, 'acf_diable_field' );
@@ -222,8 +222,6 @@ class HRV_MLA {
 		$this->loader->add_action( 'init', $plugin_public, 'search_results' );
 		$this->loader->add_action( 'wp_ajax_nopriv_book_property', $plugin_public, 'book_property' );
 		$this->loader->add_action( 'wp_ajax_book_property', $plugin_public, 'book_property' );
-		$this->loader->add_action( 'wp_ajax_nopriv_compute_season_price', $plugin_public, 'compute_season_price' );
-		$this->loader->add_action( 'wp_ajax_compute_season_price', $plugin_public, 'compute_season_price' );
 		$this->loader->add_action( 'wp_ajax_nopriv_property_available', $plugin_public, 'property_available' );
 		$this->loader->add_action( 'wp_ajax_property_available', $plugin_public, 'property_available' );
 		$this->loader->add_action( 'wp_ajax_nopriv_get_all_property_details', $plugin_public, 'get_all_property_details' );
