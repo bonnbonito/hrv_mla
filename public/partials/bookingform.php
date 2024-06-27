@@ -215,7 +215,8 @@ function stripeBooking(token) {
     form.append('apiProfit', document.querySelector('#apiProfit').value);
     form.append('roomPrice', document.querySelector('#roomPrice').value);
     form.append('totalExtra', document.querySelector('#totalExtra').value);
-    form.append('cleaningFees', document.querySelector('#cleaningFees').value);
+    form.append('cleaningFees', document.querySelector('#cleaningFees').value ? document.querySelector('#cleaningFees')
+        .value : 0);
     form.append('additional', document.querySelector('#additional').value);
     form.append('taxRate', document.querySelector('#taxRate').value);
     form.append('extras', document.querySelector('#extras').value);
@@ -559,7 +560,7 @@ span.price-highlight {
                     <?php endif; ?>
                     <?php if ( isset( $getbookingprice['cleaning_price'] ) ) : ?>
                     <input type="hidden" name="cleaningfees" id="cleaningFees"
-                        value="<?php echo $getbookingprice['cleaning_price']; ?>">
+                        value="<?php echo ($getbookingprice['cleaning_price'] ? $getbookingprice['cleaning_price'] : 0); ?>">
                     <?php endif; ?>
                     <?php if ( isset( $getbookingprice['cleaning_tax'] ) ) : ?>
                     <input type="hidden" name="cleaning_tax" id="cleaningTax"
