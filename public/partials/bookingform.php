@@ -192,18 +192,18 @@ function stripeBooking(token) {
     form.append('email', document.querySelector('#customerEmail')?.value ? document.querySelector('#customerEmail')
         .value : '');
     form.append('address1', document.querySelector('#address1')?.value ? document.querySelector('#address1').value :
-    '');
+        '');
     form.append('city', document.querySelector('#formCity')?.value ? document.querySelector('#formCity').value : '');
     form.append('state', document.querySelector('#formState')?.value ? document.querySelector('#formState').value : '');
     form.append('zip', document.querySelector('#formZip')?.value ? document.querySelector('#formZip').value : '');
     form.append('nights', document.querySelector('#no-nights')?.value ? document.querySelector('#no-nights').value :
-    '');
+        '');
     form.append('phone', document.querySelector('#customerPhone')?.value ? document.querySelector('#customerPhone')
         .value : '');
     form.append('children', document.querySelector('#noOfChildren')?.value ? document.querySelector('#noOfChildren')
         .value : '');
     form.append('adults', document.querySelector('#noOfAdult')?.value ? document.querySelector('#noOfAdult').value :
-    '');
+        '');
     form.append('startdate', document.querySelector('#arrival-date')?.value ? document.querySelector('#arrival-date')
         .value : '');
     form.append('enddate', document.querySelector('#end-date')?.value ? document.querySelector('#end-date').value : '');
@@ -288,10 +288,10 @@ function stripeBooking(token) {
                 console.log(data);
                 loadingText.innerText = "Successful. Redirecting...";
 
-                // setTimeout(function(e) {
-                //     window.location.href =
-                //         `<?php echo home_url( '/' ) . 'thank-you-for-booking?booking='; ?>${data.booking}`;
-                // }, 750);
+                setTimeout(function(e) {
+                    window.location.href =
+                        `<?php echo home_url( '/' ) . 'thank-you-for-booking?booking='; ?>${data.booking}`;
+                }, 750);
             }
         })
         .catch((error) => {
