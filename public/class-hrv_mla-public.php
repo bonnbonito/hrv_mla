@@ -520,7 +520,7 @@ class HRV_MLA_Public {
 
 			}
 			if ( $price['total'] > 0 ) {
-                $totalPrice = get_field('api_price', $id) ? $price['QuoteIncludingTax'] : $price['total'];
+                $totalPrice = get_field('api_price', $id) ? $price['total_with_comission'] : $price['total'];
 			?>
         <div class="property-results-price">
             Price: <strong>&dollar;<?php echo round( $totalPrice ); ?></strong>

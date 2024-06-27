@@ -333,7 +333,7 @@ if ( get_field( 'api_price', $_GET['id'] ) ) {
 
 
 	$bookingprice = round( $getbookingprice['total_with_comission'] );
-	$profit       = round( $getbookingprice['additional'] );
+	$profit       = round( $getbookingprice['commission'] );
 	$total_price  = $bookingprice;
 	$owner_price = $bookingprice - $profit;
 
