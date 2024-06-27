@@ -186,40 +186,61 @@ function stripeBooking(token) {
     form.append('action', 'book_property');
     form.append('nonce', HRV.nonce);
     form.append('token', token);
-    form.append('firstname', document.querySelector('#firstname').value);
-    form.append('surname', document.querySelector('#surname').value);
-    form.append('email', document.querySelector('#customerEmail').value);
-    form.append('address1', document.querySelector('#address1').value);
-    form.append('city', document.querySelector('#formCity').value);
-    form.append('state', document.querySelector('#formState').value);
-    form.append('zip', document.querySelector('#formZip').value);
-    form.append('nights', document.querySelector('#no-nights').value);
-    form.append('phone', document.querySelector('#customerPhone').value);
-    form.append('children', document.querySelector('#noOfChildren').value);
-    form.append('adults', document.querySelector('#noOfAdult').value);
-    form.append('startdate', document.querySelector('#arrival-date').value);
-    form.append('enddate', document.querySelector('#end-date').value);
-    form.append('property', document.querySelector('#propertyId').value);
-    form.append('totalPrice', document.querySelector('#totalPrice').value);
-    form.append('totalRoomRate', document.querySelector('#totalRoomRate').value);
-    form.append('ownerPrice', document.querySelector('#ownerPrice').value);
-    form.append('bookingprice', document.querySelector('#bookingprice').value);
-    form.append('owner_id', document.querySelector('#ownerID').value);
-    form.append('ownerName', document.querySelector('#ownerName').value);
-    form.append('ownerbookingpercent', document.querySelector('#commissionpercent').value);
-    form.append('property_owner_email', document.querySelector('#ownerEmail').value);
-    form.append('dueDate', document.querySelector('#dueDate').value);
-    form.append('deposit', document.querySelector('#depositPrice').value);
-    <?php if ( get_field( 'api_price', $_GET['id'] ) ) : ?>
-    form.append('apiPrice', document.querySelector('#apiPrice').value);
-    form.append('apiProfit', document.querySelector('#apiProfit').value);
-    form.append('roomPrice', document.querySelector('#roomPrice').value);
-    form.append('totalExtra', document.querySelector('#totalExtra').value);
-    form.append('cleaningFees', document.querySelector('#cleaningFees').value ? document.querySelector('#cleaningFees')
+    form.append('firstname', document.querySelector('#firstname')?.value ? document.querySelector('#firstname').value :
+        '');
+    form.append('surname', document.querySelector('#surname')?.value ? document.querySelector('#surname').value : '');
+    form.append('email', document.querySelector('#customerEmail')?.value ? document.querySelector('#customerEmail')
+        .value : '');
+    form.append('address1', document.querySelector('#address1')?.value ? document.querySelector('#address1').value :
+    '');
+    form.append('city', document.querySelector('#formCity')?.value ? document.querySelector('#formCity').value : '');
+    form.append('state', document.querySelector('#formState')?.value ? document.querySelector('#formState').value : '');
+    form.append('zip', document.querySelector('#formZip')?.value ? document.querySelector('#formZip').value : '');
+    form.append('nights', document.querySelector('#no-nights')?.value ? document.querySelector('#no-nights').value :
+    '');
+    form.append('phone', document.querySelector('#customerPhone')?.value ? document.querySelector('#customerPhone')
+        .value : '');
+    form.append('children', document.querySelector('#noOfChildren')?.value ? document.querySelector('#noOfChildren')
+        .value : '');
+    form.append('adults', document.querySelector('#noOfAdult')?.value ? document.querySelector('#noOfAdult').value :
+    '');
+    form.append('startdate', document.querySelector('#arrival-date')?.value ? document.querySelector('#arrival-date')
+        .value : '');
+    form.append('enddate', document.querySelector('#end-date')?.value ? document.querySelector('#end-date').value : '');
+    form.append('property', document.querySelector('#propertyId')?.value ? document.querySelector('#propertyId').value :
+        '');
+    form.append('totalPrice', document.querySelector('#totalPrice')?.value ? document.querySelector('#totalPrice')
+        .value : '');
+    form.append('totalRoomRate', document.querySelector('#totalRoomRate')?.value ? document.querySelector(
+        '#totalRoomRate').value : '');
+    form.append('ownerPrice', document.querySelector('#ownerPrice')?.value ? document.querySelector('#ownerPrice')
+        .value : '');
+    form.append('bookingprice', document.querySelector('#bookingprice')?.value ? document.querySelector('#bookingprice')
+        .value : '');
+    form.append('owner_id', document.querySelector('#ownerID')?.value ? document.querySelector('#ownerID').value : '');
+    form.append('ownerName', document.querySelector('#ownerName')?.value ? document.querySelector('#ownerName').value :
+        '');
+    form.append('ownerbookingpercent', document.querySelector('#commissionpercent')?.value ? document.querySelector(
+        '#commissionpercent').value : '');
+    form.append('property_owner_email', document.querySelector('#ownerEmail')?.value ? document.querySelector(
+        '#ownerEmail').value : '');
+    form.append('dueDate', document.querySelector('#dueDate')?.value ? document.querySelector('#dueDate').value : '');
+    form.append('deposit', document.querySelector('#depositPrice')?.value ? document.querySelector('#depositPrice')
         .value : 0);
-    form.append('additional', document.querySelector('#additional').value);
-    form.append('taxRate', document.querySelector('#taxRate').value);
-    form.append('extras', document.querySelector('#extras').value);
+    <?php if ( get_field( 'api_price', $_GET['id'] ) ) : ?>
+    form.append('apiPrice', document.querySelector('#apiPrice')?.value ? document.querySelector('#apiPrice').value : 0);
+    form.append('apiProfit', document.querySelector('#apiProfit')?.value ? document.querySelector('#apiProfit').value :
+        0);
+    form.append('roomPrice', document.querySelector('#roomPrice')?.value ? document.querySelector('#roomPrice').value :
+        0);
+    form.append('totalExtra', document.querySelector('#totalExtra')?.value ? document.querySelector('#totalExtra')
+        .value : 0);
+    form.append('cleaningFees', document.querySelector('#cleaningFees')?.value ? document.querySelector('#cleaningFees')
+        .value : 0);
+    form.append('additional', document.querySelector('#additional')?.value ? document.querySelector('#additional')
+        .value : 0);
+    form.append('taxRate', document.querySelector('#taxRate')?.value ? document.querySelector('#taxRate').value : 0);
+    form.append('extras', document.querySelector('#extras')?.value ? document.querySelector('#extras').value : 0);
     <?php endif; ?>
 
 
