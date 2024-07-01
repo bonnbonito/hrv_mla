@@ -786,9 +786,9 @@ span.price-highlight {
         pricetotalcompute.innerText = computed.toLocaleString();
         totalPrice.value = computed;
         summaryPrice.innerText = computed.toLocaleString();
-        depositPrice.value = depositTotal;
+        depositPrice.value = depositTotal.toFixed(1);
         document.getElementById('depositpricecompute').innerText = depositTotal.toLocaleString();
-        summaryDeposit.innerText = depositTotal.toLocaleString();
+        summaryDeposit.innerText = depositTotal.toFixed(1).toLocaleString();
         totalExtra.value = total.toFixed(1);
     }
 
