@@ -136,7 +136,7 @@ button#checkdates {
 			if (data) {
 				console.log(data);
 				if ( 'available' === data['status'] ) {
-					statusResult.innerHTML = `<h3 style="color: green;">Available: $${data['price']}</h3> <a href="/book-online/?id=${data['property_id']}&date_checkin=${data['checkin']}&date_checkout=${data['checkout']}&nights=${data['nights']}" class="booknow">Book Now</a>`;
+					statusResult.innerHTML = `<h3 style="color: green; font-family: 'Poppins', sans-serif; font-weight: 500;">Available: $${data['price'].toLocaleString('en-US')}</h3> <a href="/book-online/?id=${data['property_id']}&date_checkin=${data['checkin']}&date_checkout=${data['checkout']}&nights=${data['nights']}" class="booknow">Book Now</a>`;
 				} else {
 					statusResult.innerHTML = `<h3 style="color: red;">Not Available</h3>`;
 				}

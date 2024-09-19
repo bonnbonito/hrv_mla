@@ -276,12 +276,14 @@ class HRV_MLA_Public {
         $results['property_id'] = $property_id;
         $results['ciirus_id']   = $id;
         if ( get_field('api_price', $property_id) ) {
-            $api_get_price          = $hrv_admin->ciirus_get_property_rates_v2( $id, $checkin, $checkout );
+            /*$api_get_price          = $hrv_admin->ciirus_get_property_rates_v2( $id, $checkin, $checkout );
             $cleaning_fees          = $hrv_admin->ciirus_get_cleaning_fee( $id, $nights );
             $propertyTaxRatesApi    = $hrv_admin->ciirus_get_tax_rates( $id );
             $propertyTaxRates       = $propertyTaxRatesApi['total_rates'];
             $api_total_rate         = $api_get_price['total_rates'];
-            $results['price']       = $api_get_price['QuoteIncludingTax'];
+            $results['price']       = $api_get_price['QuoteIncludingTax']; */
+			$api_get_price = $hrv_admin->ciirus_calculated_booking_price_v2( $id, $checkin, $checkout );
+            $results['price']       =  round( $api_get_price['total_with_comission'] );
         } else {
             $price_category = wp_get_post_terms($property_id, 'price_categories')[0]->term_id;
             $results['price']          = round($hrv_admin->get_season_total_price( $property_id, $checkin, $nights, $price_category), 2);
