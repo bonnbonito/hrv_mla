@@ -710,7 +710,7 @@ span.price-highlight {
                 <input type="submit">
                 <div style="margin-top: 10px;">
                     <input type="checkbox" name="accept" id="accept" required>
-                    <label for="accept">I accept the <a href="/terms-and-conditions">Terms and Conditions</a></label>
+                    <label for="accept">I accept the <a href="/terms-conditions/">Terms and Conditions</a></label>
                 </div>
             </div>
 
