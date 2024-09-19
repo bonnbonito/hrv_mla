@@ -706,17 +706,18 @@ span.price-highlight {
                 <img src="/wp-content/uploads/2021/10/chelvron-left.png">
                 <p><a href="<?php echo previous_page(); ?>">Go Back</a></p>
             </div>
-            <div class="submit" style="margin-top: 20px; text-align: right;">
-                <input type="submit">
-                <div style="margin-top: 10px;">
+            <div class="submit" style="text-align: right;">
+                <div style="margin-bottom: 10px;">
                     <div>
-                        <p>Click here to read our <a href="/terms-conditions/" target="_blank">Terms and Conditions</a>
+                        <p style="margin-bottom: 0;">Click here to read our <a href="/terms-conditions/"
+                                target="_blank">Terms and Conditions</a>
                         </p>
-                        <input type="checkbox" name="accept" id="accept" required>
-                        <label for="accept">I accept the Terms and Conditions</label>
+                        <label for="accept">
+                            <input type="checkbox" name="accept" id="accept" required class="checkbox">
+                            I accept the Terms and Conditions</label>
                     </div>
-
                 </div>
+                <input type="submit">
             </div>
 
         </div>
