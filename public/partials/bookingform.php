@@ -712,9 +712,10 @@ span.price-highlight {
                         <p style="margin-bottom: 0;">Click here to read our <a href="/terms-conditions/"
                                 target="_blank">Terms and Conditions</a>
                         </p>
-                        <label for="accept">
+                        <label class="container">I accept the Terms and Conditions
                             <input type="checkbox" name="accept" id="accept" required class="checkbox">
-                            I accept the Terms and Conditions</label>
+                            <span class="checkmark"></span>
+                        </label>
                     </div>
                 </div>
                 <input type="submit">
